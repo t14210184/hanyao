@@ -1,0 +1,69 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files (can opt-in for committing if needed)
+.env
+.env.local
+.env.*.local
+.env*
+
+# vercel
+.vercel
+
+# typescript
+next-env.d.ts
+.agents
+local-build.ps1
+local-dev.ps1
+*.webp
+
+# private reports and planning docs
+*.csv
+*.docx
+*Skill*.txt
+Ai網站prompt.md
+各種工具做網站的比較.md
+implementation_plan.md
+*Implementation Plan*.md
+*Walkthrough*.md
+AGENTS.md
+CLAUDE.md
+
+# local only
+node20.exe
+local-build.bat
+local-dev.bat
+
+# AI agent local files
+.agents/
+.gemini/
+

@@ -1,0 +1,16 @@
+export const siteConfig = {
+  brandName: "焓耀空調工程",
+  phone1: "0931-940-133",
+  phone1Link: "tel:0931940133",
+  phone2: "0905-828-620",
+  phone2Link: "tel:0905828620",
+  lineUrl: "https://line.me/R/ti/p/@451vpomq",
+  email: "hanyao0105@gmail.com",
+  companyAddress: "900 屏東縣屏東市建南路106號",
+  businessHours: "週一至週五 08:00–17:00",
+  domain: "https://www.hanyao.com.tw",
+  serviceAreas: ["高雄市", "屏東縣"],
+  gtmId: "GTM-XXXXXXX",
+  gaId: "G-XXXXXXXXXX",
+  adsId: "AW-XXXXXXXXXX",
+};
