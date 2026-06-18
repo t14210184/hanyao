@@ -57,7 +57,7 @@ export default function CommercialAcLP() {
     "@type": "WebPage",
     "name": `${areaName}商用空調工程`,
     "description": pageDescription,
-    "url": `https://www.hanyao.com.tw/lp/commercial-ac/?area=${currentArea}`
+    "url": `https://www.xusen.pro/lp/commercial-ac/?area=${currentArea}`
   };
 
   const serviceSchema = {
@@ -279,10 +279,10 @@ export default function CommercialAcLP() {
       <head>
         <title>{pageTitle}</title>
         <meta name="description" content={pageDescription} />
-        <link rel="canonical" href={`https://www.hanyao.com.tw/lp/commercial-ac/?area=${currentArea}`} />
+        <link rel="canonical" href={`https://www.xusen.pro/lp/commercial-ac/?area=${currentArea}`} />
         <meta property="og:title" content={pageTitle} />
         <meta property="og:description" content={pageDescription} />
-        <meta property="og:url" content={`https://www.hanyao.com.tw/lp/commercial-ac/?area=${currentArea}`} />
+        <meta property="og:url" content={`https://www.xusen.pro/lp/commercial-ac/?area=${currentArea}`} />
         <meta property="og:type" content="website" />
         <JsonLd schema={pageSchema} />
         <JsonLd schema={serviceSchema} />

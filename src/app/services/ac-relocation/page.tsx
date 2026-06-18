@@ -16,7 +16,7 @@ export default function AcRelocationServicePage() {
     "@type": "WebPage",
     "name": "冷氣移機服務",
     "description": pageDescription,
-    "url": "https://www.hanyao.com.tw/services/ac-relocation/"
+    "url": "https://www.xusen.pro/services/ac-relocation/"
   };
 
   const relocationPoints = [
@@ -51,7 +51,7 @@ export default function AcRelocationServicePage() {
       <head>
         <title>{pageTitle}</title>
         <meta name="description" content={pageDescription} />
-        <link rel="canonical" href="https://www.hanyao.com.tw/services/ac-relocation/" />
+        <link rel="canonical" href="https://www.xusen.pro/services/ac-relocation/" />
         <JsonLd schema={pageSchema} />
       </head>
 

@@ -16,7 +16,7 @@ export default function PingtungAreaPage() {
     "@type": "WebPage",
     "name": "屏東冷氣空調服務",
     "description": pageDescription,
-    "url": "https://www.hanyao.com.tw/areas/pingtung/"
+    "url": "https://www.xusen.pro/areas/pingtung/"
   };
 
   const localSchema = {
@@ -70,7 +70,7 @@ export default function PingtungAreaPage() {
       <head>
         <title>{pageTitle}</title>
         <meta name="description" content={pageDescription} />
-        <link rel="canonical" href="https://www.hanyao.com.tw/areas/pingtung/" />
+        <link rel="canonical" href="https://www.xusen.pro/areas/pingtung/" />
         <JsonLd schema={pageSchema} />
         <JsonLd schema={localSchema} />
       </head>

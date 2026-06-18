@@ -16,7 +16,7 @@ export default function AcRepairServicePage() {
     "@type": "WebPage",
     "name": "冷氣維修檢修服務",
     "description": pageDescription,
-    "url": "https://www.hanyao.com.tw/services/ac-repair/"
+    "url": "https://www.xusen.pro/services/ac-repair/"
   };
 
   const issues = [
@@ -51,7 +51,7 @@ export default function AcRepairServicePage() {
       <head>
         <title>{pageTitle}</title>
         <meta name="description" content={pageDescription} />
-        <link rel="canonical" href="https://www.hanyao.com.tw/services/ac-repair/" />
+        <link rel="canonical" href="https://www.xusen.pro/services/ac-repair/" />
         <JsonLd schema={pageSchema} />
       </head>
 

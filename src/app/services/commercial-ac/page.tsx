@@ -16,7 +16,7 @@ export default function CommercialAcServicePage() {
     "@type": "WebPage",
     "name": "商用空調工程服務",
     "description": pageDescription,
-    "url": "https://www.hanyao.com.tw/services/commercial-ac/"
+    "url": "https://www.xusen.pro/services/commercial-ac/"
   };
 
   const sectors = [
@@ -51,7 +51,7 @@ export default function CommercialAcServicePage() {
       <head>
         <title>{pageTitle}</title>
         <meta name="description" content={pageDescription} />
-        <link rel="canonical" href="https://www.hanyao.com.tw/services/commercial-ac/" />
+        <link rel="canonical" href="https://www.xusen.pro/services/commercial-ac/" />
         <JsonLd schema={pageSchema} />
       </head>
 

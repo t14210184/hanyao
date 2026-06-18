@@ -16,7 +16,7 @@ export default function AboutPage() {
     "@type": "WebPage",
     "name": "關於焓耀空調 - 資格憑證與證照",
     "description": pageDescription,
-    "url": "https://www.hanyao.com.tw/about/"
+    "url": "https://www.xusen.pro/about/"
   };
 
   return (
@@ -24,7 +24,7 @@ export default function AboutPage() {
       <head>
         <title>{pageTitle}</title>
         <meta name="description" content={pageDescription} />
-        <link rel="canonical" href="https://www.hanyao.com.tw/about/" />
+        <link rel="canonical" href="https://www.xusen.pro/about/" />
         <JsonLd schema={pageSchema} />
       </head>
 

@@ -16,7 +16,7 @@ export default function AcReplacementPage() {
     "@type": "WebPage",
     "name": "冷氣舊換新安裝與評估",
     "description": pageDescription,
-    "url": "https://www.hanyao.com.tw/services/ac-replacement/"
+    "url": "https://www.xusen.pro/services/ac-replacement/"
   };
 
   const steps = [
@@ -47,7 +47,7 @@ export default function AcReplacementPage() {
       <head>
         <title>{pageTitle}</title>
         <meta name="description" content={pageDescription} />
-        <link rel="canonical" href="https://www.hanyao.com.tw/services/ac-replacement/" />
+        <link rel="canonical" href="https://www.xusen.pro/services/ac-replacement/" />
         <JsonLd schema={pageSchema} />
       </head>
 

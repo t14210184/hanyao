@@ -16,7 +16,7 @@ export default function ServicesOverviewPage() {
     "@type": "WebPage",
     "name": "服務項目總覽",
     "description": pageDescription,
-    "url": "https://www.hanyao.com.tw/services/"
+    "url": "https://www.xusen.pro/services/"
   };
 
   const services = [
@@ -91,7 +91,7 @@ export default function ServicesOverviewPage() {
       <head>
         <title>{pageTitle}</title>
         <meta name="description" content={pageDescription} />
-        <link rel="canonical" href="https://www.hanyao.com.tw/services/" />
+        <link rel="canonical" href="https://www.xusen.pro/services/" />
         <JsonLd schema={pageSchema} />
       </head>
 

@@ -21,7 +21,7 @@ export default function AcRepairLP() {
     "@type": "WebPage",
     "name": "高雄 / 屏東冷氣維修檢修",
     "description": pageDescription,
-    "url": "https://www.hanyao.com.tw/lp/ac-repair/"
+    "url": "https://www.xusen.pro/lp/ac-repair/"
   };
 
   const symptoms = [
@@ -99,7 +99,7 @@ export default function AcRepairLP() {
       <head>
         <title>{pageTitle}</title>
         <meta name="description" content={pageDescription} />
-        <link rel="canonical" href="https://www.hanyao.com.tw/lp/ac-repair/" />
+        <link rel="canonical" href="https://www.xusen.pro/lp/ac-repair/" />
         <JsonLd schema={pageSchema} />
       </head>
 

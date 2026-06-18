@@ -16,7 +16,7 @@ export default function ChillerMaintenancePage() {
     "@type": "WebPage",
     "name": "冰水主機與中央空調維修保養",
     "description": pageDescription,
-    "url": "https://www.hanyao.com.tw/services/chiller-maintenance/"
+    "url": "https://www.xusen.pro/services/chiller-maintenance/"
   };
 
   const systems = [
@@ -47,7 +47,7 @@ export default function ChillerMaintenancePage() {
       <head>
         <title>{pageTitle}</title>
         <meta name="description" content={pageDescription} />
-        <link rel="canonical" href="https://www.hanyao.com.tw/services/chiller-maintenance/" />
+        <link rel="canonical" href="https://www.xusen.pro/services/chiller-maintenance/" />
         <JsonLd schema={pageSchema} />
       </head>
 

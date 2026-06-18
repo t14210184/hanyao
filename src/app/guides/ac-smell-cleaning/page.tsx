@@ -21,19 +21,19 @@ export default function AcSmellCleaningGuidePage() {
         "@type": "ListItem",
         "position": 1,
         "name": "首頁",
-        "item": "https://www.hanyao.com.tw/"
+        "item": "https://www.xusen.pro/"
       },
       {
         "@type": "ListItem",
         "position": 2,
         "name": "服務指南",
-        "item": "https://www.hanyao.com.tw/"
+        "item": "https://www.xusen.pro/"
       },
       {
         "@type": "ListItem",
         "position": 3,
         "name": "冷氣霉味風量變小清洗指引",
-        "item": "https://www.hanyao.com.tw/guides/ac-smell-cleaning/"
+        "item": "https://www.xusen.pro/guides/ac-smell-cleaning/"
       }
     ]
   };
@@ -44,7 +44,7 @@ export default function AcSmellCleaningGuidePage() {
     "@type": "Article",
     "headline": "冷氣有霉味、風量變小怎麼辦？清洗保養前先確認這幾件事",
     "description": pageDescription,
-    "url": "https://www.hanyao.com.tw/guides/ac-smell-cleaning/",
+    "url": "https://www.xusen.pro/guides/ac-smell-cleaning/",
     "author": {
       "@type": "Organization",
       "name": "焓耀空調工程有限公司"
@@ -116,7 +116,7 @@ export default function AcSmellCleaningGuidePage() {
     "@type": "WebPage",
     "name": pageTitle,
     "description": pageDescription,
-    "url": "https://www.hanyao.com.tw/guides/ac-smell-cleaning/"
+    "url": "https://www.xusen.pro/guides/ac-smell-cleaning/"
   };
 
   return (
@@ -124,7 +124,7 @@ export default function AcSmellCleaningGuidePage() {
       <head>
         <title>{pageTitle}</title>
         <meta name="description" content={pageDescription} />
-        <link rel="canonical" href="https://www.hanyao.com.tw/guides/ac-smell-cleaning/" />
+        <link rel="canonical" href="https://www.xusen.pro/guides/ac-smell-cleaning/" />
         <JsonLd schema={pageSchema} />
         <JsonLd schema={breadcrumbSchema} />
         <JsonLd schema={articleSchema} />

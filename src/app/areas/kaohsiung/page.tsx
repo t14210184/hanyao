@@ -16,7 +16,7 @@ export default function KaohsiungAreaPage() {
     "@type": "WebPage",
     "name": "高雄冷氣空調服務",
     "description": pageDescription,
-    "url": "https://www.hanyao.com.tw/areas/kaohsiung/"
+    "url": "https://www.xusen.pro/areas/kaohsiung/"
   };
 
   const localSchema = {
@@ -70,7 +70,7 @@ export default function KaohsiungAreaPage() {
       <head>
         <title>{pageTitle}</title>
         <meta name="description" content={pageDescription} />
-        <link rel="canonical" href="https://www.hanyao.com.tw/areas/kaohsiung/" />
+        <link rel="canonical" href="https://www.xusen.pro/areas/kaohsiung/" />
         <JsonLd schema={pageSchema} />
         <JsonLd schema={localSchema} />
       </head>

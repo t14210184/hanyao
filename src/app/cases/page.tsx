@@ -16,7 +16,7 @@ export default function CasesPage() {
     "@type": "WebPage",
     "name": "工程實績與案例方向",
     "description": pageDescription,
-    "url": "https://www.hanyao.com.tw/cases/"
+    "url": "https://www.xusen.pro/cases/"
   };
 
   const cases = [
@@ -90,7 +90,7 @@ export default function CasesPage() {
       <head>
         <title>{pageTitle}</title>
         <meta name="description" content={pageDescription} />
-        <link rel="canonical" href="https://www.hanyao.com.tw/cases/" />
+        <link rel="canonical" href="https://www.xusen.pro/cases/" />
         <JsonLd schema={pageSchema} />
       </head>
 

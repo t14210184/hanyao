@@ -15,7 +15,7 @@ export default function ContactPage() {
     "@type": "ContactPage",
     "name": "聯絡焓耀空調",
     "description": pageDescription,
-    "url": "https://www.hanyao.com.tw/contact/"
+    "url": "https://www.xusen.pro/contact/"
   };
 
   return (
@@ -23,7 +23,7 @@ export default function ContactPage() {
       <head>
         <title>{pageTitle}</title>
         <meta name="description" content={pageDescription} />
-        <link rel="canonical" href="https://www.hanyao.com.tw/contact/" />
+        <link rel="canonical" href="https://www.xusen.pro/contact/" />
         <JsonLd schema={pageSchema} />
       </head>
 

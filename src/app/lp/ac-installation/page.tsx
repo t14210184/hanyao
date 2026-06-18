@@ -21,7 +21,7 @@ export default function AcInstallationLP() {
     "@type": "WebPage",
     "name": "高雄 / 屏東冷氣安裝估價",
     "description": pageDescription,
-    "url": "https://www.hanyao.com.tw/lp/ac-installation/"
+    "url": "https://www.xusen.pro/lp/ac-installation/"
   };
 
   const painPoints = [
@@ -91,7 +91,7 @@ export default function AcInstallationLP() {
       <head>
         <title>{pageTitle}</title>
         <meta name="description" content={pageDescription} />
-        <link rel="canonical" href="https://www.hanyao.com.tw/lp/ac-installation/" />
+        <link rel="canonical" href="https://www.xusen.pro/lp/ac-installation/" />
         <JsonLd schema={pageSchema} />
       </head>
 

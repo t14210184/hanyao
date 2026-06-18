@@ -8,7 +8,7 @@ export const siteConfig = {
   email: "hanyao0105@gmail.com",
   companyAddress: "900 屏東縣屏東市建南路106號",
   businessHours: "週一至週五 08:00–17:00",
-  domain: "https://www.hanyao.com.tw",
+  domain: "https://www.xusen.pro",
   serviceAreas: ["高雄市", "屏東縣"],
   gtmId: "GTM-XXXXXXX",
   gaId: "G-XXXXXXXXXX",

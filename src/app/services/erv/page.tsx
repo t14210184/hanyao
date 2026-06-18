@@ -16,7 +16,7 @@ export default function EnergyRecoveryVentilatorServicePage() {
     "@type": "WebPage",
     "name": "全熱交換器規劃服務",
     "description": pageDescription,
-    "url": "https://www.hanyao.com.tw/services/erv/"
+    "url": "https://www.xusen.pro/services/erv/"
   };
 
   const benefits = [
@@ -51,7 +51,7 @@ export default function EnergyRecoveryVentilatorServicePage() {
       <head>
         <title>{pageTitle}</title>
         <meta name="description" content={pageDescription} />
-        <link rel="canonical" href="https://www.hanyao.com.tw/services/erv/" />
+        <link rel="canonical" href="https://www.xusen.pro/services/erv/" />
         <JsonLd schema={pageSchema} />
       </head>
 

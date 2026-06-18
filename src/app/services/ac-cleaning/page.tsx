@@ -16,7 +16,7 @@ export default function AcCleaningServicePage() {
     "@type": "WebPage",
     "name": "冷氣清洗保養服務",
     "description": pageDescription,
-    "url": "https://www.hanyao.com.tw/services/ac-cleaning/"
+    "url": "https://www.xusen.pro/services/ac-cleaning/"
   };
 
   const benefits = [
@@ -51,7 +51,7 @@ export default function AcCleaningServicePage() {
       <head>
         <title>{pageTitle}</title>
         <meta name="description" content={pageDescription} />
-        <link rel="canonical" href="https://www.hanyao.com.tw/services/ac-cleaning/" />
+        <link rel="canonical" href="https://www.xusen.pro/services/ac-cleaning/" />
         <JsonLd schema={pageSchema} />
       </head>
 

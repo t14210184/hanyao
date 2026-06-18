@@ -16,7 +16,7 @@ export default function AcInstallationServicePage() {
     "@type": "WebPage",
     "name": "冷氣安裝服務",
     "description": pageDescription,
-    "url": "https://www.hanyao.com.tw/services/ac-installation/"
+    "url": "https://www.xusen.pro/services/ac-installation/"
   };
 
   const steps = [
@@ -51,7 +51,7 @@ export default function AcInstallationServicePage() {
       <head>
         <title>{pageTitle}</title>
         <meta name="description" content={pageDescription} />
-        <link rel="canonical" href="https://www.hanyao.com.tw/services/ac-installation/" />
+        <link rel="canonical" href="https://www.xusen.pro/services/ac-installation/" />
         <JsonLd schema={pageSchema} />
       </head>
 

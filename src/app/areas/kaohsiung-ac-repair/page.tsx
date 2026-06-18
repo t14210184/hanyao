@@ -16,7 +16,7 @@ export default function KaohsiungAcRepairPage() {
     "@type": "WebPage",
     "name": "高雄冷氣維修檢修",
     "description": pageDescription,
-    "url": "https://www.hanyao.com.tw/areas/kaohsiung-ac-repair/"
+    "url": "https://www.xusen.pro/areas/kaohsiung-ac-repair/"
   };
 
   const symptoms = [
@@ -51,7 +51,7 @@ export default function KaohsiungAcRepairPage() {
       <head>
         <title>{pageTitle}</title>
         <meta name="description" content={pageDescription} />
-        <link rel="canonical" href="https://www.hanyao.com.tw/areas/kaohsiung-ac-repair/" />
+        <link rel="canonical" href="https://www.xusen.pro/areas/kaohsiung-ac-repair/" />
         <JsonLd schema={pageSchema} />
       </head>
 

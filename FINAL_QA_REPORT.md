@@ -56,10 +56,10 @@
         User-agent: *
         Allow: /
         ```
-    *   明確指向 Sitemap 位址：`Sitemap: https://www.hanyao.com.tw/sitemap.xml`
+    *   明確指向 Sitemap 位址：`Sitemap: https://www.xusen.pro/sitemap.xml`
     *   **檢查結果**：✅ **正常且完全合規**。
 *   **Sitemap.xml** (`out/sitemap.xml`)：
-    *   所列 URL 均使用統一之官方網域名稱 `https://www.hanyao.com.tw`。
+    *   所列 URL 均使用統一之官方網域名稱 `https://www.xusen.pro`。
     *   所有連結均結尾帶有斜線 (`/`)，符合 `trailingSlash: true` 配置，防止搜尋引擎索引到跳轉網址。
     *   **檢查結果**：✅ **正常且完全合規**。
 
@@ -114,7 +114,7 @@
 ## 五、SEO & Schema 檢查結果
 
 1.  **Metadata 頁面檢測**：
-    全站各路由均配置唯一的 `<title>` 與 `<meta name="description">`。各頁面之 Canonical 連結均正確指向其在 `www.hanyao.com.tw` 網域下之實際路徑。
+    全站各路由均配置唯一的 `<title>` 與 `<meta name="description">`。各頁面之 Canonical 連結均正確指向其在 `www.xusen.pro` 網域下之實際路徑。
 2.  **Structured Data (JSON-LD) 稽核**：
     *   **Organization** & **HVACBusiness**：部署於全站，載明登記案號（`經冷字第 1120002883 號`、`E602011 冷凍空調工程業丙等`）、公司統編（`90234660`）、物理地址與營業時間。
     *   **Article**：配置於 4 篇 GEO Guides（`/guides/*`）中。

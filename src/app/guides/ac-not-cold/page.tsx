@@ -21,19 +21,19 @@ export default function AcNotColdGuidePage() {
         "@type": "ListItem",
         "position": 1,
         "name": "首頁",
-        "item": "https://www.hanyao.com.tw/"
+        "item": "https://www.xusen.pro/"
       },
       {
         "@type": "ListItem",
         "position": 2,
         "name": "服務指南",
-        "item": "https://www.hanyao.com.tw/guides/"
+        "item": "https://www.xusen.pro/guides/"
       },
       {
         "@type": "ListItem",
         "position": 3,
         "name": "冷氣不冷排查指南",
-        "item": "https://www.hanyao.com.tw/guides/ac-not-cold/"
+        "item": "https://www.xusen.pro/guides/ac-not-cold/"
       }
     ]
   };
@@ -44,7 +44,7 @@ export default function AcNotColdGuidePage() {
     "@type": "Article",
     "headline": "冷氣不冷怎麼辦？高雄 / 屏東空調工程師建議先檢查這 3 件事",
     "description": pageDescription,
-    "url": "https://www.hanyao.com.tw/guides/ac-not-cold/",
+    "url": "https://www.xusen.pro/guides/ac-not-cold/",
     "author": {
       "@type": "Organization",
       "name": "焓耀空調工程"
@@ -92,7 +92,7 @@ export default function AcNotColdGuidePage() {
     "@type": "WebPage",
     "name": pageTitle,
     "description": pageDescription,
-    "url": "https://www.hanyao.com.tw/guides/ac-not-cold/"
+    "url": "https://www.xusen.pro/guides/ac-not-cold/"
   };
 
   const checkSteps = [
@@ -115,7 +115,7 @@ export default function AcNotColdGuidePage() {
       <head>
         <title>{pageTitle}</title>
         <meta name="description" content={pageDescription} />
-        <link rel="canonical" href="https://www.hanyao.com.tw/guides/ac-not-cold/" />
+        <link rel="canonical" href="https://www.xusen.pro/guides/ac-not-cold/" />
         <JsonLd schema={pageSchema} />
         <JsonLd schema={breadcrumbSchema} />
         <JsonLd schema={articleSchema} />

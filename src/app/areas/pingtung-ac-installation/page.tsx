@@ -16,7 +16,7 @@ export default function PingtungAcInstallationPage() {
     "@type": "WebPage",
     "name": "屏東冷氣安裝估價",
     "description": pageDescription,
-    "url": "https://www.hanyao.com.tw/areas/pingtung-ac-installation/"
+    "url": "https://www.xusen.pro/areas/pingtung-ac-installation/"
   };
 
   const services = [
@@ -47,7 +47,7 @@ export default function PingtungAcInstallationPage() {
       <head>
         <title>{pageTitle}</title>
         <meta name="description" content={pageDescription} />
-        <link rel="canonical" href="https://www.hanyao.com.tw/areas/pingtung-ac-installation/" />
+        <link rel="canonical" href="https://www.xusen.pro/areas/pingtung-ac-installation/" />
         <JsonLd schema={pageSchema} />
       </head>
 

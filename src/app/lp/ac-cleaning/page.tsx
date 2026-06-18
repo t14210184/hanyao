@@ -21,7 +21,7 @@ export default function AcCleaningLP() {
     "@type": "WebPage",
     "name": "高雄 / 屏東冷氣清洗保養",
     "description": pageDescription,
-    "url": "https://www.hanyao.com.tw/lp/ac-cleaning/"
+    "url": "https://www.xusen.pro/lp/ac-cleaning/"
   };
 
   const symptoms = [
@@ -99,7 +99,7 @@ export default function AcCleaningLP() {
       <head>
         <title>{pageTitle}</title>
         <meta name="description" content={pageDescription} />
-        <link rel="canonical" href="https://www.hanyao.com.tw/lp/ac-cleaning/" />
+        <link rel="canonical" href="https://www.xusen.pro/lp/ac-cleaning/" />
         <JsonLd schema={pageSchema} />
       </head>
 

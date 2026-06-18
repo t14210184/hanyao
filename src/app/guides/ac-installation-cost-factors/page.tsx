@@ -21,19 +21,19 @@ export default function AcInstallationCostFactorsGuidePage() {
         "@type": "ListItem",
         "position": 1,
         "name": "首頁",
-        "item": "https://www.hanyao.com.tw/"
+        "item": "https://www.xusen.pro/"
       },
       {
         "@type": "ListItem",
         "position": 2,
         "name": "服務指南",
-        "item": "https://www.hanyao.com.tw/guides/"
+        "item": "https://www.xusen.pro/guides/"
       },
       {
         "@type": "ListItem",
         "position": 3,
         "name": "冷氣安裝費用影響條件指南",
-        "item": "https://www.hanyao.com.tw/guides/ac-installation-cost-factors/"
+        "item": "https://www.xusen.pro/guides/ac-installation-cost-factors/"
       }
     ]
   };
@@ -44,7 +44,7 @@ export default function AcInstallationCostFactorsGuidePage() {
     "@type": "Article",
     "headline": "冷氣安裝費用怎麼估？影響報價的 6 個現場條件",
     "description": pageDescription,
-    "url": "https://www.hanyao.com.tw/guides/ac-installation-cost-factors/",
+    "url": "https://www.xusen.pro/guides/ac-installation-cost-factors/",
     "author": {
       "@type": "Organization",
       "name": "焓耀空調工程"
@@ -92,7 +92,7 @@ export default function AcInstallationCostFactorsGuidePage() {
     "@type": "WebPage",
     "name": pageTitle,
     "description": pageDescription,
-    "url": "https://www.hanyao.com.tw/guides/ac-installation-cost-factors/"
+    "url": "https://www.xusen.pro/guides/ac-installation-cost-factors/"
   };
 
   const factors = [
@@ -127,7 +127,7 @@ export default function AcInstallationCostFactorsGuidePage() {
       <head>
         <title>{pageTitle}</title>
         <meta name="description" content={pageDescription} />
-        <link rel="canonical" href="https://www.hanyao.com.tw/guides/ac-installation-cost-factors/" />
+        <link rel="canonical" href="https://www.xusen.pro/guides/ac-installation-cost-factors/" />
         <JsonLd schema={pageSchema} />
         <JsonLd schema={breadcrumbSchema} />
         <JsonLd schema={articleSchema} />

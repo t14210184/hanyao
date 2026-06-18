@@ -161,7 +161,7 @@ export default function FAQPage() {
       <head>
         <title>{pageTitle}</title>
         <meta name="description" content={pageDescription} />
-        <link rel="canonical" href="https://www.hanyao.com.tw/faq/" />
+        <link rel="canonical" href="https://www.xusen.pro/faq/" />
         <JsonLd schema={pageSchema} />
         <JsonLd schema={pageSchema} />
       </head>

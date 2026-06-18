@@ -21,19 +21,19 @@ export default function AcLeakingWaterGuidePage() {
         "@type": "ListItem",
         "position": 1,
         "name": "首頁",
-        "item": "https://www.hanyao.com.tw/"
+        "item": "https://www.xusen.pro/"
       },
       {
         "@type": "ListItem",
         "position": 2,
         "name": "服務指南",
-        "item": "https://www.hanyao.com.tw/guides/"
+        "item": "https://www.xusen.pro/guides/"
       },
       {
         "@type": "ListItem",
         "position": 3,
         "name": "冷氣滴水漏水排查指南",
-        "item": "https://www.hanyao.com.tw/guides/ac-leaking-water/"
+        "item": "https://www.xusen.pro/guides/ac-leaking-water/"
       }
     ]
   };
@@ -44,7 +44,7 @@ export default function AcLeakingWaterGuidePage() {
     "@type": "Article",
     "headline": "冷氣滴水、漏水怎麼辦？排水、髒污與安裝坡度都可能是原因",
     "description": pageDescription,
-    "url": "https://www.hanyao.com.tw/guides/ac-leaking-water/",
+    "url": "https://www.xusen.pro/guides/ac-leaking-water/",
     "author": {
       "@type": "Organization",
       "name": "焓耀空調工程"
@@ -92,7 +92,7 @@ export default function AcLeakingWaterGuidePage() {
     "@type": "WebPage",
     "name": pageTitle,
     "description": pageDescription,
-    "url": "https://www.hanyao.com.tw/guides/ac-leaking-water/"
+    "url": "https://www.xusen.pro/guides/ac-leaking-water/"
   };
 
   return (
@@ -100,7 +100,7 @@ export default function AcLeakingWaterGuidePage() {
       <head>
         <title>{pageTitle}</title>
         <meta name="description" content={pageDescription} />
-        <link rel="canonical" href="https://www.hanyao.com.tw/guides/ac-leaking-water/" />
+        <link rel="canonical" href="https://www.xusen.pro/guides/ac-leaking-water/" />
         <JsonLd schema={pageSchema} />
         <JsonLd schema={breadcrumbSchema} />
         <JsonLd schema={articleSchema} />

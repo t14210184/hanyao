@@ -23,14 +23,14 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "焓耀空調工程｜高雄、屏東冷氣空調工程專精",
   description: "焓耀空調提供高雄與屏東專業冷氣空調工程服務。項目涵蓋家用冷氣安裝、商用多聯變頻空調規劃、冷氣定期清洗保養、滴水噪音冷媒故障檢修、全熱交換器及冷氣舊換新。合格技師持照施作，透明報價保固無憂。",
-  metadataBase: new URL("https://www.hanyao.com.tw"),
+  metadataBase: new URL("https://www.xusen.pro"),
   alternates: {
     canonical: "/",
   },
   openGraph: {
     title: "焓耀空調工程｜高雄、屏東冷氣空調安裝、維修、清洗保養、商用規劃",
     description: "高屏全區在地服務，國家級技術士執照師傅團隊。家用與商用空調量身規劃施工，收費透明先報價才施工，完工享售後專屬保固。",
-    url: "https://www.hanyao.com.tw",
+    url: "https://www.xusen.pro",
     siteName: "焓耀空調工程",
     locale: "zh_TW",
     type: "website",
@@ -47,7 +47,7 @@ export default function RootLayout({
     "@type": "HVACBusiness",
     "name": "焓耀空調工程有限公司",
     "alternateName": "焓耀空調",
-    "url": "https://www.hanyao.com.tw",
+    "url": "https://www.xusen.pro",
     "telephone": `+886-${siteConfig.phone1.replace(/-/g, "")}`,
     "email": siteConfig.email,
     "taxID": "90234660",
