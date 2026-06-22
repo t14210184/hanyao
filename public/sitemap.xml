@@ -46,6 +46,36 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://www.xusen.pro/services/ac-repair/not-cold/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.xusen.pro/services/ac-repair/leaking-water/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.xusen.pro/services/ac-repair/noise/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.xusen.pro/services/ac-repair/no-power/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.xusen.pro/services/ac-repair/refrigerant-leak/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.xusen.pro/services/ac-repair/cost/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://www.xusen.pro/services/ac-cleaning/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>

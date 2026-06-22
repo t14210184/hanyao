@@ -61,50 +61,50 @@ export const sitelinksData: SitelinkItem[] = [
   // 2. 冷氣維修廣告活動
   {
     campaign: "repair",
-    sitelinkText: "高雄冷氣維修",
-    description1: "高雄地區冷氣故障到府檢修",
-    description2: "精準查檢說明，同意後再施作",
-    href: "/areas/kaohsiung-ac-repair/",
+    sitelinkText: "冷氣不冷檢修",
+    description1: "吹不冷、只有風先判斷原因",
+    description2: "LINE 描述狀況安排檢查",
+    href: "/services/ac-repair/not-cold/",
     priority: 1
   },
   {
     campaign: "repair",
-    sitelinkText: "屏東服務區",
-    description1: "屏東縣市壁掛與吊隱式檢修",
-    description2: "冷媒漏水故障排除，原廠零件",
-    href: "/areas/pingtung/",
+    sitelinkText: "冷氣漏水滴水",
+    description1: "室內機滴水、牆面滲水處理",
+    description2: "排水堵塞與坡度問題檢查",
+    href: "/services/ac-repair/leaking-water/",
     priority: 2
   },
   {
     campaign: "repair",
-    sitelinkText: "冷氣不冷怎麼辦",
-    description1: "冷氣吹風不冷自我檢查步驟",
-    description2: "工程師建議四大故障排查方向",
-    href: "/guides/ac-not-cold/",
+    sitelinkText: "冷氣異音處理",
+    description1: "怪聲、震動、外機噪音檢查",
+    description2: "先判斷來源再說明維修方式",
+    href: "/services/ac-repair/noise/",
     priority: 3
   },
   {
     campaign: "repair",
-    sitelinkText: "冷氣滴水原因",
-    description1: "室內機滴水漏水解決對策",
-    description2: "排水堵塞與冷媒不足結冰排除",
-    href: "/guides/ac-leaking-water/",
+    sitelinkText: "冷氣跳電不啟動",
+    description1: "打不開、燈號閃、運轉中斷",
+    description2: "安全檢查後評估處理方向",
+    href: "/services/ac-repair/no-power/",
     priority: 4
   },
   {
     campaign: "repair",
-    sitelinkText: "常見問題",
-    description1: "檢修費用與維修保固規則",
-    description2: "了解場勘排程與原廠零件更換",
-    href: "/faq/",
+    sitelinkText: "冷媒不足檢查",
+    description1: "不冷不一定只是缺冷媒",
+    description2: "先查漏點再評估是否補充",
+    href: "/services/ac-repair/refrigerant-leak/",
     priority: 5
   },
   {
     campaign: "repair",
-    sitelinkText: "聯絡檢修",
-    description1: "線上描述故障症狀快速預約",
-    description2: "提供 LINE 傳照初步判斷服務",
-    href: "/contact/",
+    sitelinkText: "維修費用流程",
+    description1: "檢測、報價、維修流程說明",
+    description2: "依機型與故障狀況評估",
+    href: "/services/ac-repair/cost/",
     priority: 6
   },
 
