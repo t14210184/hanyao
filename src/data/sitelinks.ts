@@ -11,50 +11,50 @@ export const sitelinksData: SitelinkItem[] = [
   // 1. 冷氣安裝廣告活動
   {
     campaign: "installation",
-    sitelinkText: "冷氣舊換新",
-    description1: "專業拆除與安裝一條龍",
-    description2: "冷媒安全回收，無縫配合裝潢",
-    href: "/services/ac-replacement/",
+    sitelinkText: "分離式冷氣安裝",
+    description1: "室內外機位置與管線規劃",
+    description2: "高雄屏東空調冷氣安裝",
+    href: "/services/ac-installation/split-ac/",
     priority: 1
   },
   {
     campaign: "installation",
-    sitelinkText: "安裝費用因素",
-    description1: "冷氣安裝報價透明說明",
-    description2: "管線與散熱如何決定安裝成本",
-    href: "/guides/ac-installation-cost-factors/",
+    sitelinkText: "吊隱式冷氣安裝",
+    description1: "天花板、維修孔先確認",
+    description2: "配合裝潢規劃出回風",
+    href: "/services/ac-installation/concealed-ac/",
     priority: 2
   },
   {
     campaign: "installation",
-    sitelinkText: "高雄服務區",
-    description1: "高雄市各區到府估價規劃",
-    description2: "在地合格技師，配合工程排程",
-    href: "/areas/kaohsiung/",
+    sitelinkText: "冷氣汰舊換新",
+    description1: "舊機拆除與新機配置評估",
+    description2: "依現場條件說明施工方式",
+    href: "/services/ac-installation/replacement/",
     priority: 3
   },
   {
     campaign: "installation",
-    sitelinkText: "屏東服務區",
-    description1: "屏東市及鄰近鄉鎮冷氣安裝",
-    description2: "實地場勘規劃，價格透明合規",
-    href: "/areas/pingtung/",
+    sitelinkText: "配管排水規劃",
+    description1: "冷媒管、排水管路徑確認",
+    description2: "降低日後漏水與維修困擾",
+    href: "/services/ac-installation/piping-drainage/",
     priority: 4
   },
   {
     campaign: "installation",
-    sitelinkText: "資格憑證",
-    description1: "合規冷凍空調登記與會員",
-    description2: "乙級技術士執照師傅團隊",
-    href: "/about/",
+    sitelinkText: "坪數噸數規劃",
+    description1: "依空間坪數與熱源評估",
+    description2: "避免冷房不足或過度配置",
+    href: "/services/ac-installation/capacity-planning/",
     priority: 5
   },
   {
     campaign: "installation",
-    sitelinkText: "聯絡估價",
-    description1: "線上填表或電話直接諮詢",
-    description2: "師傅快速回覆，預約到府估價",
-    href: "/contact/",
+    sitelinkText: "安裝費用流程",
+    description1: "報價依機型與施工條件",
+    description2: "先確認需求再說明費用",
+    href: "/services/ac-installation/cost/",
     priority: 6
   },
 

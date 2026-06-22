@@ -41,7 +41,7 @@ export default function ContactPage() {
               預約估價、檢修與保養服務
             </h1>
             <p className="text-sm sm:text-base text-slate-400 mt-4 leading-relaxed max-w-2xl mx-auto">
-              提供高雄與屏東全區到府服務。無論是家用冷氣安裝清洗，或是商用大系統規劃，歡迎填寫表單或直接與我們聯絡，技師團隊將儘速與您對接。
+              提供高雄與屏東全區到府服務。無論是空調冷氣安裝清洗，或是商用大系統規劃，歡迎填寫表單或直接與我們聯絡，技師團隊將儘速與您對接。
             </p>
           </div>
         </section>

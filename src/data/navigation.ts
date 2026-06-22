@@ -14,7 +14,7 @@ export const mainNavLinks: NavLink[] = [
 export const footerLinks = {
   services: [
     { name: "商用空調工程", path: "/services/commercial-ac/" },
-    { name: "家用冷氣安裝", path: "/services/ac-installation/" },
+    { name: "空調冷氣安裝", path: "/services/ac-installation/" },
     { name: "冷氣清洗保養", path: "/services/ac-cleaning/" },
     { name: "冷氣維修檢修", path: "/services/ac-repair/" }
   ],

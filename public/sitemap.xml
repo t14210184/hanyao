@@ -36,6 +36,36 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://www.xusen.pro/services/ac-installation/split-ac/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.xusen.pro/services/ac-installation/concealed-ac/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.xusen.pro/services/ac-installation/replacement/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.xusen.pro/services/ac-installation/piping-drainage/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.xusen.pro/services/ac-installation/capacity-planning/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.xusen.pro/services/ac-installation/cost/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://www.xusen.pro/services/ac-replacement/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>

@@ -18,7 +18,7 @@ export const servicesData: ServiceItem[] = [
   },
   {
     id: "ac-installation",
-    name: "家用冷氣安裝",
+    name: "空調冷氣安裝",
     painPoint: "擔心管線外露不美觀、散熱不佳或冷房效果打折？",
     solution: "專業到府評估、管線精準隱蔽配置，並進行散熱與排水完美計算。",
     path: "/services/ac-installation/",

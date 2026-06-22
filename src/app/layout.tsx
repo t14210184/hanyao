@@ -23,7 +23,7 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: "焓耀空調工程｜高雄、屏東冷氣空調工程專精",
-  description: "焓耀空調提供高雄與屏東專業冷氣空調工程服務。項目涵蓋家用冷氣安裝、商用多聯變頻空調規劃、冷氣定期清洗保養、滴水噪音冷媒故障檢修、全熱交換器及冷氣舊換新。合格技師持照施作，透明報價保固無憂。",
+  description: "焓耀空調提供高雄與屏東專業冷氣空調工程服務。項目涵蓋空調冷氣安裝、商用多聯變頻空調規劃、冷氣定期清洗保養、滴水噪音冷媒故障檢修、全熱交換器及冷氣舊換新。合格技師持照施作，透明報價保固無憂。",
   metadataBase: new URL("https://www.xusen.pro"),
   alternates: {
     canonical: "/",
