@@ -1,26 +1,36 @@
 /**
- * Safe client-side tracking helper using GTM dataLayer
+ * Safe client-side GTM dataLayer tracking helper.
+ * Only runs in the browser; no-op on the server (SSR / Static Export).
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const trackEvent = (eventName: string, params: Record<string, any> = {}) => {
+const ALLOWED_EVENTS = ["phone_click", "line_click", "line_quote_copy"];
+
+export const trackEvent = (
+  eventName: string,
+  params: Record<string, unknown> = {}
+) => {
   if (typeof window === "undefined") return;
 
+  if (!ALLOWED_EVENTS.includes(eventName)) {
+    return;
+  }
+
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const win = window as any;
-    // Ensure dataLayer array exists
+    const win = window as Window & {
+      dataLayer?: Array<Record<string, unknown>>;
+    };
+
     win.dataLayer = win.dataLayer || [];
-    
-    // Push event to GTM dataLayer
     win.dataLayer.push({
       event: eventName,
       ...params,
-      page_path: window.location.pathname,
-      timestamp: new Date().toISOString()
     });
-    
-    console.log(`[Tracking Event] ${eventName}:`, params);
+
+    if (process.env.NODE_ENV === "development") {
+      console.log(`[GTM dataLayer Push] ${eventName}:`, params);
+    }
   } catch (err) {
-    console.error("Tracking error:", err);
+    if (process.env.NODE_ENV === "development") {
+      console.error("GTM trackEvent error:", err);
+    }
   }
 };

@@ -4,8 +4,6 @@ import React from "react";
 import { usePathname } from "next/navigation";
 import { siteConfig } from "@/data/site";
 import CTAButton from "./CTAButton";
-import { trackEvent } from "@/lib/tracking";
-
 export default function MobileStickyCTA() {
   const pathname = usePathname();
   const isCommercial = pathname?.includes("/lp/commercial-ac/");
@@ -17,50 +15,15 @@ export default function MobileStickyCTA() {
   const appointmentText = isCommercial ? "預約商用場勘" : "預約到府估價";
 
   const handlePhoneClick = () => {
-    if (isCommercial) {
-      trackEvent("lp_cta_click", {
-        service_type: "commercial_ac",
-        area: "all",
-        landing_page_type: "google_ads",
-        cta_position: "mobile_sticky_bar",
-        lead_method: "phone",
-        keyword_intent: "commercial_ac"
-      });
-    }
+    // No-op or custom behavior (unallowed event tracker removed)
   };
 
   const handleLineClick = () => {
-    if (isCommercial) {
-      trackEvent("lp_cta_click", {
-        service_type: "commercial_ac",
-        area: "all",
-        landing_page_type: "google_ads",
-        cta_position: "mobile_sticky_bar",
-        lead_method: "line",
-        keyword_intent: "commercial_ac"
-      });
-    }
+    // No-op or custom behavior (unallowed event tracker removed)
   };
 
   const handleAppointmentClick = () => {
-    if (isCommercial) {
-      trackEvent("commercial_quote_request", {
-        service_type: "commercial_ac",
-        area: "all",
-        landing_page_type: "google_ads",
-        cta_position: "mobile_sticky_bar",
-        lead_method: "form_anchor",
-        keyword_intent: "commercial_ac"
-      });
-      trackEvent("lp_cta_click", {
-        service_type: "commercial_ac",
-        area: "all",
-        landing_page_type: "google_ads",
-        cta_position: "mobile_sticky_bar",
-        lead_method: "form_anchor",
-        keyword_intent: "commercial_ac"
-      });
-    }
+    // No-op or custom behavior (unallowed event tracker removed)
   };
 
   return (
@@ -98,8 +61,6 @@ export default function MobileStickyCTA() {
       <CTAButton
         href="#contact-section"
         onClick={handleAppointmentClick}
-        trackEventName="quote_request"
-        trackParams={{ service_type: serviceType, cta_position: "mobile_sticky_bar" }}
         className="flex-1 flex flex-col items-center justify-center bg-orange-500 hover:bg-orange-400 text-white py-2 rounded-lg font-bold text-xs gap-0.5 shadow-md shadow-orange-950/20 transition-colors"
       >
         <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>

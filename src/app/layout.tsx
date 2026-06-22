@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Noto_Sans_TC, Inter } from "next/font/google";
 import Script from "next/script";
+import { GoogleTagManager } from "@next/third-parties/google";
 import "./globals.css";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -84,11 +85,21 @@ export default function RootLayout({
       lang="zh-Hant-TW"
       className={`${noto.variable} ${inter.variable} h-full scroll-smooth antialiased`}
     >
+      <GoogleTagManager gtmId={siteConfig.gtmId} />
       <head>
         {/* Inject JSON-LD Schema */}
         <JsonLd schema={businessSchema} />
       </head>
       <body className="min-h-full flex flex-col bg-slate-950 text-slate-100 font-sans">
+        {/* GTM noscript fallback */}
+        <noscript>
+          <iframe
+            src={`https://www.googletagmanager.com/ns.html?id=${siteConfig.gtmId}`}
+            height="0"
+            width="0"
+            style={{ display: "none", visibility: "hidden" }}
+          />
+        </noscript>
         {/* Background dark grid overlay */}
         <div className="fixed inset-0 z-0 bg-[linear-gradient(to_right,#0f172a_1px,transparent_1px),linear-gradient(to_bottom,#0f172a_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-30 pointer-events-none"></div>
         
@@ -104,8 +115,7 @@ export default function RootLayout({
         {/* Mobile Sticky CTA Bar */}
         <MobileStickyCTA />
 
-        {/* GTM & Tracking browser scripts */}
-        <Script src="/scripts/tracking.js" strategy="afterInteractive" />
+        {/* Geo & Form helper scripts */}
         <Script src="/scripts/geo.js" strategy="afterInteractive" />
         <Script src="/scripts/form.js" strategy="afterInteractive" />
       </body>

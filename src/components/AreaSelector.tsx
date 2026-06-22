@@ -2,8 +2,6 @@
 
 import React, { useState, useEffect } from "react";
 import { areasData } from "@/data/areas";
-import { trackEvent } from "@/lib/tracking";
-
 interface AreaSelectorProps {
   onAreaChange: (areaId: string) => void;
 }
@@ -38,12 +36,6 @@ export default function AreaSelector({ onAreaChange }: AreaSelectorProps) {
   const handleSelect = (areaId: string) => {
     setSelectedArea(areaId);
     onAreaChange(areaId);
-
-    // Track GTM event
-    trackEvent("area_selected", {
-      area: areaId,
-      selection_method: "click_button"
-    });
   };
 
   return (

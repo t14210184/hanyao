@@ -88,8 +88,6 @@ export default function Home() {
                 {/* 📝 Appointment (Full Width) */}
                 <CTAButton
                   href="#contact-section"
-                  trackEventName="quote_request"
-                  trackParams={{ cta_position: "hero_secondary" }}
                   className="w-full py-4 bg-sky-500 hover:bg-sky-400 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-sky-500/20 transition-all hover:scale-[1.01]"
                 >
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

@@ -4,7 +4,6 @@ import React from "react";
 import FinalCTA from "@/components/FinalCTA";
 import JsonLd from "@/components/JsonLd";
 import CTAButton from "@/components/CTAButton";
-import { trackEvent } from "@/lib/tracking";
 import { siteConfig } from "@/data/site";
 
 export default function AcRelocationServicePage() {
@@ -112,8 +111,6 @@ export default function AcRelocationServicePage() {
                 
                 <CTAButton
                   href="/contact/"
-                  trackEventName="quote_request"
-                  trackParams={{ service_type: "ac_relocation", cta_position: "relocation_photo_box" }}
                   className="w-full sm:flex-1 py-3.5 bg-slate-850 hover:bg-slate-800 text-white font-bold rounded-xl border border-slate-800 flex items-center justify-center gap-2 text-xs sm:text-sm transition-all"
                 >
                   <span>詢問冷氣移機評估</span>
@@ -129,8 +126,6 @@ export default function AcRelocationServicePage() {
           serviceType="ac_relocation"
           phoneText="撥打移機諮詢"
           lineText="加 LINE 傳照評估"
-          onPhoneClick={() => trackEvent("lp_cta_click", { service_type: "ac_relocation", cta_position: "final_cta", lead_method: "phone" })}
-          onLineClick={() => trackEvent("lp_cta_click", { service_type: "ac_relocation", cta_position: "final_cta", lead_method: "line" })}
         />
       </main>
     </>

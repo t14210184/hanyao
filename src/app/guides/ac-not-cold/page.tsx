@@ -5,7 +5,6 @@ import Link from "next/link";
 import FinalCTA from "@/components/FinalCTA";
 import JsonLd from "@/components/JsonLd";
 import CTAButton from "@/components/CTAButton";
-import { trackEvent } from "@/lib/tracking";
 import { siteConfig } from "@/data/site";
 
 export default function AcNotColdGuidePage() {
@@ -281,8 +280,7 @@ export default function AcNotColdGuidePage() {
                   <CTAButton
                     href={siteConfig.lineUrl}
                     external
-                    trackEventName="guide_cta_click"
-                    trackParams={{ service_type: "ac_repair", cta_position: "guide_ac_not_cold", click_target: "line" }}
+                    trackEventName="line_click" trackParams={{ service_type: "ac_repair", cta_position: "guide_ac_not_cold" }}
                     className="w-full sm:flex-1 py-3 bg-green-600 hover:bg-green-500 text-white font-bold rounded-xl flex items-center justify-center gap-2 text-xs sm:text-sm transition-all"
                   >
                     <span>LINE 傳照片初步判斷</span>
@@ -290,8 +288,7 @@ export default function AcNotColdGuidePage() {
                   
                   <CTAButton
                     href="/contact/"
-                    trackEventName="guide_cta_click"
-                    trackParams={{ service_type: "ac_repair", cta_position: "guide_ac_not_cold", click_target: "form" }}
+                    
                     className="w-full sm:flex-1 py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl border border-slate-800 flex items-center justify-center gap-2 text-xs sm:text-sm transition-all"
                   >
                     <span>預約檢修諮詢</span>
@@ -314,8 +311,6 @@ export default function AcNotColdGuidePage() {
           serviceType="ac_repair"
           phoneText="撥打冷氣檢修專線"
           lineText="加 LINE 傳照評估"
-          onPhoneClick={() => trackEvent("lp_cta_click", { service_type: "ac_repair", cta_position: "final_cta", lead_method: "phone" })}
-          onLineClick={() => trackEvent("lp_cta_click", { service_type: "ac_repair", cta_position: "final_cta", lead_method: "line" })}
         />
       </main>
     </>

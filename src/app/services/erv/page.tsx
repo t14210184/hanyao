@@ -4,7 +4,6 @@ import React from "react";
 import FinalCTA from "@/components/FinalCTA";
 import JsonLd from "@/components/JsonLd";
 import CTAButton from "@/components/CTAButton";
-import { trackEvent } from "@/lib/tracking";
 import { siteConfig } from "@/data/site";
 
 export default function EnergyRecoveryVentilatorServicePage() {
@@ -112,8 +111,6 @@ export default function EnergyRecoveryVentilatorServicePage() {
                 
                 <CTAButton
                   href="/contact/"
-                  trackEventName="quote_request"
-                  trackParams={{ service_type: "erv", cta_position: "erv_photo_box" }}
                   className="w-full sm:flex-1 py-3.5 bg-slate-850 hover:bg-slate-800 text-white font-bold rounded-xl border border-slate-800 flex items-center justify-center gap-2 text-xs sm:text-sm transition-all"
                 >
                   <span>預約全熱交換器規劃</span>
@@ -129,8 +126,6 @@ export default function EnergyRecoveryVentilatorServicePage() {
           serviceType="erv"
           phoneText="撥打規劃諮詢"
           lineText="加 LINE 傳照評估"
-          onPhoneClick={() => trackEvent("lp_cta_click", { service_type: "erv", cta_position: "final_cta", lead_method: "phone" })}
-          onLineClick={() => trackEvent("lp_cta_click", { service_type: "erv", cta_position: "final_cta", lead_method: "line" })}
         />
       </main>
     </>

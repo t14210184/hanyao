@@ -8,6 +8,6 @@ window.dataLayer = window.dataLayer || [];
 new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
 j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-})(window,document,'script','dataLayer','GTM-XXXXXXX');
+})(window,document,'script','dataLayer','GTM-5GS4HFP2');
 
-console.log("[GTM] tracking.js loaded successfully with placeholder GTM-XXXXXXX");
+// This file is a reference copy. GTM is now loaded via @next/third-parties GoogleTagManager in layout.tsx.

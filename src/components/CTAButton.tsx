@@ -9,9 +9,8 @@ interface CTAButtonProps {
   onClick?: (e: React.MouseEvent<HTMLElement>) => void;
   className?: string;
   children: React.ReactNode;
-  trackEventName: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  trackParams?: Record<string, any>;
+  trackEventName?: string;
+  trackParams?: Record<string, unknown>;
   external?: boolean;
 }
 
@@ -25,8 +24,13 @@ export default function CTAButton({
   external = false
 }: CTAButtonProps) {
   const handleClick = (e: React.MouseEvent<HTMLElement>) => {
-    // Push event to dataLayer
-    trackEvent(trackEventName, trackParams);
+    // Push event to dataLayer only if it matches approved events
+    if (
+      trackEventName &&
+      ["phone_click", "line_click", "line_quote_copy"].includes(trackEventName)
+    ) {
+      trackEvent(trackEventName, trackParams);
+    }
 
     if (onClick) {
       onClick(e);

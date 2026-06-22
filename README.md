@@ -73,10 +73,7 @@ npm run build
 ## 網站分析與事件追蹤 (GTM)
 
 全站 CTA 按鈕與表單皆整合 `trackEvent` 函數，在使用者點擊或互動時向 GTM `dataLayer` 推送以下事件：
-*   `phone_click` / `line_click`：電話及 LINE 點擊
-*   `form_start` / `form_submit` / `generate_lead`：預約表單填寫、提交與成功顯示
-*   `area_selected`：地區選擇器互動
-*   `quote_request`：主預約按鈕點擊
-*   `service_cta_click` / `lp_cta_click` / `guide_cta_click`：服務卡片、Landing Page 與 GEO 指南 CTA 點擊
-*   `commercial_quote_request`：商用工程估價諮詢
-*   `repair_urgent_click` / `cleaning_booking_click` / `installation_quote_click`：維修、清洗保養與安裝估價的專屬轉換事件
+*   `phone_click`：電話撥打點擊
+*   `line_click`：LINE 諮詢連結點擊
+*   `line_quote_copy`：點擊諮詢表單複製並開啟 LINE
+

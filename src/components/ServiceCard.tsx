@@ -91,8 +91,6 @@ export default function ServiceCard({ service }: ServiceCardProps) {
       {/* Action CTA */}
       <CTAButton
         href={service.path}
-        trackEventName="service_cta_click"
-        trackParams={{ service_type: service.id, cta_position: "service_card" }}
         className="w-full text-center py-3 bg-slate-850 text-white font-semibold rounded-xl border border-slate-800 hover:bg-sky-500 hover:border-sky-500 hover:shadow-lg hover:shadow-sky-500/25 transition-all duration-300"
       >
         {service.ctaText}

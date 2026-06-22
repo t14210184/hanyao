@@ -5,7 +5,6 @@ import Link from "next/link";
 import FinalCTA from "@/components/FinalCTA";
 import JsonLd from "@/components/JsonLd";
 import CTAButton from "@/components/CTAButton";
-import { trackEvent } from "@/lib/tracking";
 import { siteConfig } from "@/data/site";
 
 export default function AcSmellCleaningGuidePage() {
@@ -322,8 +321,7 @@ export default function AcSmellCleaningGuidePage() {
                   <CTAButton
                     href={siteConfig.lineUrl}
                     external
-                    trackEventName="guide_cta_click"
-                    trackParams={{ service_type: "ac_cleaning", cta_position: "guide_ac_smell", click_target: "line" }}
+                    trackEventName="line_click" trackParams={{ service_type: "ac_cleaning", cta_position: "guide_ac_smell" }}
                     className="w-full sm:flex-1 py-3 bg-green-600 hover:bg-green-500 text-white font-bold rounded-xl flex items-center justify-center gap-2 text-xs sm:text-sm transition-all"
                   >
                     <span>LINE 傳照片評估</span>
@@ -331,8 +329,7 @@ export default function AcSmellCleaningGuidePage() {
                   
                   <CTAButton
                     href="/contact/"
-                    trackEventName="guide_cta_click"
-                    trackParams={{ service_type: "ac_cleaning", cta_position: "guide_ac_smell", click_target: "form" }}
+                    
                     className="w-full sm:flex-1 py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl border border-slate-800 flex items-center justify-center gap-2 text-xs sm:text-sm transition-all"
                   >
                     <span>預約現場清洗</span>
@@ -388,8 +385,6 @@ export default function AcSmellCleaningGuidePage() {
           serviceType="ac_cleaning"
           phoneText="撥打清洗諮詢專線"
           lineText="加 LINE 傳照評估"
-          onPhoneClick={() => trackEvent("cleaning_booking_click", { service_type: "ac_cleaning", cta_position: "final_cta", lead_method: "phone" })}
-          onLineClick={() => trackEvent("cleaning_booking_click", { service_type: "ac_cleaning", cta_position: "final_cta", lead_method: "line" })}
         />
       </main>
     </>

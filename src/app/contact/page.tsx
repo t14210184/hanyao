@@ -157,8 +157,6 @@ export default function ContactPage() {
           serviceType="contact_general"
           phoneText="撥打專線諮詢"
           lineText="加 LINE 傳照評估"
-          onPhoneClick={() => trackEvent("lp_cta_click", { service_type: "contact_general", cta_position: "final_cta", lead_method: "phone" })}
-          onLineClick={() => trackEvent("lp_cta_click", { service_type: "contact_general", cta_position: "final_cta", lead_method: "line" })}
         />
       </main>
     </>

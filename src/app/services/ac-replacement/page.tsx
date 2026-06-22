@@ -4,7 +4,6 @@ import React from "react";
 import FinalCTA from "@/components/FinalCTA";
 import JsonLd from "@/components/JsonLd";
 import CTAButton from "@/components/CTAButton";
-import { trackEvent } from "@/lib/tracking";
 import { siteConfig } from "@/data/site";
 
 export default function AcReplacementPage() {
@@ -130,8 +129,6 @@ export default function AcReplacementPage() {
                 <div className="pt-2">
                   <CTAButton
                     href="/contact/"
-                    trackEventName="quote_request"
-                    trackParams={{ service_type: "ac-installation", cta_position: "replacement_page_booking" }}
                     className="inline-flex items-center gap-2 text-xs font-semibold text-sky-400 hover:text-sky-350 transition-colors"
                   >
                     <span>預約到府舊換新場勘 &rarr;</span>
@@ -147,8 +144,6 @@ export default function AcReplacementPage() {
           serviceType="ac-installation"
           phoneText="撥打專線諮詢"
           lineText="加 LINE 傳照評估"
-          onPhoneClick={() => trackEvent("lp_cta_click", { service_type: "ac-installation", cta_position: "final_cta", lead_method: "phone" })}
-          onLineClick={() => trackEvent("lp_cta_click", { service_type: "ac-installation", cta_position: "final_cta", lead_method: "line" })}
         />
       </main>
     </>

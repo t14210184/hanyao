@@ -1,57 +1,40 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { usePathname } from "next/navigation";
 import { siteConfig } from "@/data/site";
 import { servicesData } from "@/data/services";
 import { trackEvent } from "@/lib/tracking";
 
-// Declare global interface for window.validateContactForm if loaded from form.js
-declare global {
-  interface Window {
-    validateContactForm?: (name: string, phone: string, service: string) => { valid: boolean; message?: string };
-  }
-}
-
 export default function ContactForm() {
-  const pathname = usePathname();
-  const isCommercial = pathname?.includes("/lp/commercial-ac/");
-
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
     area: "all",
     service: "",
-    message: ""
+    message: "",
   });
-
-  // Automatically select commercial-ac if on the commercial page
-  useEffect(() => {
-    if (isCommercial) {
-      setFormData((prev) => ({ ...prev, service: "commercial-ac" }));
-    }
-  }, [isCommercial]);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const [hasStartedTyping, setHasStartedTyping] = useState(false);
+  const [copyFallbackText, setCopyFallbackText] = useState<string>("");
 
-  // Trigger form_start on first interaction
-  const handleFocus = () => {
-    if (!hasStartedTyping) {
-      setHasStartedTyping(true);
-      trackEvent("form_start", {
-        form_service: isCommercial ? "commercial_ac" : (formData.service || "none"),
-        form_area: formData.area,
-        landing_page_type: isCommercial ? "google_ads" : undefined
-      });
+  // Read ?service= from URL to pre-select
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const preService = params.get("service");
+    if (preService) {
+      setFormData((prev) => ({ ...prev, service: preService }));
     }
-  };
+  }, []);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >
+  ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-    // Clear error for this field
     if (errors[name]) {
       setErrors((prev) => {
         const next = { ...prev };
@@ -61,56 +44,118 @@ export default function ContactForm() {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    let validationResult = { valid: true, message: "" };
-
-    // Use global validator from form.js if available, otherwise fallback to React validation
-    if (typeof window !== "undefined" && typeof window.validateContactForm === "function") {
-      const result = window.validateContactForm(formData.name, formData.phone, formData.service);
-      validationResult = {
-        valid: result.valid,
-        message: result.message || ""
-      };
-    } else {
-      // Fallback client-side validation
-      if (!formData.name.trim()) {
-        validationResult = { valid: false, message: "請填寫您的聯絡姓名" };
-      } else if (!formData.phone.trim()) {
-        validationResult = { valid: false, message: "請填寫您的聯絡電話" };
-      } else if (formData.phone.replace(/[- ]/g, "").length < 8) {
-        validationResult = { valid: false, message: "請填寫正確的電話號碼格式" };
-      } else if (!formData.service) {
-        validationResult = { valid: false, message: "請選擇您需要的服務項目" };
-      }
+    // 1. Validate required fields
+    if (!formData.name.trim()) {
+      setErrors({ form: "請填寫您的聯絡姓名" });
+      return;
     }
-
-    if (!validationResult.valid) {
-      setErrors({ form: validationResult.message });
+    if (!formData.phone.trim()) {
+      setErrors({ form: "請填寫您的聯絡電話" });
+      return;
+    }
+    if (formData.phone.replace(/[- ]/g, "").length < 8) {
+      setErrors({ form: "請填寫正確的電話號碼格式" });
+      return;
+    }
+    if (!formData.service) {
+      setErrors({ form: "請選擇您需要的服務項目" });
       return;
     }
 
-    // Trigger form_submit event
-    trackEvent("form_submit", {
-      form_service: isCommercial ? "commercial_ac" : formData.service,
-      form_area: formData.area,
-      lead_method: "form",
-      landing_page_type: isCommercial ? "google_ads" : undefined
+    // 2. Resolve labels
+    const serviceLabel =
+      servicesData.find((s) => s.id === formData.service)?.name ??
+      formData.service;
+    const areaMap: Record<string, string> = {
+      all: "高雄/屏東全區",
+      kaohsiung: "高雄地區",
+      pingtung: "屏東地區",
+    };
+    const areaLabel = areaMap[formData.area] ?? formData.area;
+
+    // 3. Build LINE consultation text
+    const lineText = [
+      "您好，我想諮詢焓耀空調工程：",
+      "",
+      `姓名：${formData.name}`,
+      `電話：${formData.phone}`,
+      `所在地區：${areaLabel}`,
+      `需求項目：${serviceLabel}`,
+      `狀況描述：${formData.message.trim() || "（未填寫）"}`,
+      "",
+      "方便的聯絡時間：",
+      "是否需要到府場勘：",
+      "",
+      "請協助回覆，謝謝。",
+    ].join("\n");
+
+    // 4. Copy to clipboard — three fallback layers
+    let copySuccess = false;
+
+    // Layer 1: Clipboard API
+    if (
+      typeof window !== "undefined" &&
+      navigator?.clipboard?.writeText
+    ) {
+      try {
+        await navigator.clipboard.writeText(lineText);
+        copySuccess = true;
+      } catch {
+        // proceed to layer 2
+      }
+    }
+
+    // Layer 2: textarea + execCommand
+    if (!copySuccess && typeof document !== "undefined") {
+      try {
+        const textarea = document.createElement("textarea");
+        textarea.value = lineText;
+        textarea.style.cssText =
+          "position:fixed;top:0;left:0;opacity:0;pointer-events:none";
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+        const ok = document.execCommand("copy");
+        document.body.removeChild(textarea);
+        if (ok) copySuccess = true;
+      } catch {
+        // proceed to layer 3
+      }
+    }
+
+    // Layer 3: show text on screen for manual copy
+    if (!copySuccess) {
+      setCopyFallbackText(lineText);
+    }
+
+    // 5. Fire line_quote_copy event
+    trackEvent("line_quote_copy", {
+      form_location: "home_consultation_form",
+      service_type: formData.service,
+      area: formData.area,
+      has_phone: formData.phone.trim().length > 0,
+      has_description: formData.message.trim().length > 0,
     });
 
-    // Simulate backend sending success (since it's a static site, it displays a success placeholder action)
+    // 6. Show success UI
     setIsSubmitted(true);
 
-    // Trigger generate_lead event on success view display
-    trackEvent("generate_lead", {
-      lead_method: "form",
-      area: formData.area,
-      service_type: isCommercial ? "commercial_ac" : formData.service,
-      landing_page_type: isCommercial ? "google_ads" : undefined,
-      cta_position: "contact_form_submit",
-      keyword_intent: isCommercial ? "commercial_ac" : undefined
+    // 7. Fire line_click event
+    trackEvent("line_click", {
+      click_location: "home_consultation_form",
+      link_type: "line",
     });
+
+    // 8. Navigate to LINE after short delay so user can see the success message
+    //    Using window.location.href (not window.open) to avoid popup blocker
+    setTimeout(() => {
+      if (typeof window !== "undefined") {
+        window.location.href = siteConfig.lineUrl;
+      }
+    }, 1200);
   };
 
   const handleReset = () => {
@@ -118,54 +163,102 @@ export default function ContactForm() {
       name: "",
       phone: "",
       area: "all",
-      service: isCommercial ? "commercial-ac" : "",
-      message: ""
+      service: "",
+      message: "",
     });
     setErrors({});
     setIsSubmitted(false);
-    setHasStartedTyping(false);
+    setCopyFallbackText("");
   };
 
+  // ── Success / redirect screen ──────────────────────────────────────────────
   if (isSubmitted) {
     return (
-      <div className="bg-slate-900/60 backdrop-blur-md border border-slate-800 p-8 sm:p-12 rounded-3xl text-center shadow-xl max-w-xl mx-auto animate-fadeIn">
-        <div className="w-16 h-16 bg-emerald-950 border border-emerald-500/30 text-emerald-400 rounded-full flex items-center justify-center mx-auto mb-6">
-          <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+      <div className="bg-slate-900/60 backdrop-blur-md border border-slate-800 p-8 sm:p-12 rounded-3xl text-center shadow-xl max-w-xl mx-auto">
+        {/* Icon */}
+        <div className="w-16 h-16 bg-green-950 border border-green-500/30 text-green-400 rounded-full flex items-center justify-center mx-auto mb-6">
+          <svg
+            className="w-8 h-8"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2.5}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M5 13l4 4L19 7"
+            />
           </svg>
         </div>
-        <h3 className="text-2xl font-bold text-white mb-4">預約估價送出成功！</h3>
-        <p className="text-slate-400 mb-8 leading-relaxed">
-          感謝您的預約。我們的空調技師團隊將在最短時間內，以電話或簡訊與您聯繫，確認到府場勘的最佳時間。
+
+        <h3 className="text-2xl font-bold text-white mb-3">
+          已複製諮詢內容！
+        </h3>
+        <p className="text-slate-400 mb-2 leading-relaxed">
+          正在為您開啟 LINE 聯絡視窗…
         </p>
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <button
-            onClick={handleReset}
-            className="px-6 py-3 bg-slate-800 hover:bg-slate-700 text-white font-semibold rounded-xl transition-all"
-          >
-            再次填寫
-          </button>
-          <a
-            href={siteConfig.lineUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={() => trackEvent("line_click", { cta_position: "form_success_referral" })}
-            className="px-6 py-3 bg-green-600 hover:bg-green-500 text-white font-semibold rounded-xl flex items-center justify-center gap-1.5 shadow-md shadow-green-950/20 transition-all"
-          >
-            <span>LINE 傳照片加速估價</span>
-          </a>
-        </div>
+        <p className="text-slate-500 text-sm mb-6">
+          請在 LINE 中貼上剛才複製的內容傳送給我們。
+        </p>
+
+        {/* Fallback: show text if clipboard failed */}
+        {copyFallbackText && (
+          <div className="mt-2 mb-6 text-left">
+            <p className="text-sm text-orange-400 mb-2 flex items-center gap-2">
+              <svg
+                className="w-4 h-4 shrink-0"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                />
+              </svg>
+              剪貼簿複製失敗，請手動複製以下內容後貼到 LINE：
+            </p>
+            <textarea
+              readOnly
+              value={copyFallbackText}
+              rows={10}
+              className="w-full bg-slate-950 border border-slate-700 text-slate-300 rounded-lg p-3 text-sm resize-none focus:outline-none"
+              onFocus={(e) => e.target.select()}
+            />
+          </div>
+        )}
+
+        <button
+          onClick={handleReset}
+          className="px-6 py-3 bg-slate-800 hover:bg-slate-700 text-white font-semibold rounded-xl transition-all"
+        >
+          重新填寫
+        </button>
       </div>
     );
   }
 
+  // ── Form ──────────────────────────────────────────────────────────────────
   return (
     <div className="bg-slate-900/40 backdrop-blur-sm border border-slate-850 p-8 sm:p-10 rounded-3xl shadow-xl max-w-2xl mx-auto">
       <form onSubmit={handleSubmit} className="space-y-6">
         {errors.form && (
           <div className="bg-red-950/40 border border-red-500/20 text-red-400 text-sm p-4 rounded-xl flex items-center gap-3">
-            <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            <svg
+              className="w-5 h-5 shrink-0"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+              />
             </svg>
             <span>{errors.form}</span>
           </div>
@@ -183,7 +276,6 @@ export default function ContactForm() {
               name="name"
               required
               value={formData.name}
-              onFocus={handleFocus}
               onChange={handleChange}
               placeholder="例如：王先生"
               className="bg-slate-950 border border-slate-850 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 text-white rounded-xl py-3 px-4 outline-none transition-all placeholder:text-slate-600"
@@ -201,7 +293,6 @@ export default function ContactForm() {
               name="phone"
               required
               value={formData.phone}
-              onFocus={handleFocus}
               onChange={handleChange}
               placeholder="例如：0931-940-133"
               className="bg-slate-950 border border-slate-850 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 text-white rounded-xl py-3 px-4 outline-none transition-all placeholder:text-slate-600"
@@ -210,7 +301,7 @@ export default function ContactForm() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          {/* Service Area */}
+          {/* Area */}
           <div className="flex flex-col gap-2">
             <label htmlFor="area" className="text-sm font-semibold text-slate-300">
               所在地區
@@ -219,7 +310,6 @@ export default function ContactForm() {
               id="area"
               name="area"
               value={formData.area}
-              onFocus={handleFocus}
               onChange={handleChange}
               className="bg-slate-950 border border-slate-850 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 text-white rounded-xl py-3 px-4 outline-none transition-all"
             >
@@ -229,7 +319,7 @@ export default function ContactForm() {
             </select>
           </div>
 
-          {/* Service Item */}
+          {/* Service */}
           <div className="flex flex-col gap-2">
             <label htmlFor="service" className="text-sm font-semibold text-slate-300">
               需求項目 <span className="text-orange-500">*</span>
@@ -239,7 +329,6 @@ export default function ContactForm() {
               name="service"
               required
               value={formData.service}
-              onFocus={handleFocus}
               onChange={handleChange}
               className="bg-slate-950 border border-slate-850 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 text-white rounded-xl py-3 px-4 outline-none transition-all"
             >
@@ -263,7 +352,6 @@ export default function ContactForm() {
             name="message"
             rows={4}
             value={formData.message}
-            onFocus={handleFocus}
             onChange={handleChange}
             placeholder="例如：冷氣漏水、主機發出異音、約定場勘時間、商用廠房規格..."
             className="bg-slate-950 border border-slate-850 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 text-white rounded-xl py-3 px-4 outline-none transition-all placeholder:text-slate-600 resize-none"
@@ -274,15 +362,29 @@ export default function ContactForm() {
         <div className="pt-2">
           <button
             type="submit"
-            className="w-full py-4 bg-sky-500 hover:bg-sky-400 active:scale-[0.99] text-white font-bold rounded-xl shadow-lg shadow-sky-500/25 tracking-wide transition-all"
+            id="contact-form-submit"
+            className="w-full py-4 bg-green-600 hover:bg-green-500 active:scale-[0.99] text-white font-bold rounded-xl shadow-lg shadow-green-500/20 tracking-wide transition-all flex items-center justify-center gap-2"
           >
-            送出預約到府場勘
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+              />
+            </svg>
+            複製諮詢內容並開啟 LINE
           </button>
         </div>
 
         {/* Note */}
         <p className="text-center text-xs text-slate-500">
-          ✓ 我們保證保護您的個資安全，此資料僅限空調工程聯絡使用。
+          ✓ 填寫完成後，內容將自動複製到剪貼簿，並為您開啟 LINE 聯絡視窗。
         </p>
       </form>
     </div>

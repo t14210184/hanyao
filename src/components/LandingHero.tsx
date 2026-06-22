@@ -28,7 +28,6 @@ export default function LandingHero({
   phoneCtaText,
   lineCtaText,
   appointmentCtaText,
-  trackPrefix,
   serviceType,
   phoneEventName,
   lineEventName,
@@ -79,7 +78,7 @@ export default function LandingHero({
             <CTAButton
               href={siteConfig.phone1Link}
               onClick={onPhoneClick}
-              trackEventName={phoneEventName || `${trackPrefix}_urgent_click`}
+              trackEventName={phoneEventName || "phone_click"}
               trackParams={{ service_type: serviceType, cta_position: "lp_hero", ...extraParams }}
               className="w-full py-3.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl border border-slate-800 flex items-center justify-center gap-1.5 shadow-lg text-sm transition-all"
             >
@@ -109,7 +108,7 @@ export default function LandingHero({
           <CTAButton
             href="#contact-section"
             onClick={onAppointmentClick}
-            trackEventName={appointmentEventName || "quote_request"}
+            trackEventName={appointmentEventName}
             trackParams={{ service_type: serviceType, cta_position: "lp_hero", ...extraParams }}
             className="w-full py-3.5 bg-orange-500 hover:bg-orange-400 text-white font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-lg shadow-orange-500/20 text-sm transition-all"
           >

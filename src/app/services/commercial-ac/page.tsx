@@ -4,7 +4,6 @@ import React from "react";
 import FinalCTA from "@/components/FinalCTA";
 import JsonLd from "@/components/JsonLd";
 import CTAButton from "@/components/CTAButton";
-import { trackEvent } from "@/lib/tracking";
 import { siteConfig } from "@/data/site";
 
 export default function CommercialAcServicePage() {
@@ -120,8 +119,6 @@ export default function CommercialAcServicePage() {
                 
                 <CTAButton
                   href="/contact/"
-                  trackEventName="quote_request"
-                  trackParams={{ service_type: "commercial_ac", cta_position: "commercial_photo_box" }}
                   className="w-full sm:flex-1 py-3.5 bg-slate-850 hover:bg-slate-800 text-white font-bold rounded-xl border border-slate-800 flex items-center justify-center gap-2 text-xs sm:text-sm transition-all"
                 >
                   <span>預約商用空調場勘</span>
@@ -148,8 +145,6 @@ export default function CommercialAcServicePage() {
           serviceType="commercial_ac"
           phoneText="撥打商用工程諮詢"
           lineText="加 LINE 傳照評估"
-          onPhoneClick={() => trackEvent("lp_cta_click", { service_type: "commercial_ac", cta_position: "final_cta", lead_method: "phone" })}
-          onLineClick={() => trackEvent("lp_cta_click", { service_type: "commercial_ac", cta_position: "final_cta", lead_method: "line" })}
         />
       </main>
     </>

@@ -218,14 +218,6 @@ export default function CommercialAcLP() {
       lead_method: "phone",
       keyword_intent: "commercial_ac"
     });
-    trackEvent("lp_cta_click", {
-      service_type: "commercial_ac",
-      area: currentArea,
-      landing_page_type: "google_ads",
-      cta_position: ctaPosition,
-      lead_method: "phone",
-      keyword_intent: "commercial_ac"
-    });
   };
 
   const handleLineClick = (ctaPosition: string) => {
@@ -237,41 +229,10 @@ export default function CommercialAcLP() {
       lead_method: "line",
       keyword_intent: "commercial_ac"
     });
-    trackEvent("lp_cta_click", {
-      service_type: "commercial_ac",
-      area: currentArea,
-      landing_page_type: "google_ads",
-      cta_position: ctaPosition,
-      lead_method: "line",
-      keyword_intent: "commercial_ac"
-    });
   };
 
-  const handleAppointmentClick = (ctaPosition: string) => {
-    trackEvent("quote_request", {
-      service_type: "commercial_ac",
-      area: currentArea,
-      landing_page_type: "google_ads",
-      cta_position: ctaPosition,
-      lead_method: "form_anchor",
-      keyword_intent: "commercial_ac"
-    });
-    trackEvent("commercial_quote_request", {
-      service_type: "commercial_ac",
-      area: currentArea,
-      landing_page_type: "google_ads",
-      cta_position: ctaPosition,
-      lead_method: "form_anchor",
-      keyword_intent: "commercial_ac"
-    });
-    trackEvent("lp_cta_click", {
-      service_type: "commercial_ac",
-      area: currentArea,
-      landing_page_type: "google_ads",
-      cta_position: ctaPosition,
-      lead_method: "form_anchor",
-      keyword_intent: "commercial_ac"
-    });
+  const handleAppointmentClick = () => {
+    // Unsupported event trackers removed
   };
 
   return (
@@ -300,7 +261,6 @@ export default function CommercialAcLP() {
           serviceType="commercial_ac"
           phoneEventName="phone_click"
           lineEventName="line_click"
-          appointmentEventName="quote_request"
           extraParams={{
             landing_page_type: "google_ads",
             keyword_intent: "commercial_ac",
@@ -308,7 +268,7 @@ export default function CommercialAcLP() {
           }}
           onPhoneClick={() => handlePhoneClick("lp_hero")}
           onLineClick={() => handleLineClick("lp_hero")}
-          onAppointmentClick={() => handleAppointmentClick("lp_hero")}
+          onAppointmentClick={() => handleAppointmentClick()}
         />
 
         {/* 場域卡片 */}
@@ -352,16 +312,7 @@ export default function CommercialAcLP() {
                     {/* Primary Button: Booking */}
                     <CTAButton
                       href="#contact-section"
-                      trackEventName="quote_request"
-                      trackParams={{
-                        service_type: "commercial_ac",
-                        area: currentArea,
-                        landing_page_type: "google_ads",
-                        cta_position: `field_card_${field.title}`,
-                        lead_method: "form_anchor",
-                        keyword_intent: "commercial_ac"
-                      }}
-                      onClick={() => handleAppointmentClick(`field_card_${field.title}`)}
+                      onClick={() => handleAppointmentClick()}
                       className="w-full text-center py-2.5 bg-sky-500 hover:bg-sky-400 text-white font-semibold rounded-xl border border-sky-500 hover:border-sky-400 transition-colors text-sm block"
                     >
                       {field.cta}

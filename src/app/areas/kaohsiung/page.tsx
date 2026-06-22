@@ -4,7 +4,6 @@ import React from "react";
 import FinalCTA from "@/components/FinalCTA";
 import JsonLd from "@/components/JsonLd";
 import CTAButton from "@/components/CTAButton";
-import { trackEvent } from "@/lib/tracking";
 import { siteConfig } from "@/data/site";
 
 export default function KaohsiungAreaPage() {
@@ -116,8 +115,6 @@ export default function KaohsiungAreaPage() {
                   </div>
                   <CTAButton
                     href="/contact/"
-                    trackEventName="quote_request"
-                    trackParams={{ service_type: "general", cta_position: `kaohsiung_service_card_${idx}` }}
                     className="w-full text-center py-2 bg-slate-850 hover:bg-sky-500 text-white font-semibold rounded-lg border border-slate-800 hover:border-sky-500 text-xs transition-colors"
                   >
                     預約高雄服務評估
@@ -189,8 +186,6 @@ export default function KaohsiungAreaPage() {
           serviceType="general"
           phoneText="撥打專線諮詢"
           lineText="加 LINE 傳照評估"
-          onPhoneClick={() => trackEvent("lp_cta_click", { service_type: "general", cta_position: "final_cta", lead_method: "phone" })}
-          onLineClick={() => trackEvent("lp_cta_click", { service_type: "general", cta_position: "final_cta", lead_method: "line" })}
         />
       </main>
     </>

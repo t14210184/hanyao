@@ -4,7 +4,6 @@ import React from "react";
 import FinalCTA from "@/components/FinalCTA";
 import JsonLd from "@/components/JsonLd";
 import CTAButton from "@/components/CTAButton";
-import { trackEvent } from "@/lib/tracking";
 import { siteConfig } from "@/data/site";
 
 export default function ServicesOverviewPage() {
@@ -153,17 +152,13 @@ export default function ServicesOverviewPage() {
                   <div className="pt-4 border-t border-slate-850 flex items-center justify-between gap-4">
                     <CTAButton
                       href={item.link}
-                      trackEventName="service_cta_click"
-                      trackParams={{ service_type: item.title, cta_position: "services_page_grid" }}
-                      className="text-xs sm:text-sm font-semibold text-sky-400 hover:text-sky-305 transition-colors"
+                      className="text-xs sm:text-sm font-semibold text-sky-400 hover:text-sky-350 transition-colors"
                     >
                       {item.ctaText}
                     </CTAButton>
                     
                     <CTAButton
                       href="/contact/"
-                      trackEventName="quote_request"
-                      trackParams={{ service_type: item.title, cta_position: "services_page_booking" }}
                       className="text-[11px] py-1.5 px-3 bg-slate-800 hover:bg-slate-700 text-white rounded-lg border border-slate-700 transition-colors"
                     >
                       線上預約
@@ -216,8 +211,6 @@ export default function ServicesOverviewPage() {
           serviceType="general"
           phoneText="撥打專線諮詢"
           lineText="加 LINE 傳照評估"
-          onPhoneClick={() => trackEvent("lp_cta_click", { service_type: "general", cta_position: "final_cta", lead_method: "phone" })}
-          onLineClick={() => trackEvent("lp_cta_click", { service_type: "general", cta_position: "final_cta", lead_method: "line" })}
         />
       </main>
     </>

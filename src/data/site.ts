@@ -10,7 +10,7 @@ export const siteConfig = {
   businessHours: "週一至週五 08:00–17:00",
   domain: "https://www.xusen.pro",
   serviceAreas: ["高雄市", "屏東縣"],
-  gtmId: "GTM-XXXXXXX",
-  gaId: "G-XXXXXXXXXX",
-  adsId: "AW-XXXXXXXXXX",
+  gtmId: "GTM-5GS4HFP2",
+  gaId: "G-L87XJM1TKZ",
+  adsId: "AW-4801404246",
 };

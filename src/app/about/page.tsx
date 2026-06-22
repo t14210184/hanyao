@@ -5,8 +5,6 @@ import { siteConfig } from "@/data/site";
 import CTAButton from "@/components/CTAButton";
 import FinalCTA from "@/components/FinalCTA";
 import JsonLd from "@/components/JsonLd";
-import { trackEvent } from "@/lib/tracking";
-
 export default function AboutPage() {
   const pageTitle = "關於焓耀空調｜公司資格憑證與冷凍空調技術士團隊";
   const pageDescription = "焓耀空調工程有限公司為政府登記合規之冷凍空調工程業（丙等，統一編號：90234660）。我們是台灣區冷凍空調工程工業同業公會會員，旗下技師持有國家乙級冷凍空調裝修技術士證照。";
@@ -155,8 +153,6 @@ export default function AboutPage() {
             <div className="mt-4 text-center">
               <CTAButton
                 href="/contact/"
-                trackEventName="quote_request"
-                trackParams={{ service_type: "about_general", cta_position: "about_page_booking" }}
                 className="inline-flex items-center gap-2 text-xs font-semibold text-sky-400 hover:text-sky-350 py-2 transition-colors"
               >
                 <span>預約到府估價場勘 &rarr;</span>
@@ -171,8 +167,6 @@ export default function AboutPage() {
           serviceType="about_general"
           phoneText="撥打專線諮詢"
           lineText="加 LINE 傳照評估"
-          onPhoneClick={() => trackEvent("lp_cta_click", { service_type: "about_general", cta_position: "final_cta", lead_method: "phone" })}
-          onLineClick={() => trackEvent("lp_cta_click", { service_type: "about_general", cta_position: "final_cta", lead_method: "line" })}
         />
       </main>
     </>

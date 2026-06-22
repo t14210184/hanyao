@@ -123,23 +123,12 @@
 
 ---
 
-## 六、GTM 14 個事件追蹤確認
+## 六、GTM 事件追蹤確認
 
 全站 CTA 點擊均以 dataLayer 方式發送以下自訂事件：
 1.  `phone_click`：電話點擊。
 2.  `line_click`：LINE 點擊。
-3.  `form_start`：表單開始輸入。
-4.  `form_submit` : 表單提交點擊。
-5.  `generate_lead`：表單提交成功（感謝視窗顯示）。
-6.  `area_selected`：區域選擇器互動。
-7.  `quote_request`：主預約服務點擊。
-8.  `service_cta_click`：一般服務卡片細節點擊。
-9.  `lp_cta_click`：Landing Page 內 CTA 點擊。
-10. `guide_cta_click`：GEO 頁面內 inline 點擊。
-11. `commercial_quote_request`：商用預約場勘。
-12. `repair_urgent_click`：維修急件點擊。
-13. `cleaning_booking_click`：清洗預約點擊。
-14. `installation_quote_click`：安裝估價點擊。
+3.  `line_quote_copy`：點擊諮詢表單複製並開啟 LINE。
 
 ---
 
