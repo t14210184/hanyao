@@ -161,50 +161,50 @@ export const sitelinksData: SitelinkItem[] = [
   // 4. 商用工程廣告活動
   {
     campaign: "commercial",
-    sitelinkText: "商用空調工程",
-    description1: "中央空調、VRV 與冰水主機規劃",
-    description2: "辦公大樓、工廠與餐飲空間規劃",
-    href: "/lp/commercial-ac/",
+    sitelinkText: "辦公室空調規劃",
+    description1: "商辦分區與冷房需求評估",
+    description2: "依現場條件規劃系統",
+    href: "https://www.xusen.pro/services/commercial-ac/office-ac/",
     priority: 1
   },
   {
     campaign: "commercial",
-    sitelinkText: "冰水主機維護",
-    description1: "氣冷與水冷式冰水機保養檢修",
-    description2: "年度合約維護，預防性零件汰換",
-    href: "/services/chiller-maintenance/",
+    sitelinkText: "餐飲店面空調",
+    description1: "熱源、人流與排風一起評估",
+    description2: "店面賣場空調規劃",
+    href: "https://www.xusen.pro/services/commercial-ac/restaurant-retail/",
     priority: 2
   },
   {
     campaign: "commercial",
-    sitelinkText: "工程實績",
-    description1: "醫院、金融分行與廠辦實績方向",
-    description2: "持證技師團隊，重視工期與品質",
-    href: "/cases/",
+    sitelinkText: "廠房空調改善",
+    description1: "高熱源、大空間冷房評估",
+    description2: "協助規劃廠辦降溫方式",
+    href: "https://www.xusen.pro/services/commercial-ac/factory-ac/",
     priority: 3
   },
   {
     campaign: "commercial",
-    sitelinkText: "資格憑證",
-    description1: "具備冷凍空調登記與公會證書",
-    description2: "乙級技術士團隊，安全合規",
-    href: "/about/",
+    sitelinkText: "VRF多聯式空調",
+    description1: "多區域溫控與管線規劃",
+    description2: "商辦旅宿空調系統評估",
+    href: "https://www.xusen.pro/services/commercial-ac/vrf-vrv/",
     priority: 4
   },
   {
     campaign: "commercial",
-    sitelinkText: "高雄服務區",
-    description1: "高雄市商用大樓與廠辦場勘",
-    description2: "專業空調技師現場評估報價",
-    href: "/areas/kaohsiung/",
+    sitelinkText: "冰水主機系統",
+    description1: "中央空調與冰水系統規劃",
+    description2: "依案場規模評估設備",
+    href: "https://www.xusen.pro/services/commercial-ac/chiller-system/",
     priority: 5
   },
   {
     campaign: "commercial",
-    sitelinkText: "聯絡場勘",
-    description1: "預約專業工程師到府場勘",
-    description2: "可 LINE 傳平面圖進行初步判斷",
-    href: "/contact/",
+    sitelinkText: "空調維護合約",
+    description1: "定期巡檢與保養規劃",
+    description2: "降低突發故障與停機風險",
+    href: "https://www.xusen.pro/services/commercial-ac/maintenance-contract/",
     priority: 6
   }
 ];

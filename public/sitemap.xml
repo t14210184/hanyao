@@ -116,6 +116,36 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://www.xusen.pro/services/commercial-ac/office-ac/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.xusen.pro/services/commercial-ac/restaurant-retail/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.xusen.pro/services/commercial-ac/factory-ac/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.xusen.pro/services/commercial-ac/vrf-vrv/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.xusen.pro/services/commercial-ac/chiller-system/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.xusen.pro/services/commercial-ac/maintenance-contract/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://www.xusen.pro/services/chiller-maintenance/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
