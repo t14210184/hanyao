@@ -111,50 +111,50 @@ export const sitelinksData: SitelinkItem[] = [
   // 3. 冷氣清洗保養廣告活動
   {
     campaign: "cleaning",
-    sitelinkText: "清洗保養服務",
-    description1: "分離式與吊隱式深層高壓清洗",
-    description2: "無毒藥劑，室內裝潢防塵保護",
-    href: "/lp/ac-cleaning/",
+    sitelinkText: "清洗價格",
+    description1: "了解影響清洗費用因素",
+    description2: "依機型台數位置評估報價",
+    href: "/services/ac-cleaning/pricing/",
     priority: 1
   },
   {
     campaign: "cleaning",
-    sitelinkText: "高雄服務區",
-    description1: "高雄市區冷氣高壓清洗抗菌",
-    description2: "徹底清除黴菌，恢復冷房能效",
-    href: "/areas/kaohsiung/",
+    sitelinkText: "清洗流程",
+    description1: "了解到府清洗施工步驟",
+    description2: "預約前先看注意事項",
+    href: "/services/ac-cleaning/process/",
     priority: 2
   },
   {
     campaign: "cleaning",
-    sitelinkText: "屏東服務區",
-    description1: "屏東縣市到府清洗冷氣保養",
-    description2: "確認台數與機型，報價透明",
-    href: "/areas/pingtung/",
+    sitelinkText: "分離式清洗",
+    description1: "改善霉味風量與滴水問題",
+    description2: "高雄屏東到府清洗評估",
+    href: "/services/ac-cleaning/split-type/",
     priority: 3
   },
   {
     campaign: "cleaning",
-    sitelinkText: "霉味風量變小",
-    description1: "冷氣發霉霉味與風量變小解答",
-    description2: "高壓清洗鼓風輪與水盤改善空氣",
-    href: "/guides/ac-smell-cleaning/",
+    sitelinkText: "霉味除臭",
+    description1: "冷氣一開有霉味酸味",
+    description2: "檢查風鼓冷排排水盤",
+    href: "/services/ac-cleaning/odor-mold/",
     priority: 4
   },
   {
     campaign: "cleaning",
-    sitelinkText: "常見問題",
-    description1: "清洗時間與施作防護說明",
-    description2: "了解現場清洗是否會拆回公司",
-    href: "/faq/",
+    sitelinkText: "滴水不冷",
+    description1: "滴水風量小先檢查原因",
+    description2: "不亂補冷媒先判斷問題",
+    href: "/services/ac-cleaning/dripping-not-cooling/",
     priority: 5
   },
   {
     campaign: "cleaning",
-    sitelinkText: "預約清洗",
-    description1: "填寫台數與機型快速預約",
-    description2: "配合您的作息排定清洗保養時間",
-    href: "/contact/",
+    sitelinkText: "高屏到府",
+    description1: "高雄屏東冷氣保養服務",
+    description2: "LINE確認地區與可約時段",
+    href: "/services/ac-cleaning/kaohsiung-pingtung/",
     priority: 6
   },
 

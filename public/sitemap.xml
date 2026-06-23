@@ -111,6 +111,36 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://www.xusen.pro/services/ac-cleaning/pricing/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.xusen.pro/services/ac-cleaning/process/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.xusen.pro/services/ac-cleaning/split-type/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.xusen.pro/services/ac-cleaning/odor-mold/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.xusen.pro/services/ac-cleaning/dripping-not-cooling/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.xusen.pro/services/ac-cleaning/kaohsiung-pingtung/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://www.xusen.pro/services/commercial-ac/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
