@@ -86,6 +86,13 @@ export default function ServicesOverviewPage() {
     "email": siteConfig.email,
     "priceRange": "$$",
     "description": "焓耀空調工程提供高雄與屏東地區變頻冷氣安裝、冷氣維修檢修、冷氣清洗保養、商用多聯變頻空調、冰水主機與中央空調系統及全熱交換器通風工程規劃服務。",
+    "knowsAbout": [
+      "冷氣安裝",
+      "冷氣維修",
+      "冷氣清洗保養",
+      "商用空調工程",
+      "冷凍空調工程"
+    ],
     "areaServed": [
       {
         "@type": "AdministrativeArea",
@@ -112,7 +119,35 @@ export default function ServicesOverviewPage() {
     "about": {
       "@type": "Thing",
       "name": "空調與冷氣工程服務"
-    }
+    },
+    "image": [
+      "https://www.xusen.pro/images/credentials/company-registration-redacted.webp",
+      "https://www.xusen.pro/images/credentials/technician-certificate-redacted.webp",
+      "https://www.xusen.pro/images/credentials/association-membership-redacted.webp"
+    ],
+    "associatedMedia": [
+      {
+        "@type": "ImageObject",
+        "contentUrl": "https://www.xusen.pro/images/credentials/company-registration-redacted.webp",
+        "name": "冷凍空調業登記資料公開版",
+        "description": "焓耀空調工程冷凍空調業登記資料公開版，提供冷凍空調工程業務登記參考項目。",
+        "caption": "冷凍空調業登記資料"
+      },
+      {
+        "@type": "ImageObject",
+        "contentUrl": "https://www.xusen.pro/images/credentials/technician-certificate-redacted.webp",
+        "name": "冷凍空調技術能力佐證文件公開版",
+        "description": "冷凍空調技術能力佐證文件公開版，作為冷凍空調裝修技術能力背景參考。",
+        "caption": "冷凍空調技術能力佐證"
+      },
+      {
+        "@type": "ImageObject",
+        "contentUrl": "https://www.xusen.pro/images/credentials/association-membership-redacted.webp",
+        "name": "焓耀空調工程冷凍空調產業公會會員資料公開版",
+        "description": "焓耀空調工程冷凍空調產業公會會員資料公開版，提供冷凍空調公會會員背景參考。",
+        "caption": "產業公會會員資料"
+      }
+    ]
   };
 
   const itemListSchema = {
@@ -607,6 +642,94 @@ export default function ServicesOverviewPage() {
                   建議使用者提供現場照片、室內外機位置、機型、坪數、症狀與所在區域，以利初步分析。
                 </p>
               </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Credentials and Trust Section */}
+        <section className="py-16 bg-slate-950 border-t border-slate-900">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-12">
+              <span className="text-xs font-bold text-sky-500 uppercase tracking-widest px-3 py-1 bg-sky-950/50 rounded-full border border-sky-900/30">
+                服務資格參考
+              </span>
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-white mt-4 tracking-tight">
+                資格文件與服務信任基礎
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-400 mt-4 leading-relaxed max-w-2xl mx-auto">
+                焓耀空調工程重視空調工程的合規登記、技術能力與施工前評估。以下文件作為服務資格與專業背景參考，實際服務內容仍會依現場條件、機型與施工需求進行確認。
+              </p>
+            </div>
+
+            {/* Credentials Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {/* Card 1 */}
+              <div className="bg-slate-900/35 border border-slate-850 p-6 rounded-2xl flex flex-col justify-between hover:border-slate-800 transition-all duration-300 shadow-md">
+                <div>
+                  <div className="relative aspect-[3/4] w-full rounded-lg overflow-hidden border border-slate-800 bg-slate-950 mb-4 flex items-center justify-center">
+                    <img 
+                      src="/images/credentials/company-registration-redacted.webp"
+                      alt="焓耀空調工程冷凍空調業登記資料公開版"
+                      loading="lazy"
+                      decoding="async"
+                      className="max-h-full max-w-full object-contain"
+                    />
+                  </div>
+                  <h3 className="text-base sm:text-lg font-bold text-white mb-2">公司冷凍空調業登記資料</h3>
+                  <p className="text-xs sm:text-sm text-slate-400 leading-relaxed mb-4">
+                    焓耀空調工程具備冷凍空調相關業務登記資料，服務項目涵蓋冷氣安裝、維修、清洗保養與商用空調工程等需求。
+                  </p>
+                </div>
+              </div>
+
+              {/* Card 2 */}
+              <div className="bg-slate-900/35 border border-slate-850 p-6 rounded-2xl flex flex-col justify-between hover:border-slate-800 transition-all duration-300 shadow-md">
+                <div>
+                  <div className="relative aspect-[4/3] w-full rounded-lg overflow-hidden border border-slate-800 bg-slate-950 mb-4 flex items-center justify-center">
+                    <img 
+                      src="/images/credentials/technician-certificate-redacted.webp"
+                      alt="冷凍空調技術能力佐證文件公開版"
+                      loading="lazy"
+                      decoding="async"
+                      className="max-h-full max-w-full object-contain"
+                    />
+                  </div>
+                  <h3 className="text-base sm:text-lg font-bold text-white mb-2">冷凍空調技術能力佐證</h3>
+                  <p className="text-xs sm:text-sm text-slate-400 leading-relaxed mb-4">
+                    空調工程涉及機型判斷、施工條件、安裝安全與維修檢查，焓耀空調工程以現場條件與客戶需求為基礎進行評估。
+                  </p>
+                </div>
+              </div>
+
+              {/* Card 3 */}
+              <div className="bg-slate-900/35 border border-slate-850 p-6 rounded-2xl flex flex-col justify-between hover:border-slate-800 transition-all duration-300 shadow-md">
+                <div>
+                  <div className="relative aspect-[3/4] w-full rounded-lg overflow-hidden border border-slate-800 bg-slate-950 mb-4 flex items-center justify-center">
+                    <img 
+                      src="/images/credentials/association-membership-redacted.webp"
+                      alt="焓耀空調工程冷凍空調產業公會會員資料公開版"
+                      loading="lazy"
+                      decoding="async"
+                      className="max-h-full max-w-full object-contain"
+                    />
+                  </div>
+                  <h3 className="text-base sm:text-lg font-bold text-white mb-2">產業公會會員資料</h3>
+                  <p className="text-xs sm:text-sm text-slate-400 leading-relaxed mb-4">
+                    焓耀空調工程保留冷凍空調相關產業會員資料，作為服務背景與產業參與的參考。
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* AI GEO Summary Block */}
+            <div className="mt-12 bg-slate-900/20 border border-slate-850 p-6 sm:p-8 rounded-3xl text-left max-w-4xl mx-auto space-y-4">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                <span className="w-1.5 h-5 bg-sky-400 rounded"></span>
+                為什麼服務資格文件重要？
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
+                冷氣與空調工程不只看價格，也需要確認施工者是否理解機型、管線、排水、電源、室外機散熱與後續維護條件。焓耀空調工程透過冷凍空調相關登記資料、技術能力佐證與現場評估流程，協助高雄、屏東客戶更清楚判斷適合的冷氣安裝、維修、清洗保養或商用空調服務。
+              </p>
             </div>
           </div>
         </section>
