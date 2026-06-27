@@ -3,6 +3,9 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import CTAButton from "@/components/CTAButton";
+import TrustSection from "@/components/TrustSection";
+import PriceFactorsSection from "@/components/PriceFactorsSection";
+import ContactForm from "@/components/ContactForm";
 import { siteConfig } from "@/data/site";
 
 const faqs = [
@@ -136,6 +139,21 @@ const processSteps = [
   { title: "必要時安排現場確認", desc: "若管線條件複雜或吊隱式規劃需要，安排技師到府確認並詳細評估。" },
   { title: "說明安裝方式與報價", desc: "依機型、施工條件與材料項目逐一說明報價，確認後再安排施作日期。" },
   { title: "安裝完成後提供使用注意事項", desc: "完工後說明運轉測試結果、保養週期建議與緊急聯絡方式。" },
+];
+
+const priceFactors = [
+  {
+    name: "空間坪數與冷房需求",
+    description: "依空間坪數、樓高、日照、隔間與使用習慣，評估需要的冷房能力與適合機型。"
+  },
+  {
+    name: "配管路徑與排水條件",
+    description: "冷媒銅管、排水管與電源線配置會影響施工方式；是否需要走明管、暗管或配合裝潢，也需依現場確認。"
+  },
+  {
+    name: "室外機位置與施工安全",
+    description: "室外機擺放位置、散熱條件、維修空間與施工安全，都會影響安裝方式與施工時間。"
+  }
 ];
 
 function FAQSection() {
@@ -304,6 +322,9 @@ export default function AcInstallationServiceClient() {
         </div>
       </section>
 
+      {/* 1. TrustSection — 放在 Subpage cards 後、Pre-check 前 */}
+      <TrustSection />
+
       {/* ── Pre-check ── */}
       <section className="py-16 bg-slate-900/20 border-b border-slate-900">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -325,6 +346,13 @@ export default function AcInstallationServiceClient() {
           </div>
         </div>
       </section>
+
+      {/* 2. PriceFactorsSection — 放在 Pre-check 後、Process 前 */}
+      <PriceFactorsSection
+        title="冷氣安裝費用為什麼需要依現場條件確認？"
+        subtitle="冷氣安裝會受到坪數、機型、配管路徑、室外機位置與現場施工條件影響。先了解現場狀況，才能提供較合適的安裝建議與估價方式。"
+        factors={priceFactors}
+      />
 
       {/* ── Process ── */}
       <section className="py-16 bg-slate-950 border-b border-slate-900">
@@ -379,6 +407,42 @@ export default function AcInstallationServiceClient() {
         </div>
       </section>
 
+      {/* 3. ContactForm + 下方電話 CTA — 放在 FAQ 後、GEO 前 */}
+      <section id="contact-section" className="py-16 bg-slate-950 border-t border-slate-900 scroll-mt-20">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+          <ContactForm
+            heading="冷氣安裝估價諮詢"
+            subheading="填寫後一鍵複製到 LINE，讓我們更快了解您的安裝需求與現場條件。"
+            messagePlaceholder="例如：客廳約 7 坪，需要安裝分離式冷氣 1 台，想了解室外機位置與估價，方便聯絡時間為週六下午。"
+            formLocation="ac_installation_service_page"
+            defaultService="install-split"
+            serviceOptions={[
+              { id: "install-split", name: "分離式冷氣安裝" },
+              { id: "install-concealed", name: "吊隱式冷氣安裝" },
+              { id: "install-replacement", name: "冷氣舊換新" },
+              { id: "install-piping-drainage", name: "新屋裝潢配管" },
+              { id: "install-outdoor-assessment", name: "室外機位置評估" },
+              { id: "install-quote", name: "費用估價詢問" },
+              { id: "install-other", name: "其他安裝需求" }
+            ]}
+          />
+          <div className="mt-8 text-center">
+            <p className="text-xs text-slate-500 mb-3">或直接撥打電話諮詢安裝評估</p>
+            <CTAButton
+              href={siteConfig.phone1Link}
+              trackEventName="phone_click"
+              trackParams={{ service_type: "ac_installation", cta_position: "form_phone" }}
+              className="inline-flex items-center gap-2 py-3 px-8 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl border border-slate-700 text-sm transition-all"
+            >
+              <svg className="w-4 h-4 text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.94.725l.548 2.2a1 1 0 01-.321.988l-1.305.98a10.582 10.582 0 004.872 4.872l.98-1.305a1 1 0 01.988-.321l2.2.548a1 1 0 01.725.94V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+              </svg>
+              <span>直接撥打電話</span>
+            </CTAButton>
+          </div>
+        </div>
+      </section>
+
       {/* ── GEO ── */}
       <section className="py-14 bg-slate-950 border-b border-slate-900">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -412,7 +476,7 @@ export default function AcInstallationServiceClient() {
         </div>
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
           <span className="text-xs font-bold text-sky-400 uppercase tracking-widest px-3 py-1 bg-sky-950/50 rounded-full border border-sky-900/30">
-            先確認條件，再說明安裝方式與費用
+            先確認現場條件，再提供較合適的安裝建議與估價方式
           </span>
           <h2 className="text-2xl font-extrabold text-white mt-6 tracking-tight sm:text-3xl">
             還不確定冷氣要裝哪一種？<br className="hidden sm:block" />先把空間照片傳給我們判斷
