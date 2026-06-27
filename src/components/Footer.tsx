@@ -10,7 +10,7 @@ export default function Footer() {
   return (
     <footer className="bg-slate-950 text-slate-400 border-t border-slate-900 pt-16 pb-32">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8 lg:gap-12">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8 lg:gap-10">
           {/* Brand Info */}
           <div className="flex flex-col gap-4">
             <Link href="/" className="flex items-center gap-2 text-white font-bold text-lg">
@@ -49,6 +49,20 @@ export default function Footer() {
             <h3 className="text-white font-bold text-base tracking-wider uppercase mb-4">服務項目</h3>
             <ul className="space-y-2.5 text-base text-slate-300">
               {footerLinks.services.map((item) => (
+                <li key={item.name}>
+                  <Link href={item.path} className="hover:text-white transition-colors py-1 inline-block">
+                    {item.name}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Guide Links */}
+          <div>
+            <h3 className="text-white font-bold text-base tracking-wider uppercase mb-4">冷氣知識庫</h3>
+            <ul className="space-y-2.5 text-base text-slate-300">
+              {footerLinks.guides.map((item) => (
                 <li key={item.name}>
                   <Link href={item.path} className="hover:text-white transition-colors py-1 inline-block">
                     {item.name}

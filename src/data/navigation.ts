@@ -23,5 +23,11 @@ export const footerLinks = {
     { name: "關於我們", path: "/about/" },
     { name: "聯絡估價", path: "/contact/" },
     { name: "隱私政策", path: "/privacy/" }
+  ],
+  guides: [
+    { name: "冷氣不冷原因判斷", path: "/guides/ac-not-cold/" },
+    { name: "冷氣漏水處理方式", path: "/guides/ac-leaking-water/" },
+    { name: "冷氣安裝費用因素", path: "/guides/ac-installation-cost-factors/" },
+    { name: "冷氣異味與清洗時機", path: "/guides/ac-smell-cleaning/" }
   ]
 };
