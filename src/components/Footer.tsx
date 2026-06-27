@@ -10,7 +10,7 @@ export default function Footer() {
   return (
     <footer className="bg-slate-950 text-slate-400 border-t border-slate-900 pt-16 pb-32">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 lg:gap-12">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8 lg:gap-12">
           {/* Brand Info */}
           <div className="flex flex-col gap-4">
             <Link href="/" className="flex items-center gap-2 text-white font-bold text-lg">
@@ -69,6 +69,33 @@ export default function Footer() {
                   </Link>
                 </li>
               ))}
+            </ul>
+          </div>
+
+          {/* Area Links */}
+          <div>
+            <h3 className="text-white font-semibold text-sm tracking-wider uppercase mb-4">服務地區</h3>
+            <ul className="space-y-2.5 text-sm">
+              <li>
+                <Link href="/areas/kaohsiung/" className="hover:text-white transition-colors">
+                  高雄空調冷氣服務
+                </Link>
+              </li>
+              <li>
+                <Link href="/areas/pingtung/" className="hover:text-white transition-colors">
+                  屏東空調冷氣服務
+                </Link>
+              </li>
+              <li>
+                <Link href="/areas/kaohsiung-ac-repair/" className="hover:text-white transition-colors">
+                  高雄冷氣維修
+                </Link>
+              </li>
+              <li>
+                <Link href="/areas/pingtung-ac-installation/" className="hover:text-white transition-colors">
+                  屏東冷氣安裝
+                </Link>
+              </li>
             </ul>
           </div>
 
