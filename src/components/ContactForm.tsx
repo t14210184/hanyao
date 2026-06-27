@@ -222,26 +222,26 @@ export default function ContactForm({
           </svg>
         </div>
 
-        <h3 className="text-2xl font-bold text-white mb-3">
+        <h3 className="text-2xl sm:text-3xl font-bold text-white mb-4">
           已複製諮詢內容！
         </h3>
-        <p className="text-slate-400 mb-2 leading-relaxed">
+        <p className="text-slate-200 text-lg sm:text-xl mb-3 leading-relaxed font-medium">
           正在為您開啟 LINE 聯絡視窗…
         </p>
-        <p className="text-slate-500 text-sm mb-6">
+        <p className="text-slate-300 text-base sm:text-lg mb-6 leading-relaxed">
           請在 LINE 中貼上剛才複製的內容傳送給我們。
         </p>
 
         {/* Fallback: show text if clipboard failed */}
         {copyFallbackText && (
           <div className="mt-2 mb-6 text-left">
-            <p className="text-sm text-orange-400 mb-2 flex items-center gap-2">
+            <p className="text-base sm:text-lg text-orange-400 mb-3 flex items-center gap-2 font-bold">
               <svg
-                className="w-4 h-4 shrink-0"
+                className="w-5 h-5 shrink-0"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
-                strokeWidth={2}
+                strokeWidth={2.5}
               >
                 <path
                   strokeLinecap="round"
@@ -254,8 +254,8 @@ export default function ContactForm({
             <textarea
               readOnly
               value={copyFallbackText}
-              rows={10}
-              className="w-full bg-slate-950 border border-slate-700 text-slate-300 rounded-lg p-3 text-sm resize-none focus:outline-none"
+              rows={8}
+              className="w-full bg-slate-950 border border-slate-600 text-slate-200 rounded-xl p-4 text-base sm:text-lg resize-none focus:outline-none min-h-[200px] leading-relaxed"
               onFocus={(e) => e.target.select()}
             />
           </div>
@@ -305,8 +305,8 @@ export default function ContactForm({
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           {/* Name */}
-          <div className="flex flex-col gap-2">
-            <label htmlFor="name" className="text-sm font-semibold text-slate-300">
+          <div className="flex flex-col gap-3">
+            <label htmlFor="name" className="text-lg sm:text-xl font-bold text-slate-100 leading-relaxed">
               聯絡姓名 <span className="text-orange-500">*</span>
             </label>
             <input
@@ -317,13 +317,13 @@ export default function ContactForm({
               value={formData.name}
               onChange={handleChange}
               placeholder="例如：王先生"
-              className="bg-slate-950 border border-slate-850 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 text-white rounded-xl py-3 px-4 outline-none transition-all placeholder:text-slate-500 text-sm sm:text-base"
+              className="bg-slate-950 border border-slate-600 focus:border-sky-400 focus:ring-1 focus:ring-sky-400 text-white rounded-xl py-4 px-5 outline-none transition-all placeholder:text-slate-400 text-lg sm:text-xl min-h-[64px] w-full font-medium"
             />
           </div>
 
           {/* Phone */}
-          <div className="flex flex-col gap-2">
-            <label htmlFor="phone" className="text-sm font-semibold text-slate-300">
+          <div className="flex flex-col gap-3">
+            <label htmlFor="phone" className="text-lg sm:text-xl font-bold text-slate-100 leading-relaxed">
               聯絡電話 <span className="text-orange-500">*</span>
             </label>
             <input
@@ -334,15 +334,15 @@ export default function ContactForm({
               value={formData.phone}
               onChange={handleChange}
               placeholder="例如：0931-940-133"
-              className="bg-slate-950 border border-slate-850 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 text-white rounded-xl py-3 px-4 outline-none transition-all placeholder:text-slate-500 text-sm sm:text-base"
+              className="bg-slate-950 border border-slate-600 focus:border-sky-400 focus:ring-1 focus:ring-sky-400 text-white rounded-xl py-4 px-5 outline-none transition-all placeholder:text-slate-400 text-lg sm:text-xl min-h-[64px] w-full font-medium"
             />
           </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           {/* Area */}
-          <div className="flex flex-col gap-2">
-            <label htmlFor="area" className="text-sm font-semibold text-slate-300">
+          <div className="flex flex-col gap-3">
+            <label htmlFor="area" className="text-lg sm:text-xl font-bold text-slate-100 leading-relaxed">
               所在地區
             </label>
             <select
@@ -350,7 +350,7 @@ export default function ContactForm({
               name="area"
               value={formData.area}
               onChange={handleChange}
-              className="bg-slate-950 border border-slate-850 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 text-white rounded-xl py-3 px-4 outline-none transition-all"
+              className="bg-slate-950 border border-slate-600 focus:border-sky-400 focus:ring-1 focus:ring-sky-400 text-white rounded-xl py-4 px-5 outline-none transition-all text-lg sm:text-xl min-h-[64px] w-full font-medium"
             >
               <option value="all">高雄/屏東全區</option>
               <option value="kaohsiung">高雄地區</option>
@@ -359,8 +359,8 @@ export default function ContactForm({
           </div>
 
           {/* Service */}
-          <div className="flex flex-col gap-2">
-            <label htmlFor="service" className="text-sm font-semibold text-slate-300">
+          <div className="flex flex-col gap-3">
+            <label htmlFor="service" className="text-lg sm:text-xl font-bold text-slate-100 leading-relaxed">
               需求項目 <span className="text-orange-500">*</span>
             </label>
             <select
@@ -369,7 +369,7 @@ export default function ContactForm({
               required
               value={formData.service}
               onChange={handleChange}
-              className="bg-slate-950 border border-slate-850 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 text-white rounded-xl py-3 px-4 outline-none transition-all"
+              className="bg-slate-950 border border-slate-600 focus:border-sky-400 focus:ring-1 focus:ring-sky-400 text-white rounded-xl py-4 px-5 outline-none transition-all text-lg sm:text-xl min-h-[64px] w-full font-medium"
             >
               <option value="">-- 請選擇服務項目 --</option>
               {(serviceOptions ?? servicesData).map((s) => (
@@ -382,8 +382,8 @@ export default function ContactForm({
         </div>
 
         {/* Message */}
-        <div className="flex flex-col gap-2">
-          <label htmlFor="message" className="text-sm font-semibold text-slate-300">
+        <div className="flex flex-col gap-3">
+          <label htmlFor="message" className="text-lg sm:text-xl font-bold text-slate-100 leading-relaxed">
             狀況描述或特殊需求 (選填)
           </label>
           <textarea
@@ -393,23 +393,23 @@ export default function ContactForm({
             value={formData.message}
             onChange={handleChange}
             placeholder={messagePlaceholder}
-            className="bg-slate-950 border border-slate-850 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 text-white rounded-xl py-3 px-4 outline-none transition-all placeholder:text-slate-500 text-sm sm:text-base resize-none"
+            className="bg-slate-950 border border-slate-600 focus:border-sky-400 focus:ring-1 focus:ring-sky-400 text-white rounded-xl py-4 px-5 outline-none transition-all placeholder:text-slate-400 text-lg sm:text-xl min-h-[180px] w-full font-medium leading-[1.8] resize-none"
           />
         </div>
 
         {/* Submit */}
-        <div className="pt-2">
+        <div className="pt-4">
           <button
             type="submit"
             id="contact-form-submit"
-            className="w-full py-4 bg-green-600 hover:bg-green-500 active:scale-[0.99] text-white font-bold rounded-xl shadow-lg shadow-green-500/20 tracking-wide transition-all flex items-center justify-center gap-2"
+            className="w-full min-h-[72px] bg-green-600 hover:bg-green-500 active:scale-[0.99] text-white font-bold rounded-2xl shadow-lg shadow-green-500/20 tracking-wide transition-all flex items-center justify-center gap-3 text-xl sm:text-2xl px-6 py-4"
           >
             <svg
-              className="w-5 h-5"
+              className="w-6 h-6 sm:w-7 h-7"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
-              strokeWidth={2}
+              strokeWidth={2.5}
             >
               <path
                 strokeLinecap="round"
@@ -422,33 +422,35 @@ export default function ContactForm({
         </div>
 
         {/* Note */}
-        <div className="text-slate-300 text-xs sm:text-sm leading-relaxed space-y-3 bg-slate-950/60 p-4 sm:p-5 rounded-2xl border border-slate-850/80">
-          <p className="font-semibold text-white text-sm sm:text-base">【LINE 聯絡流程說明】</p>
-          <div className="space-y-2 text-slate-400 text-xs sm:text-sm">
-            <p>
-              📱 <strong>手機瀏覽：</strong>手機瀏覽且已安裝 LINE 時，送出後會複製諮詢內容並嘗試開啟 LINE，您可直接貼上傳送。
+        <div className="text-slate-200 text-base sm:text-lg leading-[1.8] space-y-4 bg-slate-950/60 p-5 sm:p-7 rounded-2xl border border-slate-800 shadow-inner">
+          <p className="font-bold text-white text-lg sm:text-2xl border-b border-slate-800 pb-2 mb-3">【LINE 聯絡流程說明】</p>
+          <div className="space-y-4 text-slate-200">
+            <p className="flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-2">
+              <span className="shrink-0 font-bold text-white">📱 手機瀏覽：</span>
+              <span>手機瀏覽且已安裝 LINE 時，送出後會複製諮詢內容並嘗試開啟 LINE，您可直接貼上傳送。</span>
             </p>
-            <p>
-              💻 <strong>電腦瀏覽：</strong>電腦瀏覽時，無法直接把內容送到您的手機 LINE。按下按鈕後會先複製諮詢內容，並嘗試開啟 LINE 官方帳號加好友頁面；請再用手機 LINE 搜尋官方 ID <strong className="text-white">@451vpomq</strong>，或開啟加好友頁面後，將內容貼上傳送。
+            <p className="flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-2">
+              <span className="shrink-0 font-bold text-white">💻 電腦瀏覽：</span>
+              <span>電腦瀏覽時，無法直接把內容送到您的手機 LINE。按下按鈕後會先複製諮詢內容，並嘗試開啟 LINE 官方帳號加好友頁面；請再用手機 LINE 搜尋官方 ID <strong className="text-white font-bold text-lg sm:text-xl bg-slate-900 px-2 py-0.5 rounded border border-slate-800">@451vpomq</strong>，或開啟加好友頁面後，將內容貼上傳送。</span>
             </p>
           </div>
-          <div className="pt-2 text-center md:hidden">
-            <span className="text-[11px] text-slate-500">※ 提示：建議使用手機瀏覽本站以獲得最順暢的 LINE 諮詢體驗。</span>
+          <div className="pt-3 text-center md:hidden border-t border-slate-900">
+            <span className="text-sm sm:text-base text-slate-300 font-semibold">※ 提示：建議使用手機瀏覽本站以獲得最順暢的 LINE 諮詢體驗。</span>
           </div>
           {/* 電腦瀏覽時的按鈕 */}
-          <div className="hidden md:flex flex-col items-center gap-2 pt-2.5 border-t border-slate-800/60">
-            <span className="text-xs font-semibold text-slate-400">電腦瀏覽加 LINE：</span>
+          <div className="hidden md:flex flex-col items-center gap-3 pt-4 border-t border-slate-900">
+            <span className="text-sm sm:text-base font-bold text-slate-200">電腦瀏覽加 LINE：</span>
             <div className="flex gap-4 items-center">
               <a
                 href={siteConfig.lineUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 py-2.5 px-4 bg-green-700 hover:bg-green-600 text-white text-xs font-bold rounded-lg transition-colors"
+                className="inline-flex items-center justify-center gap-2 py-3 px-6 bg-green-700 hover:bg-green-600 text-white text-base sm:text-lg font-bold rounded-xl min-h-[56px] transition-colors shadow"
               >
                 開啟 LINE 加好友頁面
               </a>
-              <span className="text-xs text-slate-500">
-                （LINE 官方帳號 ID: <strong className="text-white">@451vpomq</strong>，加好友後貼上諮詢內容傳送）
+              <span className="text-sm text-slate-300">
+                （LINE 官方帳號 ID: <strong className="text-white font-bold">@451vpomq</strong>，加好友後貼上諮詢內容傳送）
               </span>
             </div>
           </div>

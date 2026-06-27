@@ -300,29 +300,29 @@ export default function AcRepairServiceClient() {
       <section className="py-16 bg-slate-950 border-t border-slate-900">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-10">
-            <span className="text-xs sm:text-sm font-bold text-sky-400 uppercase tracking-widest px-3 py-1 bg-sky-950/40 rounded-full border border-sky-900/30">
+            <span className="text-base sm:text-lg font-bold text-sky-400 uppercase tracking-widest px-3 py-1 bg-sky-950/40 rounded-full border border-sky-900/30">
               延伸閱讀
             </span>
-            <h2 className="text-xl font-bold text-white mt-4">
+            <h2 className="text-2xl sm:text-3xl font-bold text-white mt-4">
               延伸閱讀：常見冷氣維修判斷
             </h2>
-            <p className="text-sm sm:text-base text-slate-300 mt-3 max-w-2xl mx-auto leading-relaxed">
+            <p className="text-lg sm:text-xl text-slate-200 mt-3 max-w-2xl mx-auto leading-[1.8]">
               如果還在判斷冷氣不冷、漏水或是否需要檢修，可先閱讀下列說明；實際原因仍需依現場環境、機型與檢測結果確認。
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-3xl mx-auto">
-            <div className="bg-slate-900/20 border border-slate-850 p-5 rounded-xl hover:border-slate-800 transition-colors">
-              <h3 className="text-base font-bold text-white mb-3">常識與故障自助排查</h3>
-              <ul className="space-y-1.5 text-sm sm:text-base font-medium">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-3xl mx-auto">
+            <div className="bg-slate-900/20 border border-slate-850 p-6 rounded-xl hover:border-slate-800 transition-colors">
+              <h3 className="text-lg sm:text-xl font-bold text-white mb-3">常識與故障自助排查</h3>
+              <ul className="space-y-2 text-lg sm:text-xl font-semibold">
                 <li>
-                  <Link href="/guides/ac-not-cold/" className="py-1.5 flex items-center gap-1 text-sky-400 hover:text-sky-300 transition-colors">
+                  <Link href="/guides/ac-not-cold/" className="py-2.5 flex items-center gap-1 text-sky-400 hover:text-sky-300 transition-colors">
                     <span>冷氣不冷怎麼辦？</span>
                     <span>&rarr;</span>
                   </Link>
                 </li>
                 <li>
-                  <Link href="/guides/ac-leaking-water/" className="py-1.5 flex items-center gap-1 text-sky-400 hover:text-sky-300 transition-colors">
+                  <Link href="/guides/ac-leaking-water/" className="py-2.5 flex items-center gap-1 text-sky-400 hover:text-sky-300 transition-colors">
                     <span>冷氣漏水怎麼辦？</span>
                     <span>&rarr;</span>
                   </Link>
@@ -330,17 +330,17 @@ export default function AcRepairServiceClient() {
               </ul>
             </div>
 
-            <div className="bg-slate-900/20 border border-slate-850 p-5 rounded-xl hover:border-slate-800 transition-colors">
-              <h3 className="text-base font-bold text-white mb-3">專業檢修服務細項</h3>
-              <ul className="space-y-1.5 text-sm sm:text-base font-medium">
+            <div className="bg-slate-900/20 border border-slate-850 p-6 rounded-xl hover:border-slate-800 transition-colors">
+              <h3 className="text-lg sm:text-xl font-bold text-white mb-3">專業檢修服務細項</h3>
+              <ul className="space-y-2 text-lg sm:text-xl font-semibold">
                 <li>
-                  <Link href="/services/ac-repair/not-cold/" className="py-1.5 flex items-center gap-1 text-sky-400 hover:text-sky-300 transition-colors">
+                  <Link href="/services/ac-repair/not-cold/" className="py-2.5 flex items-center gap-1 text-sky-400 hover:text-sky-300 transition-colors">
                     <span>冷氣不冷檢修服務</span>
                     <span>&rarr;</span>
                   </Link>
                 </li>
                 <li>
-                  <Link href="/services/ac-repair/leaking-water/" className="py-1.5 flex items-center gap-1 text-sky-400 hover:text-sky-300 transition-colors">
+                  <Link href="/services/ac-repair/leaking-water/" className="py-2.5 flex items-center gap-1 text-sky-400 hover:text-sky-300 transition-colors">
                     <span>冷氣漏水檢修服務</span>
                     <span>&rarr;</span>
                   </Link>
