@@ -180,7 +180,7 @@ export default function AcLeakingWaterClient() {
               </div>
               
               <div className="flex justify-center gap-6 text-xs text-sky-400 font-semibold">
-                <Link href="/lp/ac-repair/" className="hover:underline">冷氣維修廣告專區 &rarr;</Link>
+                <Link href="/services/ac-repair/leaking-water/" className="hover:underline">冷氣漏水檢修服務 &rarr;</Link>
                 <Link href="/services/ac-repair/" className="hover:underline">冷氣檢修服務項目 &rarr;</Link>
                 <Link href="/services/ac-cleaning/" className="hover:underline">冷氣清洗保養項目 &rarr;</Link>
               </div>

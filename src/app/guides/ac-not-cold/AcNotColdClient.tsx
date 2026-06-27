@@ -197,7 +197,7 @@ export default function AcNotColdClient() {
               </div>
               
               <div className="flex justify-center gap-6 text-xs text-sky-400 font-semibold">
-                <Link href="/lp/ac-repair/" className="hover:underline">冷氣維修廣告專區 &rarr;</Link>
+                <Link href="/services/ac-repair/not-cold/" className="hover:underline">冷氣不冷檢修服務 &rarr;</Link>
                 <Link href="/services/ac-repair/" className="hover:underline">變頻冷氣檢修服務頁 &rarr;</Link>
               </div>
             </div>

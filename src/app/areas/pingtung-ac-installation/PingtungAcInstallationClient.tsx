@@ -122,7 +122,7 @@ export default function PingtungAcInstallationClient() {
 
             {/* Navigation links */}
             <div className="mt-12 pt-8 border-t border-slate-900 flex flex-wrap justify-center gap-x-6 gap-y-2 text-xs sm:text-sm">
-              <Link href="/lp/ac-installation/" className="text-sky-400 hover:underline">冷氣安裝高轉換專區 &rarr;</Link>
+              <Link href="/services/ac-installation/" className="text-sky-400 hover:underline">冷氣安裝服務 &rarr;</Link>
               <Link href="/services/ac-replacement/" className="text-sky-400 hover:underline">冷氣舊換新規劃指引 &rarr;</Link>
               <Link href="/contact/" className="text-sky-400 hover:underline">預約現場估價場勘 &rarr;</Link>
             </div>

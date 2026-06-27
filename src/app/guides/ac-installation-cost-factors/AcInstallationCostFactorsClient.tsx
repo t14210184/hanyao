@@ -207,7 +207,7 @@ export default function AcInstallationCostFactorsClient() {
               </div>
               
               <div className="flex justify-center gap-6 text-xs text-sky-400 font-semibold">
-                <Link href="/lp/ac-installation/" className="hover:underline">冷氣安裝廣告專區 &rarr;</Link>
+                <Link href="/services/ac-installation/cost/" className="hover:underline">冷氣安裝費用流程 &rarr;</Link>
                 <Link href="/services/ac-installation/" className="hover:underline">變頻冷氣安裝服務頁 &rarr;</Link>
                 <Link href="/services/ac-replacement/" className="hover:underline">冷氣舊換新規劃指引 &rarr;</Link>
               </div>

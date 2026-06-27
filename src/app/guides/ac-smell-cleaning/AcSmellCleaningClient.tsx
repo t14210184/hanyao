@@ -214,7 +214,7 @@ export default function AcSmellCleaningClient() {
               </div>
               
               <div className="flex justify-center gap-6 text-xs text-sky-400 font-semibold">
-                <Link href="/lp/ac-cleaning/" className="hover:underline">冷氣清洗廣告專區 &rarr;</Link>
+                <Link href="/services/ac-cleaning/odor-mold/" className="hover:underline">冷氣霉味清洗服務 &rarr;</Link>
                 <Link href="/services/ac-cleaning/" className="hover:underline">變頻冷氣清洗服務 &rarr;</Link>
                 <Link href="/faq/" className="hover:underline">常見保養問題 &rarr;</Link>
               </div>
