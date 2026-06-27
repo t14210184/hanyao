@@ -5,6 +5,9 @@ import Link from "next/link";
 import FinalCTA from "@/components/FinalCTA";
 import CTAButton from "@/components/CTAButton";
 import FAQAccordion from "@/components/FAQAccordion";
+import TrustSection from "@/components/TrustSection";
+import PriceFactorsSection from "@/components/PriceFactorsSection";
+import ContactForm from "@/components/ContactForm";
 import { siteConfig } from "@/data/site";
 
 const symptoms = [
@@ -74,7 +77,7 @@ const steps = [
   {
     step: "02",
     title: "到場開機檢查",
-    desc: "施作前技師先開機測試功能，確認風量、冷度及有無機械或電路故障，評估安裝位置與施作安全性."
+    desc: "施作前技師先開機測試功能，確認風量、冷度及有無機械或電路故障，評估安裝位置與施作安全性。"
   },
   {
     step: "03",
@@ -98,6 +101,21 @@ const steps = [
   }
 ];
 
+const priceFactors = [
+  {
+    name: "冷氣機型與拆洗方式",
+    description: "分離式、吊隱式、窗型或其他機型，拆裝難度與清洗方式不同，需依實際機型確認。"
+  },
+  {
+    name: "台數、髒污狀況與使用環境",
+    description: "長時間未清洗、霉味明顯、風量變小或多台同時清洗，都會影響現場作業安排與所需時間。"
+  },
+  {
+    name: "現場防護與施工空間",
+    description: "室內家具、裝潢、排水位置與施工空間都會影響防護方式與清洗流程，需依現場狀況安排。"
+  }
+];
+
 const faqs = [
   {
     id: "faq-cleaning-1",
@@ -112,7 +130,7 @@ const faqs = [
   {
     id: "faq-cleaning-3",
     question: "冷氣不冷是缺冷媒還是太髒？",
-    answer: "大多數不冷的情況是因為濾網、蒸發器冷凝翅片或風鼓卡滿污垢，阻礙風流與熱交換，清洗後即可恢复冷房能效。冷媒在密閉系統中除非有破損漏點否則不會減少，不冷時應先排查髒污，不應隨意強行灌冷媒。"
+    answer: "大多數不冷的情況是因為濾網、蒸發器冷凝翅片或風鼓卡滿污垢，阻礙風流與熱交換，清洗後即可恢復冷房能效。冷媒在密閉系統中除非有破損漏點否則不會減少，不冷時應先排查髒污，不應隨意強行灌冷媒。"
   },
   {
     id: "faq-cleaning-4",
@@ -180,7 +198,7 @@ export default function AcCleaningServiceClient() {
               trackParams={{ service_type: "ac_cleaning", cta_position: "hero_line" }}
               className="w-full sm:flex-1 py-4 bg-green-600 hover:bg-green-500 text-white font-bold rounded-xl flex items-center justify-center gap-2 text-sm shadow-lg transition-all"
             >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
               </svg>
               <span>立即 LINE 諮詢</span>
@@ -300,6 +318,9 @@ export default function AcCleaningServiceClient() {
         </div>
       </section>
 
+      {/* 1. TrustSection — 放在 Services 服務內容後、Process 清洗流程前 */}
+      <TrustSection />
+
       {/* Process Section */}
       <section className="py-16 bg-slate-950">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -347,6 +368,13 @@ export default function AcCleaningServiceClient() {
           </div>
         </div>
       </section>
+
+      {/* 2. PriceFactorsSection — 放在 Process 清洗流程後、Pricing 價格說明前 */}
+      <PriceFactorsSection
+        title="冷氣清洗費用會受哪些因素影響？"
+        subtitle="冷氣清洗會依機型、台數、髒污狀況、現場防護與施工空間而有所不同。先了解機型與現場條件，才能提供較合適的清洗建議與估價方式。"
+        factors={priceFactors}
+      />
 
       {/* Pricing Section */}
       <section className="py-16 bg-slate-900/20 border-t border-slate-900">
@@ -506,6 +534,42 @@ export default function AcCleaningServiceClient() {
           </div>
 
           <FAQAccordion items={faqs} />
+        </div>
+      </section>
+
+      {/* 3. ContactForm + 下方電話 CTA — 放在 FAQ 後、Photo box guide 前 */}
+      <section id="contact-section" className="py-16 bg-slate-950 border-t border-slate-900 scroll-mt-20">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+          <ContactForm
+            heading="冷氣清洗保養諮詢"
+            subheading="填寫後一鍵複製到 LINE，讓我們更快了解您的機型、台數與清洗狀況。"
+            messagePlaceholder="例如：分離式冷氣 2 台，其中 1 台有霉味、風量變小，想了解清洗保養方式，方便聯絡時間為平日晚上。"
+            formLocation="ac_cleaning_service_page"
+            defaultService="cleaning-split"
+            serviceOptions={[
+              { id: "cleaning-split", name: "分離式冷氣清洗" },
+              { id: "cleaning-odor", name: "冷氣霉味處理" },
+              { id: "cleaning-airflow", name: "冷氣風量變小" },
+              { id: "cleaning-drip", name: "冷氣滴水處理" },
+              { id: "cleaning-quote", name: "清洗價格詢問" },
+              { id: "cleaning-multiple", name: "多台冷氣清洗" },
+              { id: "cleaning-other", name: "其他清洗保養需求" }
+            ]}
+          />
+          <div className="mt-8 text-center">
+            <p className="text-xs text-slate-500 mb-3">或直接撥打電話諮詢清洗評估</p>
+            <CTAButton
+              href={siteConfig.phone1Link}
+              trackEventName="phone_click"
+              trackParams={{ service_type: "ac_cleaning", cta_position: "form_phone" }}
+              className="inline-flex items-center gap-2 py-3 px-8 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl border border-slate-700 text-sm transition-all"
+            >
+              <svg className="w-4 h-4 text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.94.725l.548 2.2a1 1 0 01-.321.988l-1.305.98a10.582 10.582 0 004.872 4.872l.98-1.305a1 1 0 01.988-.321l2.2.548a1 1 0 01.725.94V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+              </svg>
+              <span>直接撥打電話</span>
+            </CTAButton>
+          </div>
         </div>
       </section>
 
