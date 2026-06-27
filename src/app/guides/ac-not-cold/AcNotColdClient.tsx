@@ -50,21 +50,27 @@ export default function AcNotColdClient() {
             </h1>
             
             {/* Core conclusion box */}
-            <div className="mt-6 p-4 rounded-xl bg-slate-900/60 border border-slate-850 text-xs sm:text-sm text-slate-300 leading-relaxed">
-              <strong className="text-sky-400 block mb-1">核心結論：</strong>
+            <div className="mt-6 p-6 rounded-2xl bg-slate-900/60 border border-slate-850 text-base sm:text-lg text-slate-200 leading-[1.8]">
+              <strong className="text-sky-400 block mb-2 text-lg">核心結論：</strong>
               冷氣不冷常見原因包含濾網髒污、室外機散熱不良、冷媒系統異常或電控零件問題。若基本清潔與散熱確認後仍無改善，建議拍照或錄影後 LINE 傳給專業人員初步判斷。
             </div>
           </header>
 
-          <div className="space-y-10 text-xs sm:text-sm text-slate-450 leading-relaxed">
+          <div className="space-y-10 text-base sm:text-lg text-slate-200 leading-[1.8]">
             
             {/* Section 1 */}
             <section className="space-y-4">
-              <h2 className="text-lg font-bold text-white border-l-4 border-sky-500 pl-3">一、冷氣不冷的常見原因</h2>
+              <h2 className="text-xl sm:text-2xl font-bold text-white border-l-4 border-sky-500 pl-3">一、冷氣不冷的常見原因</h2>
+              <div className="bg-slate-900/20 p-5 rounded-xl border border-slate-850/60 mb-4">
+                <strong className="text-sky-300 block mb-2">Q：冷氣不冷的最主要原因有哪些？</strong>
+                <p className="text-slate-200">
+                  答：冷氣吹風不冷通常由四個核心問題引起：<strong>室內機濾網灰塵堵塞</strong>（阻礙冷風送出）、<strong>室外機散熱空間受阻</strong>（導致主機高溫跳機保護）、<strong>冷媒系統微漏</strong>（壓力不足降低冷房能力）以及<strong>啟動電容或主機板等電控零件老化損壞</strong>。
+                </p>
+              </div>
               <p>
                 當冷氣開啟後只吹出像電風扇一般的送風，或是風量微弱、溫度降不下來時，請先了解原因可能非常多樣，並非單純「補冷媒」就能解決。主要原因包含：
               </p>
-              <ul className="list-disc pl-5 space-y-2">
+              <ul className="list-disc pl-6 space-y-2.5">
                 <li><strong>環境與清潔條件：</strong>防塵濾網卡滿棉絮、灰塵或寵物毛髮；室內機或室外機鋁鰭片卡滿油煙髒污。</li>
                 <li><strong>室外機散熱受阻：</strong>室外機出風方向被建築物外牆、雜物或盆栽擋住，導致熱量無法排出。</li>
                 <li><strong>冷媒系統壓力異常：</strong>管路可能因物理磨損或老舊接口鬆動而微漏冷媒，導致冷凍噸數不足。</li>
@@ -74,63 +80,78 @@ export default function AcNotColdClient() {
 
             {/* Section 2 */}
             <section className="space-y-4">
-              <h2 className="text-lg font-bold text-white border-l-4 border-sky-500 pl-3">二、可以自行檢查的 3 個步驟</h2>
+              <h2 className="text-xl sm:text-2xl font-bold text-white border-l-4 border-sky-500 pl-3">二、可以自行檢查的 3 個步驟</h2>
               <div className="space-y-4">
                 {checkSteps.map((step, idx) => (
-                  <div key={idx} className="bg-slate-900/30 p-5 rounded-xl border border-slate-850">
-                    <h3 className="font-bold text-white mb-2">{step.step}</h3>
-                    <p className="text-slate-400">{step.detail}</p>
+                  <div key={idx} className="bg-slate-900/30 p-6 rounded-2xl border border-slate-850">
+                    <h3 className="font-bold text-white mb-2 text-lg">{step.step}</h3>
+                    <p className="text-slate-200 leading-[1.8]">{step.detail}</p>
                   </div>
                 ))}
               </div>
             </section>
 
+            {/* 三、技師如何檢測冷氣不冷：出回風溫差標準 */}
+            <section className="space-y-4">
+              <h2 className="text-xl sm:text-2xl font-bold text-white border-l-4 border-sky-500 pl-3">三、技師如何檢測冷氣不冷：出回風溫差標準</h2>
+              <p>
+                除了表面清潔，空調技師到府時會使用專業儀器量測<strong>回風溫度</strong>與<strong>出風溫度</strong>的溫差，這是評估冷氣製冷能力最科學的標準。
+              </p>
+              <div className="bg-slate-900/50 p-6 rounded-2xl border border-sky-950/40 space-y-3">
+                <span className="text-sky-400 font-bold text-lg block">★ 冷氣出回風溫差判定指標：</span>
+                <ul className="list-disc pl-6 space-y-2.5">
+                  <li><strong>正常運轉（溫差 8°C 以上）：</strong>冷氣開機運轉約 15 至 20 分鐘後，機體上方「吸入口（回風處）」與下方「出風口」的溫差若達到 <strong>8°C ~ 12°C 以上</strong>，代表冷房製冷循環正常。</li>
+                  <li><strong>能效衰退（溫差小於 8°C）：</strong>若溫差低於 8°C，代表冷氣製冷能力明顯不足。可能原因包含冷排髒污堵塞、冷媒量不足（有漏點），或是壓縮機運作能效降低，必須安排技師檢修。</li>
+                </ul>
+              </div>
+            </section>
+
             {/* HTML Table Section */}
             <section className="space-y-4">
-              <h2 className="text-lg font-bold text-white border-l-4 border-sky-500 pl-3">三、冷氣不冷自我排查對照表</h2>
+              <h2 className="text-xl sm:text-2xl font-bold text-white border-l-4 border-sky-500 pl-3">四、冷氣不冷自我排查對照表</h2>
               <div className="overflow-x-auto border border-slate-850 rounded-xl bg-slate-900/20">
-                <table className="w-full text-left border-collapse text-[11px] sm:text-xs">
+                <table className="w-full text-left border-collapse text-sm sm:text-base">
                   <thead>
-                    <tr className="bg-slate-900/80 border-b border-slate-850 text-slate-300">
-                      <th className="p-3 font-semibold">可能原因</th>
-                      <th className="p-3 font-semibold">可自行檢查方法</th>
-                      <th className="p-3 font-semibold">是否建議預約專業檢修</th>
+                    <tr className="bg-slate-900/80 border-b border-slate-850 text-slate-200">
+                      <th className="p-4 font-semibold">可能原因</th>
+                      <th className="p-4 font-semibold">可自行檢查方法</th>
+                      <th className="p-4 font-semibold">是否建議預約專業檢修</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-850/60 text-slate-350">
+                  <tbody className="divide-y divide-slate-850/60 text-slate-200">
                     <tr>
-                      <td className="p-3 font-medium text-white">濾網嚴重卡塵</td>
-                      <td className="p-3">拆卸濾網查看是否透光、清洗乾淨</td>
-                      <td className="p-3 text-slate-500">否（可自行處理）</td>
+                      <td className="p-4 font-medium text-white">濾網嚴重卡塵</td>
+                      <td className="p-4">拆卸濾網查看是否透光、清洗乾淨</td>
+                      <td className="p-4 text-slate-400">否（可自行處理）</td>
                     </tr>
                     <tr>
-                      <td className="p-3 font-medium text-white">室外機散熱受阻</td>
-                      <td className="p-3">確認室外機出風口無雜物堆積與遮擋</td>
-                      <td className="p-3 text-slate-500">否（可自行清除雜物）</td>
+                      <td className="p-4 font-medium text-white">室外機散熱受阻</td>
+                      <td className="p-4">確認室外機出風口無雜物堆積與遮擋</td>
+                      <td className="p-4 text-slate-400">否（可自行清除雜物）</td>
                     </tr>
                     <tr>
-                      <td className="p-3 font-medium text-white">電容燒毀 / 控制板故障</td>
-                      <td className="p-3">濾網乾淨但室外壓縮機不運轉、無熱風排出</td>
-                      <td className="p-3 text-orange-400 font-medium">是（需拆機檢測安規）</td>
+                      <td className="p-4 font-medium text-white">電容燒毀 / 控制板故障</td>
+                      <td className="p-4">濾網乾淨但室外壓縮機不運轉、無熱風排出</td>
+                      <td className="p-4 text-orange-400 font-semibold">是（需拆機檢測安規）</td>
                     </tr>
                     <tr>
-                      <td className="p-3 font-medium text-white">冷媒系統洩漏</td>
-                      <td className="p-3">銅管接頭處有明顯結霜、冷度逐月衰退</td>
-                      <td className="p-3 text-orange-400 font-medium">是（需加壓查漏與補漏）</td>
+                      <td className="p-4 font-medium text-white">冷媒系統洩漏</td>
+                      <td className="p-4">銅管接頭處有明顯結霜、冷度逐月衰退</td>
+                      <td className="p-4 text-orange-400 font-semibold">是（需加壓查漏與補漏）</td>
                     </tr>
                     <tr>
-                      <td className="p-3 font-medium text-white">風扇馬達損壞</td>
-                      <td className="p-3">開機後只吹送風，室內機無出風量或伴隨劇烈異音</td>
-                      <td className="p-3 text-orange-400 font-medium">是（需現場更換馬達零件）</td>
+                      <td className="p-4 font-medium text-white">風扇馬達損壞</td>
+                      <td className="p-4">開機後只吹送風，室內機無出風量或伴隨劇烈異音</td>
+                      <td className="p-4 text-orange-400 font-semibold">是（需現場更換馬達零件）</td>
                     </tr>
                   </tbody>
                 </table>
               </div>
             </section>
 
-            {/* Section 4 */}
+            {/* Section 5 */}
             <section className="space-y-4">
-              <h2 className="text-lg font-bold text-white border-l-4 border-sky-500 pl-3">四、為什麼冷氣不冷不要「只靠補冷媒」判斷</h2>
+              <h2 className="text-xl sm:text-2xl font-bold text-white border-l-4 border-sky-500 pl-3">五、為什麼冷氣不冷不要「只靠補冷媒」判斷</h2>
               <p>
                 許多客戶遇到冷氣不冷，會要求師傅「直接灌冷媒」。然而，冷氣是一個密閉的循環系統，如果系統沒有洩漏，冷媒是不會平白無故消失的。
               </p>
@@ -139,13 +160,13 @@ export default function AcNotColdClient() {
               </p>
             </section>
 
-            {/* Section 5 */}
+            {/* Section 6 */}
             <section className="space-y-4">
-              <h2 className="text-lg font-bold text-white border-l-4 border-sky-500 pl-3">五、如何預約檢修與 LINE 傳照初步分析</h2>
+              <h2 className="text-xl sm:text-2xl font-bold text-white border-l-4 border-sky-500 pl-3">六、如何預約檢修與 LINE 傳照初步分析</h2>
               <p>
                 當您完成基本清潔與散熱排除，冷氣依然只吹風不冷時，建議您加我們的官方 LINE 帳號進行諮詢。為了幫助技師在線上更精準地進行初步狀況分析，傳送訊息時建議提供以下資訊：
               </p>
-              <ul className="list-decimal pl-5 space-y-2">
+              <ul className="list-decimal pl-6 space-y-2.5">
                 <li><strong>冷氣型號銘牌照片：</strong>通常貼在室內機下方或室外機側面，以利技師查詢機器規格與零件圖。</li>
                 <li><strong>室外機安裝環境照片：</strong>拍攝主機周邊空間，讓技師評估是否涉及高空吊裝安全。</li>
                 <li><strong>目前冷氣運作狀態與聲音：</strong>說明出風口是否只有常溫送風，如有異音可錄製簡短影片。</li>
@@ -158,47 +179,47 @@ export default function AcNotColdClient() {
 
             {/* FAQ Section */}
             <section className="space-y-4 pt-6 border-t border-slate-900">
-              <h2 className="text-lg font-bold text-white">常見問題解答 FAQ</h2>
+              <h2 className="text-xl sm:text-2xl font-bold text-white">常見問題解答 FAQ</h2>
               <div className="space-y-4">
-                <div className="bg-slate-900/30 p-5 rounded-xl border border-slate-850">
-                  <h3 className="font-bold text-white mb-2">Q：冷氣不冷是不是一定要補冷媒？</h3>
-                  <p className="text-slate-450 text-xs sm:text-sm">答：不一定。冷氣不冷最常見的原因是濾網髒污、冷凝器卡灰塵導致風阻過大，或是室外機散熱空間被雜物阻擋。如果是漏冷媒，必須先找出漏水點焊接修補，否則只加冷媒依然會反覆漏光，且容易導致壓縮機過載燒毀。</p>
+                <div className="bg-slate-900/30 p-6 rounded-2xl border border-slate-850">
+                  <h3 className="font-bold text-white mb-2 text-lg">Q：冷氣不冷是不是一定要補冷媒？</h3>
+                  <p className="text-slate-200 text-base sm:text-lg leading-[1.8]">答：不一定。冷氣不冷最常見的原因是濾網髒污、冷凝器卡灰塵導致風阻過大，或是室外機散熱空間被雜物阻擋。如果是漏冷媒，必須先找出漏水點焊接修補，否則只加冷媒依然會反覆漏光，且容易導致壓縮機過載燒毀。</p>
                 </div>
-                <div className="bg-slate-900/30 p-5 rounded-xl border border-slate-850">
-                  <h3 className="font-bold text-white mb-2">Q：自行清洗濾網後，冷氣還是不冷該怎麼辦？</h3>
-                  <p className="text-slate-450 text-xs sm:text-sm">答：如果濾網乾淨、室外機通風良好卻仍只吹送風，可能是壓縮機啟動電容損壞、主控板受損或冷媒管路微漏。建議先關閉電源，拍照或錄製冷氣運轉聲音，LINE 傳給專業師傅協助初步分析。</p>
+                <div className="bg-slate-900/30 p-6 rounded-2xl border border-slate-850">
+                  <h3 className="font-bold text-white mb-2 text-lg">Q：自行清洗濾網後，冷氣還是不冷該怎麼辦？</h3>
+                  <p className="text-slate-200 text-base sm:text-lg leading-[1.8]">答：如果濾網乾淨、室外機通風良好卻仍只吹送風，可能是壓縮機啟動電容損壞、主控板受損或冷媒管路微漏。建議先關閉電源，拍照或錄製冷氣運轉聲音，LINE 傳給專業師傅協助初步分析。</p>
                 </div>
-                <div className="bg-slate-900/30 p-5 rounded-xl border border-slate-850">
-                  <h3 className="font-bold text-white mb-2">Q：技師到府檢查冷氣不冷一般會做哪些項目？</h3>
-                  <p className="text-slate-455 text-xs sm:text-sm">答：我們會進行系統性的查檢，包含出風口溫差量測、壓縮機運轉電流測量、冷媒高低壓壓力檢測、控制訊號線與基板診斷，並觀察鰭片髒污程度，依現場狀況與檢測數據向您說明最合適的處理方式。</p>
+                <div className="bg-slate-900/30 p-6 rounded-2xl border border-slate-850">
+                  <h3 className="font-bold text-white mb-2 text-lg">Q：技師到府檢查冷氣不冷一般會做哪些項目？</h3>
+                  <p className="text-slate-200 text-base sm:text-lg leading-[1.8]">答：我們會進行系統性的查檢，包含出風口溫差量測、壓縮機運轉電流測量、冷媒高低壓壓力檢測、控制訊號線與基板診斷，並觀察鰭片髒污程度，依現場狀況與檢測數據向您說明最合適的處理方式。</p>
                 </div>
               </div>
             </section>
 
             {/* CTAs */}
             <div className="pt-6 text-center space-y-6">
-              <h3 className="text-base font-bold text-white">冷氣持續不冷？請 LINE 傳照初步分析或預約檢修</h3>
+              <h3 className="text-lg font-bold text-white">冷氣持續不冷？請 LINE 傳照初步分析或預約檢修</h3>
               <div className="flex flex-col sm:flex-row justify-center items-center gap-4 max-w-md mx-auto">
                 <CTAButton
                   href={siteConfig.lineUrl}
                   external
                   trackEventName="line_click" trackParams={{ service_type: "ac_repair", cta_position: "guide_ac_not_cold" }}
-                  className="w-full sm:flex-1 py-3 bg-green-600 hover:bg-green-500 text-white font-bold rounded-xl flex items-center justify-center gap-2 text-xs sm:text-sm transition-all"
+                  className="w-full sm:flex-1 py-4 bg-green-600 hover:bg-green-500 text-white font-bold rounded-xl flex items-center justify-center gap-2 text-base sm:text-lg min-h-[56px] shadow-md transition-all"
                 >
                   <span>LINE 傳照片初步判斷</span>
                 </CTAButton>
                 
                 <CTAButton
                   href="/contact/"
-                  className="w-full sm:flex-1 py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl border border-slate-800 flex items-center justify-center gap-2 text-xs sm:text-sm transition-all"
+                  className="w-full sm:flex-1 py-4 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl border border-slate-800 flex items-center justify-center gap-2 text-base sm:text-lg min-h-[56px] transition-all"
                 >
                   <span>預約檢修諮詢</span>
                 </CTAButton>
               </div>
               
-              <div className="flex justify-center gap-6 text-xs text-sky-400 font-semibold">
-                <Link href="/services/ac-repair/not-cold/" className="hover:underline">冷氣不冷檢修服務 &rarr;</Link>
-                <Link href="/services/ac-repair/" className="hover:underline">變頻冷氣檢修服務頁 &rarr;</Link>
+              <div className="flex justify-center gap-6 text-base text-sky-400 font-semibold pt-2">
+                <Link href="/services/ac-repair/not-cold/" className="hover:underline py-2">冷氣不冷檢修服務 &rarr;</Link>
+                <Link href="/services/ac-repair/" className="hover:underline py-2">變頻冷氣檢修服務頁 &rarr;</Link>
               </div>
             </div>
 
