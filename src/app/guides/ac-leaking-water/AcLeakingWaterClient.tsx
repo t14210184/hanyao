@@ -35,21 +35,27 @@ export default function AcLeakingWaterClient() {
             </h1>
             
             {/* Core conclusion */}
-            <div className="mt-6 p-4 rounded-xl bg-slate-900/60 border border-slate-850 text-xs sm:text-sm text-slate-300 leading-relaxed">
-              <strong className="text-sky-400 block mb-1">核心結論：</strong>
+            <div className="mt-6 p-6 rounded-2xl bg-slate-900/60 border border-slate-850 text-base sm:text-lg text-slate-200 leading-[1.8]">
+              <strong className="text-sky-400 block mb-2 text-lg">核心結論：</strong>
               冷氣滴水常見原因包含排水管堵塞、室內機髒污、排水坡度不良或安裝位置影響。若擦乾後仍反覆滴水，建議先停止長時間運轉並安排檢查。
             </div>
           </header>
 
-          <div className="space-y-10 text-xs sm:text-sm text-slate-450 leading-relaxed">
+          <div className="space-y-10 text-base sm:text-lg text-slate-200 leading-[1.8]">
             
             {/* Section 1 */}
             <section className="space-y-4">
-              <h2 className="text-lg font-bold text-white border-l-4 border-sky-500 pl-3">一、冷氣滴水 / 漏水常見原因</h2>
+              <h2 className="text-xl sm:text-2xl font-bold text-white border-l-4 border-sky-500 pl-3">一、冷氣滴水 / 漏水常見原因</h2>
+              <div className="bg-slate-900/20 p-5 rounded-xl border border-slate-850/60 mb-4">
+                <strong className="text-sky-300 block mb-2">Q：冷氣滴水、漏水的主要原因是什麼？</strong>
+                <p className="text-slate-200">
+                  答：室內機滴水主要由四個關鍵原因造成：<strong>排水管發霉與髒污堵塞</strong>（果凍生物膜封死）、<strong>室內機蒸發器結霜結冰</strong>（融化水量過大）、<strong>冷媒銅管保溫套老化破損</strong>（冷凝水出汗），以及<strong>冷氣安裝水平偏差</strong>（產生逆坡度導致積水溢出）。
+                </p>
+              </div>
               <p>
                 室內機運轉時，蒸發器會產生凝結水並落入排水盤中。如果凝結水無法順利排出，就會從機身縫隙或出風口溢出滴漏。主要原因包括：
               </p>
-              <ul className="list-disc pl-5 space-y-2">
+              <ul className="list-disc pl-6 space-y-2.5">
                 <li><strong>排水管路嚴重堵塞：</strong>水盤與排水管內因濕氣滋生黴菌，形成果凍狀的生物膜黏液，將細小的排水孔完全封死。</li>
                 <li><strong>安裝水平斜度不良：</strong>冷氣自然排水全靠重力坡度。如果安裝時水平量測跑位、或因地震牆面變形產生「逆坡度」，凝結水便會向另一側低窪處溢出。</li>
                 <li><strong>室內機蒸發器嚴重髒污：</strong>鰭片卡滿髒污油煙阻礙風道，導致局部結冰結霜。當風機關閉或室溫升高時，結冰急速融化，水量過大導致排水盤宣洩不及。</li>
@@ -59,58 +65,73 @@ export default function AcLeakingWaterClient() {
 
             {/* Section 2 */}
             <section className="space-y-4">
-              <h2 className="text-lg font-bold text-white border-l-4 border-sky-500 pl-3">二、可以先自行排查的位置</h2>
+              <h2 className="text-xl sm:text-2xl font-bold text-white border-l-4 border-sky-500 pl-3">二、可以先自行排查的位置</h2>
               <p>
                 當冷氣出現漏水時，您可以先觀察並記下以下位置，有助於線上諮詢時初步判斷：
               </p>
-              <ol className="list-decimal pl-5 space-y-2">
+              <ol className="list-decimal pl-6 space-y-2.5">
                 <li><strong>出風口風葉：</strong>滴水是從擺葉出風口滴下，還是順著機身兩側的縫隙漏出？（出風口滴水多為鰭片結霜或髒污風阻所致）。</li>
                 <li><strong>機身底部：</strong>滴水是否沿著機身底部貼牆面流下？（貼牆流下常為排水盤溢水、排水管接頭鬆脫或逆坡引起）。</li>
                 <li><strong>室外排水管口：</strong>到陽台或戶外觀察冷氣外接排水管出口，是否有凝結水穩定滴出？如果開機數小時卻沒有一滴水排出，代表內部一定嚴重堵塞。</li>
               </ol>
             </section>
 
+            {/* 三、技師如何診斷滴水：排水管洩水坡度標準 */}
+            <section className="space-y-4">
+              <h2 className="text-xl sm:text-2xl font-bold text-white border-l-4 border-sky-500 pl-3">三、技師如何診斷滴水：排水管洩水坡度標準</h2>
+              <p>
+                冷氣自然重力排水完全依靠物理坡度。如果施工時量測跑位、或者排水管吊掛不確實，水便會滯留逆流。
+              </p>
+              <div className="bg-slate-900/50 p-6 rounded-2xl border border-sky-950/40 space-y-3">
+                <span className="text-sky-400 font-bold text-lg block">★ 冷氣天然重力排水坡度標準：</span>
+                <ul className="list-disc pl-6 space-y-2.5">
+                  <li><strong>標準洩水坡度（1/100 以上）：</strong>在室內機天然排水工法中，冷媒配管與排水管路需維持至少 <strong>1/100 以上</strong> 的下斜坡度（即每 1 公尺水平距離，高度需下降 1 公分以上），確保凝結水順利排除。</li>
+                  <li><strong>排水故障與積水逆流：</strong>若坡度不足、甚至出現局部 U 型凹陷，會導致排水管積水並滋生黴菌生物膜，最終封死管路並引發室內機水盤溢水、天花板滲水滴漏。</li>
+                </ul>
+              </div>
+            </section>
+
             {/* HTML Table Section */}
             <section className="space-y-4">
-              <h2 className="text-lg font-bold text-white border-l-4 border-sky-500 pl-3">三、冷氣漏水原因與建議處理對照表</h2>
+              <h2 className="text-xl sm:text-2xl font-bold text-white border-l-4 border-sky-500 pl-3">四、冷氣漏水原因與建議處理對照表</h2>
               <div className="overflow-x-auto border border-slate-850 rounded-xl bg-slate-900/20">
-                <table className="w-full text-left border-collapse text-[11px] sm:text-xs">
+                <table className="w-full text-left border-collapse text-sm sm:text-base">
                   <thead>
-                    <tr className="bg-slate-900/80 border-b border-slate-850 text-slate-300">
-                      <th className="p-3 font-semibold">滴水原因</th>
-                      <th className="p-3 font-semibold">可能現象 / 自檢指標</th>
-                      <th className="p-3 font-semibold">建議處理方式</th>
+                    <tr className="bg-slate-900/80 border-b border-slate-850 text-slate-200">
+                      <th className="p-4 font-semibold">滴水原因</th>
+                      <th className="p-4 font-semibold">可能現象 / 自檢指標</th>
+                      <th className="p-4 font-semibold">建議處理方式</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-850/60 text-slate-355">
+                  <tbody className="divide-y divide-slate-850/60 text-slate-200">
                     <tr>
-                      <td className="p-3 font-medium text-white">排水盤卡霉堵塞</td>
-                      <td className="p-3">吹風有酸霉味，出風口或機身底部溢水，外頭無排水</td>
-                      <td className="p-3">安排專業高壓清洗，疏通水盤與排水管道</td>
+                      <td className="p-4 font-medium text-white">排水盤卡霉堵塞</td>
+                      <td className="p-4">吹風有酸霉味，出風口或機身底部溢水，外頭無排水</td>
+                      <td className="p-4 text-slate-200">安排專業高壓清洗，疏通水盤與排水管道</td>
                     </tr>
                     <tr>
-                      <td className="p-3 font-medium text-white">安裝水平逆坡</td>
-                      <td className="p-3">水從排水孔反方向的機身角落溢出，安裝位置傾斜</td>
-                      <td className="p-3">安排專業檢修，重測水平並調整室內機掛架坡度</td>
+                      <td className="p-4 font-medium text-white">安裝水平逆坡</td>
+                      <td className="p-4">水從排水孔反方向的機身角落溢出，安裝位置傾斜</td>
+                      <td className="p-4 text-slate-200">安排專業檢修，重測水平並調整室內機掛架坡度</td>
                     </tr>
                     <tr>
-                      <td className="p-3 font-medium text-white">排水盒/抽水幫浦損壞</td>
-                      <td className="p-3">排水器發出劇烈達達聲或完全靜音，水從機器周邊滲漏</td>
-                      <td className="p-3">更換新品，清洗排水管路防範回流堵塞</td>
+                      <td className="p-4 font-medium text-white">排水盒/抽水幫浦損壞</td>
+                      <td className="p-4">排水器發出劇烈達達聲或完全靜音，水從機器周邊滲漏</td>
+                      <td className="p-4 text-slate-200">更換新品，清洗排水管路防範回流堵塞</td>
                     </tr>
                     <tr>
-                      <td className="p-3 font-medium text-white">銅管保溫套破損</td>
-                      <td className="p-3">沿著包覆銅管的管槽、包飾板產生冷凝水滴漏（出汗）</td>
-                      <td className="p-3">安排專業維修，重新敷設防凝露保溫棉與膠帶包覆</td>
+                      <td className="p-4 font-medium text-white">銅管保溫套破損</td>
+                      <td className="p-4">沿著包覆銅管的管槽、包飾板產生冷凝水滴漏（出汗）</td>
+                      <td className="p-4 text-slate-200">安排專業維修，重新敷設防凝露保溫棉與膠帶包覆</td>
                     </tr>
                   </tbody>
                 </table>
               </div>
             </section>
 
-            {/* Section 4 */}
+            {/* Section 5 */}
             <section className="space-y-4">
-              <h2 className="text-lg font-bold text-white border-l-4 border-sky-500 pl-3">四、如何判定需要「清洗保養」還是「維修處理」？</h2>
+              <h2 className="text-xl sm:text-2xl font-bold text-white border-l-4 border-sky-500 pl-3">五、如何判定需要「清洗保養」還是「維修處理」？</h2>
               <p>
                 冷氣滴水可能與排水、髒污、安裝坡度或環境條件等諸多複雜原因有關。
               </p>
@@ -122,67 +143,67 @@ export default function AcLeakingWaterClient() {
               </p>
             </section>
 
-            {/* Section 5 */}
+            {/* Section 6 */}
             <section className="space-y-4">
-              <h2 className="text-lg font-bold text-white border-l-4 border-sky-500 pl-3">五、如何提供照片以利線上初步分析？</h2>
+              <h2 className="text-xl sm:text-2xl font-bold text-white border-l-4 border-sky-500 pl-3">六、如何提供照片以利線上初步分析？</h2>
               <p>
                 當您的冷氣出現滴水時，建議您加官方 LINE，並提供以下位置的照片，技師將能更迅速地為您評估：
               </p>
-              <ul className="list-decimal pl-5 space-y-2">
+              <ul className="list-decimal pl-6 space-y-2.5">
                 <li><strong>冷氣滴水處近照與遠照：</strong>讓技師辨識漏水是出風口擺葉處、機底貼牆處，或是外露銅管保溫處。</li>
                 <li><strong>室內機正面外觀：</strong>讓技師辨別是壁掛式還是天花板吊隱式冷氣。</li>
                 <li><strong>周邊裝潢天花板近照：</strong>如果冷氣為吊隱式，拍攝天花板維修孔照片，以利技師判斷施工動線空間。</li>
               </ul>
               <p className="text-orange-400 font-semibold mt-4">
-                ※ 焓耀空調秉持誠實施工與安規原則，我們不進行誇大承諾。技師到府實地診斷後，會為您分析滴水是因髒污引發還是管路損壞，並據實報價再施工，保證消費誠信透明。
+                ※ 焓耀空調秉持誠實施工與安規原則，我們不進行誇大承諾。技師到府實地診斷後，會為您分析滴水是因髒污引發還是管路損壞，並據實報價再施工，確保消費誠信透明。
               </p>
             </section>
 
             {/* FAQ Section */}
             <section className="space-y-4 pt-6 border-t border-slate-900">
-              <h2 className="text-lg font-bold text-white">常見問題解答 FAQ</h2>
+              <h2 className="text-xl sm:text-2xl font-bold text-white">常見問題解答 FAQ</h2>
               <div className="space-y-4">
-                <div className="bg-slate-900/30 p-5 rounded-xl border border-slate-850">
-                  <h3 className="font-bold text-white mb-2">Q：冷氣滴水是不是只要清洗保養就會好？</h3>
-                  <p className="text-slate-450 text-xs sm:text-sm">答：不一定。滴水原因與排水管路、髒污程度、安裝坡度及環境條件皆有關係。如果是排水盤淤積發霉黏膜造成堵塞，進行深層清洗即可排除；但若是排水軟管破裂、銅管保溫套老化產生冷凝水，或是原安裝水平跑位，則必須安排維修更換配件，需依現場狀況進行診斷與判斷。</p>
+                <div className="bg-slate-900/30 p-6 rounded-2xl border border-slate-850">
+                  <h3 className="font-bold text-white mb-2 text-lg">Q：冷氣滴水是不是只要清洗保養就會好？</h3>
+                  <p className="text-slate-200 text-base sm:text-lg leading-[1.8]">答：不一定。滴水原因與排水管路、髒污程度、安裝坡度及環境條件皆有關係。如果是排水盤淤積發霉黏膜造成堵塞，進行深層清洗即可排除；但若是排水軟管破裂、銅管保溫套老化產生冷凝水，或是原安裝水平跑位，則必須安排維修更換配件，需依現場狀況進行診斷與判斷。</p>
                 </div>
-                <div className="bg-slate-900/30 p-5 rounded-xl border border-slate-850">
-                  <h3 className="font-bold text-white mb-2">Q：冷氣突然開始滴水，應該先做什麼？</h3>
-                  <p className="text-slate-450 text-xs sm:text-sm">答：請先關閉冷氣電源，避免凝結水持續溢出損壞天花板裝潢或壁紙。接著可先用抹布擦乾，檢查室外排水管口是否順暢排出，並可將滴水處或周圍管線配置拍照，LINE 傳送給技師協助判斷。</p>
+                <div className="bg-slate-900/30 p-6 rounded-2xl border border-slate-850">
+                  <h3 className="font-bold text-white mb-2 text-lg">Q：冷氣突然開始滴水，應該先做什麼？</h3>
+                  <p className="text-slate-200 text-base sm:text-lg leading-[1.8]">答：請先關閉冷氣電源，避免凝結水持續溢出損壞天花板裝潢或壁紙。接著可先用抹布擦乾，檢查室外排水管口是否順暢排出，並可將滴水處或周圍管線配置拍照，LINE 傳送給技師協助判斷。</p>
                 </div>
-                <div className="bg-slate-900/30 p-5 rounded-xl border border-slate-850">
-                  <h3 className="font-bold text-white mb-2">Q：使用裝潢排水盒（小水幫浦）容易壞掉滴水嗎？</h3>
-                  <p className="text-slate-455 text-xs sm:text-sm">答：是的。當室內機沒有天然重力排水坡度時，會安裝機械式排水器。排水器內部有感應浮球與小馬達，使用時間久了容易積垢卡死，導致積水無法排出而溢水滴漏。這通常需要更換新的排水器零件。</p>
+                <div className="bg-slate-900/30 p-6 rounded-2xl border border-slate-850">
+                  <h3 className="font-bold text-white mb-2 text-lg">Q：使用裝潢排水盒（小水幫浦）容易壞掉滴水嗎？</h3>
+                  <p className="text-slate-200 text-base sm:text-lg leading-[1.8]">答：是的。當室內機沒有天然重力排水坡度時，會安裝機械式排水器。排水器內部有感應浮球與小馬達，使用時間久了容易積垢卡死，導致積水無法排出而溢水滴漏。這通常需要更換新的排水器零件。</p>
                 </div>
               </div>
             </section>
 
             {/* CTAs */}
             <div className="pt-6 text-center space-y-6">
-              <h3 className="text-base font-bold text-white">冷氣滴水不止？請 LINE 傳照初步分析或預約檢修</h3>
+              <h3 className="text-lg font-bold text-white">冷氣滴水不止？請 LINE 傳照初步分析或預約檢修</h3>
               <div className="flex flex-col sm:flex-row justify-center items-center gap-4 max-w-md mx-auto">
                 <CTAButton
                   href={siteConfig.lineUrl}
                   external
                   trackEventName="line_click"
                   trackParams={{ service_type: "ac_repair", cta_position: "guide_ac_leaking_water" }}
-                  className="w-full sm:flex-1 py-3 bg-green-600 hover:bg-green-500 text-white font-bold rounded-xl flex items-center justify-center gap-2 text-xs sm:text-sm transition-all"
+                  className="w-full sm:flex-1 py-4 bg-green-600 hover:bg-green-500 text-white font-bold rounded-xl flex items-center justify-center gap-2 text-base sm:text-lg min-h-[56px] shadow-md transition-all"
                 >
                   <span>LINE 傳滴水位置照片</span>
                 </CTAButton>
                 
                 <CTAButton
                   href="/contact/"
-                  className="w-full sm:flex-1 py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl border border-slate-800 flex items-center justify-center gap-2 text-xs sm:text-sm transition-all"
+                  className="w-full sm:flex-1 py-4 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl border border-slate-800 flex items-center justify-center gap-2 text-base sm:text-lg min-h-[56px] transition-all"
                 >
                   <span>預約檢修諮詢</span>
                 </CTAButton>
               </div>
               
-              <div className="flex justify-center gap-6 text-xs text-sky-400 font-semibold">
-                <Link href="/services/ac-repair/leaking-water/" className="hover:underline">冷氣漏水檢修服務 &rarr;</Link>
-                <Link href="/services/ac-repair/" className="hover:underline">冷氣檢修服務項目 &rarr;</Link>
-                <Link href="/services/ac-cleaning/" className="hover:underline">冷氣清洗保養項目 &rarr;</Link>
+              <div className="flex justify-center gap-6 text-base text-sky-400 font-semibold pt-2">
+                <Link href="/services/ac-repair/leaking-water/" className="hover:underline py-2">冷氣漏水檢修服務 &rarr;</Link>
+                <Link href="/services/ac-repair/" className="hover:underline py-2">冷氣檢修服務項目 &rarr;</Link>
+                <Link href="/services/ac-cleaning/" className="hover:underline py-2">冷氣清洗保養項目 &rarr;</Link>
               </div>
             </div>
 
