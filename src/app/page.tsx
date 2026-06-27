@@ -21,8 +21,14 @@ export default function Home() {
   };
 
   return (
-    <main className="flex-1 flex flex-col">
-      {/* 1. Hero Section */}
+    <>
+      <head>
+        <title>焓耀空調工程｜高雄、屏東冷氣空調工程專精</title>
+        <meta name="description" content="焓耀空調提供高雄與屏東專業冷氣空調工程服務。項目涵蓋空調冷氣安裝、商用多聯變頻空調規劃、冷氣定期清洗保養、滴水噪音冷媒故障檢修、全熱交換器及冷氣舊換新。合格技師持照施作，透明報價保固無憂。" />
+        <link rel="canonical" href="https://www.xusen.pro/" />
+      </head>
+      <main className="flex-1 flex flex-col">
+        {/* 1. Hero Section */}
       <section className="relative pt-24 pb-16 sm:pt-32 sm:pb-24 lg:pt-40 lg:pb-32 overflow-hidden flex items-center justify-center min-h-[90vh] lg:min-h-screen">
         {/* Decorative background gradients */}
         <div className="absolute inset-0 z-0">
@@ -273,5 +279,6 @@ export default function Home() {
       {/* 9. Final CTA */}
       <FinalCTA />
     </main>
+    </>
   );
 }

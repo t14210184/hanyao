@@ -104,23 +104,11 @@ export default function AcInstallationSubpageTemplate({
 
   return (
     <>
-      <head>
-        <title>{pageTitle}</title>
-        <meta name="description" content={pageDescription} />
-        <link rel="canonical" href={canonicalUrl} />
-        {/* Open Graph Tags */}
-        <meta property="og:title" content={data.ogTitle} />
-        <meta property="og:description" content={data.ogDescription} />
-        <meta property="og:url" content={canonicalUrl} />
-        <meta property="og:type" content="website" />
-        <meta property="og:site_name" content={siteConfig.brandName} />
-        <meta property="og:locale" content="zh_TW" />
-        {/* JSON-LD Schemas */}
-        <JsonLd schema={pageSchema} />
-        <JsonLd schema={breadcrumbSchema} />
-        <JsonLd schema={serviceSchema} />
-        <JsonLd schema={faqSchema} />
-      </head>
+      {/* JSON-LD Schemas — metadata by page.tsx export const metadata */}
+      <JsonLd schema={pageSchema} />
+      <JsonLd schema={breadcrumbSchema} />
+      <JsonLd schema={serviceSchema} />
+      <JsonLd schema={faqSchema} />
 
       <main className="flex-1 flex flex-col pt-16">
         {/* Breadcrumb Section */}

@@ -88,19 +88,11 @@ export default function CommercialAcSubpageTemplate({ data }: CommercialAcSubpag
 
   return (
     <>
-      <head>
-        <title>{data.title}</title>
-        <meta name="description" content={data.description} />
-        <meta property="og:title" content={data.ogTitle} />
-        <meta property="og:description" content={data.ogDescription} />
-        <meta property="og:url" content={data.canonical} />
-        <meta property="og:type" content="website" />
-        <link rel="canonical" href={data.canonical} />
-        <JsonLd schema={breadcrumbSchema} />
-        <JsonLd schema={pageSchema} />
-        <JsonLd schema={serviceSchema} />
-        <JsonLd schema={faqSchema} />
-      </head>
+      {/* JSON-LD Schemas — metadata by page.tsx export const metadata */}
+      <JsonLd schema={breadcrumbSchema} />
+      <JsonLd schema={pageSchema} />
+      <JsonLd schema={serviceSchema} />
+      <JsonLd schema={faqSchema} />
 
       <main className="flex-1 flex flex-col pt-16 bg-slate-950 text-slate-100">
         {/* Hero Section */}
