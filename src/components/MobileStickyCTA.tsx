@@ -34,14 +34,14 @@ export default function MobileStickyCTA() {
         onClick={handlePhoneClick}
         trackEventName="phone_click"
         trackParams={{ service_type: serviceType, cta_position: "mobile_sticky_bar" }}
-        className="flex-1 flex flex-col items-center justify-center bg-slate-800 text-white hover:bg-slate-700 py-2 rounded-lg font-bold border border-slate-700 text-xs gap-0.5 transition-colors"
+        className="flex-1 flex flex-col items-center justify-center bg-slate-800 text-white hover:bg-slate-700 py-2.5 rounded-lg font-bold border border-slate-700 text-[13px] sm:text-sm gap-0.5 transition-colors"
       >
         <svg className="w-5 h-5 text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.94.725l.548 2.2a1 1 0 01-.321.988l-1.305.98a10.582 10.582 0 004.872 4.872l.98-1.305a1 1 0 01.988-.321l2.2.548a1 1 0 01.725.94V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
         </svg>
         <span>{phoneText}</span>
       </CTAButton>
-
+ 
       {/* 💬 LINE CTA */}
       <CTAButton
         href={siteConfig.lineUrl}
@@ -49,19 +49,19 @@ export default function MobileStickyCTA() {
         onClick={handleLineClick}
         trackEventName="line_click"
         trackParams={{ service_type: serviceType, cta_position: "mobile_sticky_bar" }}
-        className="flex-1 flex flex-col items-center justify-center bg-green-600 hover:bg-green-500 text-white py-2 rounded-lg font-bold text-xs gap-0.5 shadow-md shadow-green-950/20 transition-colors"
+        className="flex-1 flex flex-col items-center justify-center bg-green-600 hover:bg-green-500 text-white py-2.5 rounded-lg font-bold text-[13px] sm:text-sm gap-0.5 shadow-md shadow-green-950/20 transition-colors"
       >
         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
         </svg>
         <span>{lineText}</span>
       </CTAButton>
-
+ 
       {/* 📝 Appointment CTA */}
       <CTAButton
         href="#contact-section"
         onClick={handleAppointmentClick}
-        className="flex-1 flex flex-col items-center justify-center bg-orange-500 hover:bg-orange-400 text-white py-2 rounded-lg font-bold text-xs gap-0.5 shadow-md shadow-orange-950/20 transition-colors"
+        className="flex-1 flex flex-col items-center justify-center bg-orange-500 hover:bg-orange-400 text-white py-2.5 rounded-lg font-bold text-[13px] sm:text-sm gap-0.5 shadow-md shadow-orange-950/20 transition-colors"
       >
         <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />

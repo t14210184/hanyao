@@ -401,29 +401,29 @@ export default function AcInstallationServiceClient() {
       <section className="py-16 bg-slate-950 border-t border-slate-900">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-10">
-            <span className="text-xs font-bold text-sky-400 uppercase tracking-widest px-3 py-1 bg-sky-950/40 rounded-full border border-sky-900/30">
-              知識與服務推薦
+            <span className="text-xs sm:text-sm font-bold text-sky-400 uppercase tracking-widest px-3 py-1 bg-sky-950/40 rounded-full border border-sky-900/30">
+              延伸閱讀
             </span>
             <h2 className="text-xl font-bold text-white mt-4">
               延伸閱讀：冷氣安裝前先了解
             </h2>
-            <p className="text-xs sm:text-sm text-slate-400 mt-3 max-w-2xl mx-auto leading-relaxed">
+            <p className="text-sm sm:text-base text-slate-300 mt-3 max-w-2xl mx-auto leading-relaxed">
               如果還在評估安裝方式、費用因素或舊換新流程，可先閱讀下列說明；實際施工方式與費用仍需依現場條件確認。
             </p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-3xl mx-auto">
             <div className="bg-slate-900/20 border border-slate-850 p-5 rounded-xl hover:border-slate-800 transition-colors">
-              <h3 className="text-sm font-semibold text-white mb-2">費用考量與評估指南</h3>
-              <ul className="space-y-2 text-xs">
+              <h3 className="text-base font-bold text-white mb-3">費用考量與評估指南</h3>
+              <ul className="space-y-1.5 text-sm sm:text-base font-medium">
                 <li>
-                  <Link href="/guides/ac-installation-cost-factors/" className="text-sky-400 hover:underline flex items-center gap-1">
+                  <Link href="/guides/ac-installation-cost-factors/" className="py-1.5 flex items-center gap-1 text-sky-400 hover:text-sky-300 transition-colors">
                     <span>冷氣安裝費用受哪些因素影響？</span>
                     <span>&rarr;</span>
                   </Link>
                 </li>
                 <li>
-                  <Link href="/services/ac-installation/cost/" className="text-sky-400 hover:underline flex items-center gap-1">
+                  <Link href="/services/ac-installation/cost/" className="py-1.5 flex items-center gap-1 text-sky-400 hover:text-sky-300 transition-colors">
                     <span>冷氣安裝費用流程</span>
                     <span>&rarr;</span>
                   </Link>
@@ -432,16 +432,16 @@ export default function AcInstallationServiceClient() {
             </div>
 
             <div className="bg-slate-900/20 border border-slate-850 p-5 rounded-xl hover:border-slate-800 transition-colors">
-              <h3 className="text-sm font-semibold text-white mb-2">安裝類型與服務項目</h3>
-              <ul className="space-y-2 text-xs">
+              <h3 className="text-base font-bold text-white mb-3">安裝類型與服務項目</h3>
+              <ul className="space-y-1.5 text-sm sm:text-base font-medium">
                 <li>
-                  <Link href="/services/ac-installation/replacement/" className="text-sky-400 hover:underline flex items-center gap-1">
+                  <Link href="/services/ac-installation/replacement/" className="py-1.5 flex items-center gap-1 text-sky-400 hover:text-sky-300 transition-colors">
                     <span>冷氣舊換新安裝</span>
                     <span>&rarr;</span>
                   </Link>
                 </li>
                 <li>
-                  <Link href="/services/ac-installation/split-ac/" className="text-sky-400 hover:underline flex items-center gap-1">
+                  <Link href="/services/ac-installation/split-ac/" className="py-1.5 flex items-center gap-1 text-sky-400 hover:text-sky-300 transition-colors">
                     <span>分離式冷氣安裝</span>
                     <span>&rarr;</span>
                   </Link>

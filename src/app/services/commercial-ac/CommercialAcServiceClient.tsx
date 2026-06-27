@@ -327,13 +327,13 @@ export default function CommercialAcServiceClient() {
       <section className="py-16 bg-slate-950 border-t border-slate-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <span className="text-xs font-bold text-sky-400 uppercase tracking-widest px-3 py-1 bg-sky-950/50 rounded-full border border-sky-900/30">
-              相關商用服務
+            <span className="text-xs sm:text-sm font-bold text-sky-400 uppercase tracking-widest px-3 py-1 bg-sky-950/50 rounded-full border border-sky-900/30">
+              延伸閱讀
             </span>
             <h2 className="text-xl sm:text-2xl font-bold text-white mt-4">
-              商用系統評估與服務項目
+              延伸閱讀：商用空調服務與系統評估
             </h2>
-            <p className="text-xs sm:text-sm text-slate-400 mt-3 max-w-3xl mx-auto leading-relaxed">
+            <p className="text-sm sm:text-base text-slate-300 mt-3 max-w-3xl mx-auto leading-relaxed">
               不同商用場域的空調需求會受到空間用途、人流、設備熱源、配管條件與維護動線影響；建議先依場域與系統類型了解評估方向，實際規劃仍需依現場條件確認。
             </p>
           </div>
@@ -341,16 +341,16 @@ export default function CommercialAcServiceClient() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
             {/* 辦公與餐飲零售 */}
             <div className="bg-slate-900/20 border border-slate-850 p-6 rounded-xl hover:border-slate-800 transition-colors">
-              <h3 className="text-sm font-semibold text-white mb-3">場域空調規劃</h3>
-              <ul className="space-y-2.5 text-xs">
+              <h3 className="text-base font-bold text-white mb-3">場域空調規劃</h3>
+              <ul className="space-y-1.5 text-sm sm:text-base font-medium">
                 <li>
-                  <Link href="/services/commercial-ac/office-ac/" className="text-sky-400 hover:underline flex items-center gap-1">
+                  <Link href="/services/commercial-ac/office-ac/" className="py-1.5 flex items-center gap-1 text-sky-400 hover:text-sky-300 transition-colors">
                     <span>辦公室空調規劃</span>
                     <span>&rarr;</span>
                   </Link>
                 </li>
                 <li>
-                  <Link href="/services/commercial-ac/restaurant-retail/" className="text-sky-400 hover:underline flex items-center gap-1">
+                  <Link href="/services/commercial-ac/restaurant-retail/" className="py-1.5 flex items-center gap-1 text-sky-400 hover:text-sky-300 transition-colors">
                     <span>餐飲零售空調</span>
                     <span>&rarr;</span>
                   </Link>
@@ -360,16 +360,16 @@ export default function CommercialAcServiceClient() {
 
             {/* 工廠與多聯系統 */}
             <div className="bg-slate-900/20 border border-slate-850 p-6 rounded-xl hover:border-slate-800 transition-colors">
-              <h3 className="text-sm font-semibold text-white mb-3">廠辦與多聯式系統</h3>
-              <ul className="space-y-2.5 text-xs">
+              <h3 className="text-base font-bold text-white mb-3">廠辦與多聯式系統</h3>
+              <ul className="space-y-1.5 text-sm sm:text-base font-medium">
                 <li>
-                  <Link href="/services/commercial-ac/factory-ac/" className="text-sky-400 hover:underline flex items-center gap-1">
+                  <Link href="/services/commercial-ac/factory-ac/" className="py-1.5 flex items-center gap-1 text-sky-400 hover:text-sky-300 transition-colors">
                     <span>工廠廠辦空調</span>
                     <span>&rarr;</span>
                   </Link>
                 </li>
                 <li>
-                  <Link href="/services/commercial-ac/vrf-vrv/" className="text-sky-400 hover:underline flex items-center gap-1">
+                  <Link href="/services/commercial-ac/vrf-vrv/" className="py-1.5 flex items-center gap-1 text-sky-400 hover:text-sky-300 transition-colors">
                     <span>VRF / VRV 多聯式</span>
                     <span>&rarr;</span>
                   </Link>
@@ -379,16 +379,16 @@ export default function CommercialAcServiceClient() {
 
             {/* 冰水與維護合約 */}
             <div className="bg-slate-900/20 border border-slate-850 p-6 rounded-xl hover:border-slate-800 transition-colors">
-              <h3 className="text-sm font-semibold text-white mb-3">大型主機與維護</h3>
-              <ul className="space-y-2.5 text-xs">
+              <h3 className="text-base font-bold text-white mb-3">大型主機與維護</h3>
+              <ul className="space-y-1.5 text-sm sm:text-base font-medium">
                 <li>
-                  <Link href="/services/commercial-ac/chiller-system/" className="text-sky-400 hover:underline flex items-center gap-1">
+                  <Link href="/services/commercial-ac/chiller-system/" className="py-1.5 flex items-center gap-1 text-sky-400 hover:text-sky-300 transition-colors">
                     <span>冰水主機系統</span>
                     <span>&rarr;</span>
                   </Link>
                 </li>
                 <li>
-                  <Link href="/services/commercial-ac/maintenance-contract/" className="text-sky-400 hover:underline flex items-center gap-1">
+                  <Link href="/services/commercial-ac/maintenance-contract/" className="py-1.5 flex items-center gap-1 text-sky-400 hover:text-sky-300 transition-colors">
                     <span>維護合約</span>
                     <span>&rarr;</span>
                   </Link>

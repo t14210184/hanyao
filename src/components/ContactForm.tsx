@@ -317,7 +317,7 @@ export default function ContactForm({
               value={formData.name}
               onChange={handleChange}
               placeholder="例如：王先生"
-              className="bg-slate-950 border border-slate-850 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 text-white rounded-xl py-3 px-4 outline-none transition-all placeholder:text-slate-600"
+              className="bg-slate-950 border border-slate-850 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 text-white rounded-xl py-3 px-4 outline-none transition-all placeholder:text-slate-500 text-sm sm:text-base"
             />
           </div>
 
@@ -334,7 +334,7 @@ export default function ContactForm({
               value={formData.phone}
               onChange={handleChange}
               placeholder="例如：0931-940-133"
-              className="bg-slate-950 border border-slate-850 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 text-white rounded-xl py-3 px-4 outline-none transition-all placeholder:text-slate-600"
+              className="bg-slate-950 border border-slate-850 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 text-white rounded-xl py-3 px-4 outline-none transition-all placeholder:text-slate-500 text-sm sm:text-base"
             />
           </div>
         </div>
@@ -393,7 +393,7 @@ export default function ContactForm({
             value={formData.message}
             onChange={handleChange}
             placeholder={messagePlaceholder}
-            className="bg-slate-950 border border-slate-850 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 text-white rounded-xl py-3 px-4 outline-none transition-all placeholder:text-slate-600 resize-none"
+            className="bg-slate-950 border border-slate-850 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 text-white rounded-xl py-3 px-4 outline-none transition-all placeholder:text-slate-500 text-sm sm:text-base resize-none"
           />
         </div>
 
@@ -422,9 +422,37 @@ export default function ContactForm({
         </div>
 
         {/* Note */}
-        <p className="text-center text-xs text-slate-500">
-          ✓ 填寫完成後，內容將自動複製到剪貼簿，並為您開啟 LINE 聯絡視窗。
-        </p>
+        <div className="text-slate-300 text-xs sm:text-sm leading-relaxed space-y-3 bg-slate-950/60 p-4 sm:p-5 rounded-2xl border border-slate-850/80">
+          <p className="font-semibold text-white text-sm sm:text-base">【LINE 聯絡流程說明】</p>
+          <div className="space-y-2 text-slate-400 text-xs sm:text-sm">
+            <p>
+              📱 <strong>手機瀏覽：</strong>手機瀏覽且已安裝 LINE 時，送出後會複製諮詢內容並嘗試開啟 LINE，您可直接貼上傳送。
+            </p>
+            <p>
+              💻 <strong>電腦瀏覽：</strong>電腦瀏覽時，無法直接把內容送到您的手機 LINE。按下按鈕後會先複製諮詢內容，並嘗試開啟 LINE 官方帳號加好友頁面；請再用手機 LINE 搜尋官方 ID <strong className="text-white">@451vpomq</strong>，或開啟加好友頁面後，將內容貼上傳送。
+            </p>
+          </div>
+          <div className="pt-2 text-center md:hidden">
+            <span className="text-[11px] text-slate-500">※ 提示：建議使用手機瀏覽本站以獲得最順暢的 LINE 諮詢體驗。</span>
+          </div>
+          {/* 電腦瀏覽時的按鈕 */}
+          <div className="hidden md:flex flex-col items-center gap-2 pt-2.5 border-t border-slate-800/60">
+            <span className="text-xs font-semibold text-slate-400">電腦瀏覽加 LINE：</span>
+            <div className="flex gap-4 items-center">
+              <a
+                href={siteConfig.lineUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 py-2.5 px-4 bg-green-700 hover:bg-green-600 text-white text-xs font-bold rounded-lg transition-colors"
+              >
+                開啟 LINE 加好友頁面
+              </a>
+              <span className="text-xs text-slate-500">
+                （LINE 官方帳號 ID: <strong className="text-white">@451vpomq</strong>，加好友後貼上諮詢內容傳送）
+              </span>
+            </div>
+          </div>
+        </div>
       </form>
     </div>
   );
