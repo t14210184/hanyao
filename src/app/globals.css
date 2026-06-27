@@ -55,3 +55,93 @@ body {
 .safe-bottom {
   padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));
 }
+
+/* 全站手機無障礙文字大小與對比度極度詳細修正 (A11y Mobile Overrides) */
+@media (max-width: 767px) {
+  /* 1. 全站小字級及低對比強制覆寫，最小字不得低於無障礙門檻 */
+  .text-xs, 
+  .text-\[11px\], 
+  .text-\[12px\],
+  .text-\[13px\] {
+    font-size: 1rem !important; /* 相當於 text-base 16px */
+  }
+  
+  .text-sm {
+    font-size: 1.125rem !important; /* 相當於 text-lg 18px */
+  }
+  
+  .text-base {
+    font-size: 1.125rem !important; /* 原本 text-base 行動端一併升級為 18px */
+  }
+
+  /* 2. 標題與標籤強化 */
+  .text-lg {
+    font-size: 1.25rem !important; /* 20px */
+  }
+  
+  .text-xl {
+    font-weight: 700 !important;
+    font-size: 1.5rem !important; /* 24px */
+  }
+  
+  .text-2xl {
+    font-weight: 700 !important;
+    font-size: 1.75rem !important; /* 28px */
+  }
+  
+  .text-3xl {
+    font-weight: 800 !important;
+    font-size: 2.25rem !important; /* 36px */
+  }
+
+  /* 3. 顏色對比度提升，拒絕暗灰字，確保在深色背景下有足夠對比 */
+  .text-slate-400 {
+    color: rgb(226, 232, 240) !important; /* 提升至 slate-200 */
+  }
+  
+  .text-slate-500 {
+    color: rgb(203, 213, 225) !important; /* 提升至 slate-300 */
+  }
+  
+  .text-slate-600 {
+    color: rgb(203, 213, 225) !important; /* 提升至 slate-300 */
+  }
+
+  .text-slate-350 {
+    color: rgb(241, 245, 249) !important; /* 提升至 slate-100 */
+  }
+
+  .placeholder\:text-slate-500::placeholder {
+    color: rgb(148, 163, 184) !important; /* 提升至 slate-400 */
+  }
+  .placeholder\:text-slate-600::placeholder {
+    color: rgb(148, 163, 184) !important; /* 提升至 slate-400 */
+  }
+
+  /* 4. 行高優化，使文字間距更易讀，避免年長者視力擠壓 */
+  p, li, .leading-relaxed, .leading-normal {
+    line-height: 1.8 !important;
+  }
+
+  /* 5. 手機版按鈕與連結擴大高度，防止誤觸 */
+  a, button, select, input, textarea {
+    min-height: 48px; /* 至少 48px 觸摸高度 */
+  }
+
+  /* 6. Footer 專屬選擇器：頁尾是目前重災區，必須特別調整 */
+  footer p, 
+  footer a, 
+  footer li, 
+  footer span {
+    font-size: 1.125rem !important; /* text-lg */
+    color: rgb(241, 245, 249) !important; /* 強制提亮至 text-slate-100 */
+    line-height: 1.8 !important;
+  }
+  
+  footer h3, 
+  footer .footer-title {
+    font-size: 1.375rem !important; /* 大標 */
+    font-weight: 800 !important;
+    color: #ffffff !important;
+  }
+}

@@ -200,8 +200,8 @@ export default function CommercialAcServiceClient() {
       <section className="py-20 bg-slate-950">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-16">
-            <h2 className="text-xl sm:text-2xl font-bold text-white">商用需求快速選擇</h2>
-            <p className="text-xs sm:text-sm text-slate-400 mt-2">
+            <h2 className="text-2xl sm:text-3xl font-bold text-white">商用需求快速選擇</h2>
+            <p className="text-base sm:text-lg text-slate-200 mt-2 leading-[1.8]">
               針對不同商業場域與系統配置，提供對應的空調規劃重點，點擊以查看細節。
             </p>
           </div>
@@ -213,14 +213,14 @@ export default function CommercialAcServiceClient() {
                 className="bg-slate-900/40 border border-slate-800 p-6 rounded-2xl hover:border-slate-700 transition-colors flex flex-col justify-between"
               >
                 <div>
-                  <h3 className="text-base font-bold text-white mb-3 flex items-center gap-2 border-b border-slate-800 pb-2">
+                  <h3 className="text-lg sm:text-xl font-bold text-white mb-3 flex items-center gap-2 border-b border-slate-800 pb-2">
                     <span className="w-1.5 h-1.5 bg-sky-400 rounded-full shrink-0"></span>
                     {card.title}
                   </h3>
-                  <p className="text-xs text-sky-400/90 font-medium mb-4">{card.desc}</p>
-                  <ul className="space-y-2 mb-6">
+                  <p className="text-sm sm:text-base text-sky-300 font-medium mb-4">{card.desc}</p>
+                  <ul className="space-y-2.5 mb-6">
                     {card.scenarios.map((scene, sIdx) => (
-                      <li key={sIdx} className="text-xs sm:text-sm text-slate-400 flex items-start gap-2">
+                      <li key={sIdx} className="text-base sm:text-lg text-slate-200 flex items-start gap-2 leading-[1.8]">
                         <span className="text-sky-500 shrink-0 font-medium">•</span>
                         <span>{scene}</span>
                       </li>
@@ -229,7 +229,7 @@ export default function CommercialAcServiceClient() {
                 </div>
                 <Link
                   href={card.href}
-                  className="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-sky-400 hover:text-sky-300 font-bold rounded-xl flex items-center justify-center gap-1 text-xs sm:text-sm border border-slate-700 transition-colors mt-auto"
+                  className="w-full py-3.5 bg-slate-800 hover:bg-slate-700 text-sky-400 hover:text-sky-300 font-bold rounded-xl flex items-center justify-center gap-1 text-base sm:text-lg min-h-[56px] border border-slate-700 transition-colors mt-auto"
                 >
                   <span>查看規劃重點</span>
                   <span>&rarr;</span>
@@ -487,23 +487,23 @@ export default function CommercialAcServiceClient() {
       {/* 六、GEO 區塊 */}
       <section className="py-20 bg-slate-950">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-xl font-bold text-white mb-6">主要服務與可詢問區域</h2>
+          <h2 className="text-2xl sm:text-3xl font-bold text-white mb-6">主要服務與可詢問區域</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 text-left max-w-2xl mx-auto">
             <div className="bg-slate-900/40 border border-slate-800/80 p-6 rounded-2xl">
-              <h3 className="text-base font-bold text-sky-400 mb-3 border-b border-slate-800 pb-2 flex items-center gap-2">
+              <h3 className="text-lg sm:text-xl font-bold text-sky-400 mb-3 border-b border-slate-800 pb-2 flex items-center gap-2">
                 <span className="w-1.5 h-1.5 bg-sky-400 rounded-full"></span>
                 高雄市各區
               </h3>
-              <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
+              <p className="text-base sm:text-lg text-slate-200 leading-[1.8]">
                 三民、左營、楠梓、鼓山、苓雅、前鎮、小港、鳳山、仁武、大寮、岡山、橋頭、路竹、燕巢等區域。
               </p>
             </div>
             <div className="bg-slate-900/40 border border-slate-800/80 p-6 rounded-2xl">
-              <h3 className="text-base font-bold text-sky-400 mb-3 border-b border-slate-800 pb-2 flex items-center gap-2">
+              <h3 className="text-lg sm:text-xl font-bold text-sky-400 mb-3 border-b border-slate-800 pb-2 flex items-center gap-2">
                 <span className="w-1.5 h-1.5 bg-sky-400 rounded-full"></span>
                 屏東縣市各鄉鎮
               </h3>
-              <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
+              <p className="text-base sm:text-lg text-slate-200 leading-[1.8]">
                 屏東市、潮州、東港、萬丹、長治、麟洛、內埔、九如、里港、恆春、車城等區域。
               </p>
             </div>
@@ -517,21 +517,21 @@ export default function CommercialAcServiceClient() {
           <div className="absolute top-0 left-[20%] w-[60%] h-[100%] rounded-full bg-blue-950/10 blur-[100px] pointer-events-none"></div>
         </div>
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
-          <h2 className="text-xl sm:text-2xl font-bold text-white mb-4">
+          <h2 className="text-2xl sm:text-3xl font-bold text-white mb-4">
             正在規劃商用空調？先把平面圖或現場照片傳給我們評估
           </h2>
-          <p className="text-xs sm:text-sm text-slate-400 leading-relaxed max-w-xl mx-auto mb-8">
+          <p className="text-base sm:text-lg text-slate-200 leading-[1.8] max-w-xl mx-auto mb-8">
             協助評估冷房容量、主機擺放、分區控制以及氣流分配，必要時安排技師進行現場確認，並依施工與系統條件說明報價。
           </p>
-          <div className="flex flex-col sm:flex-row justify-center items-center gap-3 max-w-sm mx-auto">
+          <div className="flex flex-col sm:flex-row justify-center items-center gap-3 max-w-md mx-auto">
             <CTAButton
               href={siteConfig.lineUrl}
               external
               trackEventName="line_click"
               trackParams={{ service_type: "commercial_ac", cta_position: "bottom_line" }}
-              className="w-full sm:flex-1 py-3.5 bg-green-600 hover:bg-green-500 text-white font-bold rounded-xl flex items-center justify-center gap-2 text-sm shadow-md transition-all"
+              className="w-full sm:flex-1 py-4 bg-green-600 hover:bg-green-500 text-white font-bold rounded-xl flex items-center justify-center gap-2 text-base sm:text-lg min-h-[56px] shadow-md transition-all"
             >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
               </svg>
               <span>LINE 傳平面圖諮詢</span>
@@ -540,9 +540,9 @@ export default function CommercialAcServiceClient() {
               href={siteConfig.phone1Link}
               trackEventName="phone_click"
               trackParams={{ service_type: "commercial_ac", cta_position: "bottom_phone" }}
-              className="w-full sm:flex-1 py-3.5 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl border border-slate-700 flex items-center justify-center gap-2 text-sm transition-all"
+              className="w-full sm:flex-1 py-4 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl border border-slate-700 flex items-center justify-center gap-2 text-base sm:text-lg min-h-[56px] transition-all"
             >
-              <svg className="w-4 h-4 text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <svg className="w-5 h-5 text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.94.725l.548 2.2a1 1 0 01-.321.988l-1.305.98a10.582 10.582 0 004.872 4.872l.98-1.305a1 1 0 01.988-.321l2.2.548a1 1 0 01.725.94V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
               </svg>
               <span>立即電話諮詢</span>
@@ -553,12 +553,12 @@ export default function CommercialAcServiceClient() {
 
       {/* Internal Navigation Links */}
       <section className="py-8 bg-slate-950 border-t border-slate-900 text-center space-y-4">
-        <span className="text-xs text-slate-500 block">商用空調相關頁面：</span>
-        <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-xs sm:text-sm">
-          <Link href="/services/chiller-maintenance/" className="text-sky-400 hover:underline">冰水主機保養維護 &rarr;</Link>
-          <Link href="/cases/" className="text-sky-400 hover:underline">工程實績 &rarr;</Link>
-          <Link href="/about/" className="text-sky-400 hover:underline">技師資格與憑證 &rarr;</Link>
-          <Link href="/contact/" className="text-sky-400 hover:underline">預約現場估價 &rarr;</Link>
+        <span className="text-base text-slate-200 font-bold block">商用空調相關頁面：</span>
+        <div className="flex flex-wrap justify-center gap-x-6 gap-y-3 text-base sm:text-lg font-semibold">
+          <Link href="/services/chiller-maintenance/" className="text-sky-400 hover:underline py-2 px-1">冰水主機保養維護 &rarr;</Link>
+          <Link href="/cases/" className="text-sky-400 hover:underline py-2 px-1">工程實績 &rarr;</Link>
+          <Link href="/about/" className="text-sky-400 hover:underline py-2 px-1">技師資格與憑證 &rarr;</Link>
+          <Link href="/contact/" className="text-sky-400 hover:underline py-2 px-1">預約現場估價 &rarr;</Link>
         </div>
       </section>
     </main>

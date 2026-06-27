@@ -34,10 +34,10 @@ export default function Footer() {
               </svg>
               {siteConfig.brandName}
             </Link>
-            <p className="text-sm text-slate-500 leading-relaxed">
+            <p className="text-base text-slate-300 leading-relaxed">
               專業空調工程服務團隊。從家用變頻冷氣到大型工廠、醫院、商用空間多聯變頻冷氣規劃與維修，提供全方位空調解決方案。
             </p>
-            <div className="flex flex-col gap-1.5 text-xs text-slate-600 mt-2">
+            <div className="flex flex-col gap-1.5 text-sm text-slate-300 mt-2">
               <span>✓ 台灣區冷凍空調工程工業同業公會會員</span>
               <span>✓ 乙級冷凍空調裝修技術士師傅團隊</span>
               <span>✓ 絕不強推不必要工項，收費透明</span>
@@ -46,11 +46,11 @@ export default function Footer() {
 
           {/* Service Links */}
           <div>
-            <h3 className="text-white font-semibold text-sm tracking-wider uppercase mb-4">服務項目</h3>
-            <ul className="space-y-2.5 text-sm">
+            <h3 className="text-white font-bold text-base tracking-wider uppercase mb-4">服務項目</h3>
+            <ul className="space-y-2.5 text-base text-slate-300">
               {footerLinks.services.map((item) => (
                 <li key={item.name}>
-                  <Link href={item.path} className="hover:text-white transition-colors">
+                  <Link href={item.path} className="hover:text-white transition-colors py-1 inline-block">
                     {item.name}
                   </Link>
                 </li>
@@ -60,11 +60,11 @@ export default function Footer() {
 
           {/* Support Links */}
           <div>
-            <h3 className="text-white font-semibold text-sm tracking-wider uppercase mb-4">相關資訊</h3>
-            <ul className="space-y-2.5 text-sm">
+            <h3 className="text-white font-bold text-base tracking-wider uppercase mb-4">相關資訊</h3>
+            <ul className="space-y-2.5 text-base text-slate-300">
               {footerLinks.support.map((item) => (
                 <li key={item.name}>
-                  <Link href={item.path} className="hover:text-white transition-colors">
+                  <Link href={item.path} className="hover:text-white transition-colors py-1 inline-block">
                     {item.name}
                   </Link>
                 </li>
@@ -74,25 +74,25 @@ export default function Footer() {
 
           {/* Area Links */}
           <div>
-            <h3 className="text-white font-semibold text-sm tracking-wider uppercase mb-4">服務地區</h3>
-            <ul className="space-y-2.5 text-sm">
+            <h3 className="text-white font-bold text-base tracking-wider uppercase mb-4">服務地區</h3>
+            <ul className="space-y-2.5 text-base text-slate-300">
               <li>
-                <Link href="/areas/kaohsiung/" className="hover:text-white transition-colors">
+                <Link href="/areas/kaohsiung/" className="hover:text-white transition-colors py-1 inline-block">
                   高雄空調冷氣服務
                 </Link>
               </li>
               <li>
-                <Link href="/areas/pingtung/" className="hover:text-white transition-colors">
+                <Link href="/areas/pingtung/" className="hover:text-white transition-colors py-1 inline-block">
                   屏東空調冷氣服務
                 </Link>
               </li>
               <li>
-                <Link href="/areas/kaohsiung-ac-repair/" className="hover:text-white transition-colors">
+                <Link href="/areas/kaohsiung-ac-repair/" className="hover:text-white transition-colors py-1 inline-block">
                   高雄冷氣維修
                 </Link>
               </li>
               <li>
-                <Link href="/areas/pingtung-ac-installation/" className="hover:text-white transition-colors">
+                <Link href="/areas/pingtung-ac-installation/" className="hover:text-white transition-colors py-1 inline-block">
                   屏東冷氣安裝
                 </Link>
               </li>
@@ -101,8 +101,8 @@ export default function Footer() {
 
           {/* Contact Details */}
           <div className="flex flex-col gap-4">
-            <h3 className="text-white font-semibold text-sm tracking-wider uppercase">聯絡諮詢</h3>
-            <ul className="space-y-3 text-sm">
+            <h3 className="text-white font-bold text-base tracking-wider uppercase">聯絡諮詢</h3>
+            <ul className="space-y-3 text-base text-slate-300">
               <li className="flex items-start gap-2">
                 <svg className="w-5 h-5 text-sky-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.94.725l.548 2.2a1 1 0 01-.321.988l-1.305.98a10.582 10.582 0 004.872 4.872l.98-1.305a1 1 0 01.988-.321l2.2.548a1 1 0 01.725.94V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
@@ -156,12 +156,12 @@ export default function Footer() {
         </div>
 
         {/* Bottom Bar */}
-        <div className="border-t border-slate-900 mt-16 pt-8 flex flex-col md:flex-row items-center justify-between text-xs text-slate-600 gap-4">
+        <div className="border-t border-slate-900 mt-16 pt-8 flex flex-col md:flex-row items-center justify-between text-sm text-slate-400 gap-4">
           <p>© {new Date().getFullYear()} {siteConfig.brandName}. All rights reserved.</p>
           <div className="flex gap-4">
             <Link href="/privacy/" className="hover:text-slate-400">隱私條款</Link>
-            <span className="text-slate-800">|</span>
-            <span className="text-slate-600">本網站所標記之商用品牌案例均為工程方向定位，無任何商業授權關聯</span>
+            <span className="text-slate-700">|</span>
+            <span className="text-slate-400">本網站所標記之商用品牌案例均為工程方向定位，無任何商業授權關聯</span>
           </div>
         </div>
       </div>
