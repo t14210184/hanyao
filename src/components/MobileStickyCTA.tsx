@@ -1,18 +1,28 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { siteConfig } from "@/data/site";
 import CTAButton from "./CTAButton";
+
 export default function MobileStickyCTA() {
   const pathname = usePathname();
   const isCommercial = pathname?.includes("/lp/commercial-ac/");
+  const [hasContactSection, setHasContactSection] = useState(false);
 
   // Dynamic values based on current page
   const serviceType = isCommercial ? "commercial_ac" : "general";
   const phoneText = isCommercial ? "商用電話" : "電話聯絡";
   const lineText = isCommercial ? "LINE傳圖" : "LINE諮詢";
-  const appointmentText = isCommercial ? "預約場勘" : "預約估價";
+
+  useEffect(() => {
+    // Check if element exists in current DOM
+    const contactSectionExists = !!document.getElementById("contact-section");
+    setHasContactSection(contactSectionExists);
+  }, [pathname]);
+
+  const appointmentHref = hasContactSection ? "#contact-section" : "/contact/";
+  const appointmentText = hasContactSection ? (isCommercial ? "預約場勘" : "預約估價") : "聯絡表單";
 
   const handlePhoneClick = () => {
     // No-op or custom behavior (unallowed event tracker removed)
@@ -22,8 +32,14 @@ export default function MobileStickyCTA() {
     // No-op or custom behavior (unallowed event tracker removed)
   };
 
-  const handleAppointmentClick = () => {
-    // No-op or custom behavior (unallowed event tracker removed)
+  const handleAppointmentClick = (e: React.MouseEvent) => {
+    if (hasContactSection) {
+      e.preventDefault();
+      const element = document.getElementById("contact-section");
+      if (element) {
+        element.scrollIntoView({ behavior: "smooth" });
+      }
+    }
   };
 
   return (
@@ -59,7 +75,7 @@ export default function MobileStickyCTA() {
  
       {/* 📝 Appointment CTA */}
       <CTAButton
-        href="#contact-section"
+        href={appointmentHref}
         onClick={handleAppointmentClick}
         className="flex-1 flex flex-col items-center justify-center bg-orange-500 hover:bg-orange-400 text-white py-3 rounded-xl font-bold text-base sm:text-lg min-h-[64px] gap-1 shadow-md shadow-orange-950/20 transition-colors"
       >
