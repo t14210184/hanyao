@@ -4,6 +4,9 @@ import React, { useState } from "react";
 import Link from "next/link";
 import JsonLd from "@/components/JsonLd";
 import CTAButton from "@/components/CTAButton";
+import TrustSection from "@/components/TrustSection";
+import PriceFactorsSection from "@/components/PriceFactorsSection";
+import ContactForm from "@/components/ContactForm";
 import { siteConfig } from "@/data/site";
 
 export default function CommercialAcServicePage() {
@@ -319,6 +322,9 @@ export default function CommercialAcServicePage() {
           </div>
         </section>
 
+        {/* TrustSection — 信任背書（新增）*/}
+        <TrustSection />
+
         {/* 三、商用空調規劃前需要確認什麼 */}
         <section className="py-20 bg-slate-900/20 border-t border-b border-slate-900">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -348,6 +354,26 @@ export default function CommercialAcServicePage() {
             </div>
           </div>
         </section>
+
+        {/* PriceFactorsSection — 為何需要現場評估（新增）*/}
+        <PriceFactorsSection
+          title="商用空調工程為什麼需要依現場條件評估？"
+          subtitle="商用空調會受到空間大小、使用型態、主機位置、管線與電力條件影響。先了解現場條件，才能提出較合適的規劃方向與估價方式。"
+          factors={[
+            {
+              name: "空間熱負荷與使用型態",
+              description: "依空間坪數、樓高、隔間、使用人數、設備熱源與日照條件，評估需要的冷房能力與系統配置。"
+            },
+            {
+              name: "管線路徑與電力條件",
+              description: "冷媒管、排水、電源與控制線配置會影響施工方式；現場配電容量與維修動線也需要一併確認。"
+            },
+            {
+              name: "主機位置、散熱與維護空間",
+              description: "室外機或主機的位置、通風散熱條件、排水坡度與後續維修可達性，都會影響整體規劃。"
+            }
+          ]}
+        />
 
         {/* 四、商用空調規劃流程 */}
         <section className="py-20 bg-slate-950">
@@ -420,6 +446,46 @@ export default function CommercialAcServicePage() {
                   )}
                 </div>
               ))}
+            </div>
+          </div>
+        </section>
+
+        {/* 六、LINE 複製式諮詢表單（新增）*/}
+        <section
+          id="contact-section"
+          className="py-20 bg-slate-950 border-t border-slate-900 scroll-mt-20"
+        >
+          <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+            <ContactForm
+              heading="商用空調諮詢"
+              subheading="填寫後一鍵複製到 LINE，讓我們更快了解您的商用空調需求。"
+              messagePlaceholder="例如：辦公室約 100 坪，目前使用分離式，想了解是否適合改為多聯式，方便聯絡時間為平日下午。"
+              formLocation="commercial_ac_service_page"
+              defaultService="commercial-ac-office"
+              serviceOptions={[
+                { id: "commercial-ac-office",      name: "辦公室空調規劃" },
+                { id: "commercial-ac-restaurant",  name: "餐飲店面空調" },
+                { id: "commercial-ac-factory",     name: "廠房空調改善" },
+                { id: "commercial-ac-vrf",         name: "VRF/VRV 多聯式系統" },
+                { id: "commercial-ac-chiller",     name: "冰水主機 / 商用主機" },
+                { id: "commercial-ac-maintenance", name: "維護保養合約" },
+                { id: "commercial-ac-other",       name: "其他商用空調需求" },
+              ]}
+            />
+            {/* 電話 CTA 同區塊顯示 */}
+            <div className="mt-8 text-center">
+              <p className="text-xs text-slate-500 mb-3">或直接撥打電話諮詢專案評估</p>
+              <CTAButton
+                href={siteConfig.phone1Link}
+                trackEventName="phone_click"
+                trackParams={{ service_type: "commercial_ac", cta_position: "form_phone" }}
+                className="inline-flex items-center gap-2 py-3 px-8 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl border border-slate-700 text-sm transition-all"
+              >
+                <svg className="w-4 h-4 text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.94.725l.548 2.2a1 1 0 01-.321.988l-1.305.98a10.582 10.582 0 004.872 4.872l.98-1.305a1 1 0 01.988-.321l2.2.548a1 1 0 01.725.94V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                </svg>
+                <span>直接撥打電話</span>
+              </CTAButton>
             </div>
           </div>
         </section>

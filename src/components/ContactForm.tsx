@@ -5,7 +5,34 @@ import { siteConfig } from "@/data/site";
 import { servicesData } from "@/data/services";
 import { trackEvent } from "@/lib/tracking";
 
-export default function ContactForm() {
+interface ServiceOption {
+  id: string;
+  name: string;
+}
+
+interface ContactFormProps {
+  /** 表單標題，預設不顯示（首頁不備而呈現） */
+  heading?: string;
+  /** 表單副標，預設不顯示 */
+  subheading?: string;
+  /** 狀況描述 textarea 的 placeholder，預設為現有文案 */
+  messagePlaceholder?: string;
+  /** tracking form_location param，預設 "home_consultation_form" */
+  formLocation?: string;
+  /** 預設選中的服務 option id，預設 ""（不預設） */
+  defaultService?: string;
+  /** 自訂服務選項陣列，不傳時沿用 servicesData 全列表 */
+  serviceOptions?: ServiceOption[];
+}
+
+export default function ContactForm({
+  heading,
+  subheading,
+  messagePlaceholder = "例如：冷氣漏水、主機發出異音、約定場勘時間、商用廠房規格...",
+  formLocation = "home_consultation_form",
+  defaultService = "",
+  serviceOptions,
+}: ContactFormProps = {}) {
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
@@ -18,15 +45,17 @@ export default function ContactForm() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [copyFallbackText, setCopyFallbackText] = useState<string>("");
 
-  // Read ?service= from URL to pre-select
+  // Read ?service= from URL to pre-select, fallback to defaultService prop
   useEffect(() => {
     if (typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
     const preService = params.get("service");
     if (preService) {
       setFormData((prev) => ({ ...prev, service: preService }));
+    } else if (defaultService) {
+      setFormData((prev) => ({ ...prev, service: defaultService }));
     }
-  }, []);
+  }, [defaultService]);
 
   const handleChange = (
     e: React.ChangeEvent<
@@ -66,8 +95,9 @@ export default function ContactForm() {
     }
 
     // 2. Resolve labels
+    const allOptions: ServiceOption[] = serviceOptions ?? servicesData;
     const serviceLabel =
-      servicesData.find((s) => s.id === formData.service)?.name ??
+      allOptions.find((s) => s.id === formData.service)?.name ??
       formData.service;
     const areaMap: Record<string, string> = {
       all: "高雄/屏東全區",
@@ -133,7 +163,7 @@ export default function ContactForm() {
 
     // 5. Fire line_quote_copy event
     trackEvent("line_quote_copy", {
-      form_location: "home_consultation_form",
+      form_location: formLocation,
       service_type: formData.service,
       area: formData.area,
       has_phone: formData.phone.trim().length > 0,
@@ -145,7 +175,7 @@ export default function ContactForm() {
 
     // 7. Fire line_click event
     trackEvent("line_click", {
-      click_location: "home_consultation_form",
+      click_location: formLocation,
       link_type: "line",
     });
 
@@ -244,6 +274,15 @@ export default function ContactForm() {
   // ── Form ──────────────────────────────────────────────────────────────────
   return (
     <div className="bg-slate-900/40 backdrop-blur-sm border border-slate-850 p-8 sm:p-10 rounded-3xl shadow-xl max-w-2xl mx-auto">
+      {/* Optional heading / subheading — only rendered when props are passed */}
+      {heading && (
+        <div className="mb-6 text-center">
+          <h2 className="text-xl font-bold text-white">{heading}</h2>
+          {subheading && (
+            <p className="text-sm text-slate-400 mt-2">{subheading}</p>
+          )}
+        </div>
+      )}
       <form onSubmit={handleSubmit} className="space-y-6">
         {errors.form && (
           <div className="bg-red-950/40 border border-red-500/20 text-red-400 text-sm p-4 rounded-xl flex items-center gap-3">
@@ -333,7 +372,7 @@ export default function ContactForm() {
               className="bg-slate-950 border border-slate-850 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 text-white rounded-xl py-3 px-4 outline-none transition-all"
             >
               <option value="">-- 請選擇服務項目 --</option>
-              {servicesData.map((s) => (
+              {(serviceOptions ?? servicesData).map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.name}
                 </option>
@@ -353,7 +392,7 @@ export default function ContactForm() {
             rows={4}
             value={formData.message}
             onChange={handleChange}
-            placeholder="例如：冷氣漏水、主機發出異音、約定場勘時間、商用廠房規格..."
+            placeholder={messagePlaceholder}
             className="bg-slate-950 border border-slate-850 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 text-white rounded-xl py-3 px-4 outline-none transition-all placeholder:text-slate-600 resize-none"
           />
         </div>
