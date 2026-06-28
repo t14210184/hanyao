@@ -48,11 +48,43 @@ const localSchema = {
   }
 };
 
+const faqSchema = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "屏東太陽大且高溫，冷氣室外機需要安裝遮雨棚嗎？",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "如果室外機安裝在陽光強烈直射的屋頂或外牆，加裝冷氣遮陽棚的確有助於阻擋直射熱能，對主機散熱有正面幫助。但遮陽棚安裝必須穩固，且不能阻擋室外機前方風扇的出風散熱空間，避免反而造成熱風迴流跳機。"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "沿海地區的冷氣室外機，生鏽了該怎麼處理？",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "在海風鹽分較重的區域，室外機鰭片容易受到腐蝕。如果只是輕微鏽蝕，可定期進行清水沖洗保養清除積鹽；若是鏽蝕嚴重導致散熱鰭片粉碎損壞或冷媒外漏，則應由技師到府查檢評估，判定是否需進行零件更換或採取其他適當的保護措施。"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "屏東地區預約冷氣安裝或清洗，一般排程需要多久？",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "我們在屏東市設有在地工程團隊。預約到府場勘或施作，客服會依據目前的派工排程與技師路線，儘速為您安排。一般情況下在接單後會與您電話約定合適的施工時間，以期提供您順暢的服務體驗。"
+      }
+    }
+  ]
+};
+
 export default function PingtungAreaPage() {
   return (
     <>
       <JsonLd schema={pageSchema} />
       <JsonLd schema={localSchema} />
+      <JsonLd schema={faqSchema} />
       <PingtungAreaClient />
     </>
   );
