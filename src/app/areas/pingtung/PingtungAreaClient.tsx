@@ -97,14 +97,14 @@ export default function PingtungAreaClient() {
             <div className="bg-slate-950 p-6 rounded-2xl border border-slate-850/60">
               <h3 className="text-lg font-bold text-white mb-3">1. 南台灣超長日照與高溫曝曬（主機散熱與配管防護）</h3>
               <p>
-                屏東常年氣溫居高不下，室外機若長期處於日光直射的無遮蔽環境下，會使冷媒凝結溫度過高，影響冷房效果。我們技師在安裝時，會優先挑選具有遮陽或散熱良好的安裝位置，並對暴露在強烈陽光下的冷媒銅管外包覆<strong>高耐候抗 UV 保護防護膠帶</strong>，防範保溫棉脆化破損，以有助於減緩冷媒管路老化的風險。
+                屏東常年氣溫居高不下，室外機若長期處於日光直射的無遮蔽環境下，會使冷媒凝結溫度過高，影響冷房效果。我們技師在安裝時，會優先挑選具有遮陽或散熱良好的安裝位置，並對暴露在強烈陽光下的冷媒銅管外包覆<strong>高耐候抗 UV 保護防護膠帶</strong>，防範保溫棉脆化破損，作為防範冷媒管路老化的保護措施之一。
               </p>
             </div>
 
             <div className="bg-slate-950 p-6 rounded-2xl border border-slate-850/60">
               <h3 className="text-lg font-bold text-white mb-3">2. 沿海鹽分腐蝕與強風吹襲（防鏽與白鐵支架固定）</h3>
               <p>
-                屏東擁有漫長的海岸線，部分沿海鄉鎮（如東港、佳冬、林邊、枋寮等）空氣中帶有高鹽分。室外機鰭片若無適當防護，極易生鏽劣化。此外，部分特定區域（如恆春半島）在秋冬季節會受到強烈落山風襲擊。因此，我們在安裝時會特別注重<strong>防鏽處理與加厚白鐵安裝支架</strong>，並使用膨脹螺絲強力固定，是防範主機受風力動搖或墜落的安全維護措施。
+                屏東擁有漫長的海岸線，部分沿海鄉鎮（如東港、佳冬、林邊、枋寮等）空氣中帶有高鹽分。室外機鰭片若無適當防護，可能面臨生鏽與老化考量。此外，部分特定區域（如恆春半島）在秋冬季節會受到強烈落山風襲擊。因此，我們在安裝時會特別注重<strong>防鏽處理與加厚白鐵安裝支架</strong>，並使用膨脹螺絲強力固定，是防範主機受風力動搖或墜落的安全維護措施。
               </p>
             </div>
 
@@ -126,12 +126,12 @@ export default function PingtungAreaClient() {
           <div className="space-y-6">
             <div className="bg-slate-900/30 p-6 rounded-2xl border border-slate-850">
               <h3 className="font-bold text-white mb-2 text-lg">Q：屏東太陽大且高溫，冷氣室外機需要安裝遮雨棚嗎？</h3>
-              <p className="text-slate-200 text-base sm:text-lg leading-[1.8]">答：如果室外機安裝在陽光強烈直射的屋頂或外牆，加裝冷氣遮陽棚的確有助於阻擋直射熱能，對主機散熱有正面幫助。但遮陽棚安裝必須穩固，且不能阻擋室外機前方風扇的出風散熱空間，避免反而造成熱風迴流跳機。</p>
+              <p className="text-slate-200 text-base sm:text-lg leading-[1.8]">答：如果室外機安裝在陽光強烈直射的屋頂或外牆，加裝冷氣遮陽棚是遮擋直射光照的方式之一，能對室外機提供物理遮蔽。但遮陽棚安裝必須穩固，且不能阻擋室外機前方風扇的出風散熱空間，避免反而造成熱風迴流跳機。</p>
             </div>
             
             <div className="bg-slate-900/30 p-6 rounded-2xl border border-slate-850">
               <h3 className="font-bold text-white mb-2 text-lg">Q：沿海地區的冷氣室外機，生鏽了該怎麼處理？</h3>
-              <p className="text-slate-200 text-base sm:text-lg leading-[1.8]">答：在海風鹽分較重的區域，室外機鰭片容易受到腐蝕。如果只是輕微鏽蝕，可定期進行清水沖洗保養清除積鹽；若是鏽蝕嚴重導致散熱鰭片粉碎損壞或冷媒外漏，則應由技師到府查檢評估，判定是否需進行零件更換或採取其他適當的保護措施。</p>
+              <p className="text-slate-200 text-base sm:text-lg leading-[1.8]">答：在海風鹽分較重的區域，室外機鰭片可能受到環境鹽分影響。如果只是輕微狀況，定期安排沖洗是防範積鹽的日常維護措施之一；若是鏽蝕嚴重導致散熱鰭片粉碎損壞或冷媒外漏，則應由技師到府查檢評估，判定是否需進行零件更換或採取其他適當的保護措施。</p>
             </div>
             
             <div className="bg-slate-900/30 p-6 rounded-2xl border border-slate-850">
