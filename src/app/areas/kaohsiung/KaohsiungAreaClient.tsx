@@ -129,12 +129,12 @@ export default function KaohsiungAreaClient() {
           <div className="space-y-6">
             <div className="bg-slate-900/30 p-6 rounded-2xl border border-slate-850">
               <h3 className="font-bold text-white mb-2 text-lg">Q：高雄靠近臨海地區，冷氣室外機該如何保養防腐蝕？</h3>
-              <p className="text-slate-200 text-base sm:text-lg leading-[1.8]">答：高雄臨海區域空氣鹽分高、環境潮濕，容易導致散熱鰭片生鏽。建議定期安排專業技師到府進行室外機沖洗，清除鰭片表面的鹽分與沙塵積垢，並在安裝時選用防蝕效果佳的白鐵安裝支架，可有助於減緩鏽蝕劣化風險。</p>
+              <p className="text-slate-200 text-base sm:text-lg leading-[1.8]">答：高雄臨海區域空氣鹽分高、環境潮濕，容易導致散熱鰭片生鏽。建議定期安排專業技師到府進行室外機沖洗，清除鰭片表面的鹽分與沙塵積垢，並在安裝時選用防蝕效果佳的白鐵安裝支架，有助於減緩鏽蝕劣化風險。</p>
             </div>
             
             <div className="bg-slate-900/30 p-6 rounded-2xl border border-slate-850">
               <h3 className="font-bold text-white mb-2 text-lg">Q：為什麼高雄商用中央空調或冰水主機需要定期通管？</h3>
-              <p className="text-slate-200 text-base sm:text-lg leading-[1.8]">答：當空調冷卻水系統中的鈣、鎂等礦物質離子濃度累積較高時，冷卻水在塔體運行蒸發過程中容易沈積成水垢，可能影響冷卻熱交換能效。因此，商用與中央空調保養時，定期進行通管與專用藥劑循環清洗保養，有助於維持系統原有運轉能效。</p>
+              <p className="text-slate-200 text-base sm:text-lg leading-[1.8]">答：當空調冷卻水系統中的鈣、鎂等礦物質離子濃度累積較高時，冷卻水在塔體運行蒸發過程中容易沉積成水垢，可能影響熱交換效率。因此，商用與中央空調保養時，定期進行通管與專用藥劑循環清洗保養，有助於維持設備原有運轉能效。</p>
             </div>
             
             <div className="bg-slate-900/30 p-6 rounded-2xl border border-slate-850">
