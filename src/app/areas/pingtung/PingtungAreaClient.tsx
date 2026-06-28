@@ -135,7 +135,7 @@ export default function PingtungAreaClient() {
             </div>
             
             <div className="bg-slate-900/30 p-6 rounded-2xl border border-slate-850">
-              <h3 className="font-bold text-white mb-2 text-lg">Q：屏東地區預約冷氣安裝或清洗，一般排程需要多久？</h3>
+              <h3 className="font-bold text-white mb-2 text-lg">Q：屏東地區預約冷氣安裝或清洗，排程與預約流程為何？</h3>
               <p className="text-slate-200 text-base sm:text-lg leading-[1.8]">答：我們提供屏東地區到府服務，均採派工到府行動服務（無對外開放實體門市）。預約到府場勘或施作，將由客服與您聯繫並依實際派工狀況規劃排定。在受理需求後，會與您電話約定施工時間。</p>
             </div>
           </div>
