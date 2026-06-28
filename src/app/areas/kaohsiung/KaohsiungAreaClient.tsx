@@ -100,14 +100,14 @@ export default function KaohsiungAreaClient() {
             <div className="bg-slate-950 p-6 rounded-2xl border border-slate-850/60">
               <h3 className="text-lg font-bold text-white mb-3">1. 臨海高濕與高溫環境（防腐蝕與散熱設計）</h3>
               <p>
-                高雄夏季漫長且氣溫經常突破 34°C 至 36°C，且沿海行政區（如鼓山、前鎮、小港、左營）空氣中含有較高濕度與微量鹽分。室外機鰭片長期暴露於此環境下極易受腐蝕。這會導致熱交換率衰退、主機耗電增加或冷媒外洩。因此，我們建議在安裝時挑選具備<strong>防鏽防腐蝕鍍層（藍波防鏽）</strong>的機型，並於保養時檢查室外機散熱環境。
+                高雄夏季漫長且氣溫經常突破 34°C 至 36°C，且沿海行政區（如鼓山、前鎮、小港、左營）空氣中含有較高濕度與微量鹽分。室外機鰭片長期暴露於此環境下容易受腐蝕。這會導致熱交換率衰退、主機耗電增加或冷媒外洩。因此，我們建議在安裝時挑選具備<strong>防鏽防腐蝕鍍層（藍波防鏽）</strong>的機型，並於保養時檢查室外機散熱環境。
               </p>
             </div>
 
             <div className="bg-slate-950 p-6 rounded-2xl border border-slate-850/60">
               <h3 className="text-lg font-bold text-white mb-3">2. 局部硬水質挑戰（商用中央空調水垢防範）</h3>
               <p>
-                高雄部分行政區（如鳳山、大寮、仁武、楠梓）水質硬度偏高，水中富含鈣、鎂等礦物質。對於使用冷卻水塔與冰水主機的商用中央空調而言，冷卻水在循環蒸發過程中極易結晶沉積形成水垢，阻礙冷媒散熱管路的熱交換效率，嚴重時會迫使主機超載運轉。技師在施作保養時，會針對水質狀況進行<strong>通管清洗、冷卻水塔藥洗</strong>與定期排污，以維持系統能效。
+                高雄部分行政區（如鳳山、大寮、仁武、楠梓）水質硬度偏高，水中富含鈣、鎂等礦物質。對於使用冷卻水塔與冰水主機的商用中央空調而言，冷卻水在循環蒸發過程中容易結晶沉積形成水垢，可能影響冷媒散熱管路的熱交換效率。技師在施作保養時，會針對水質狀況進行<strong>通管清洗、冷卻水塔專用藥劑循環清洗</strong>與定期排污，以有助於維持系統原有能效。
               </p>
             </div>
 
@@ -134,7 +134,7 @@ export default function KaohsiungAreaClient() {
             
             <div className="bg-slate-900/30 p-6 rounded-2xl border border-slate-850">
               <h3 className="font-bold text-white mb-2 text-lg">Q：為什麼高雄商用中央空調或冰水主機需要定期通管？</h3>
-              <p className="text-slate-200 text-base sm:text-lg leading-[1.8]">答：因為高雄部分地區自來水硬度偏高，水中鈣鎂離子在冷卻水塔運行時極易在大氣蒸發下形成水垢，阻礙冷卻交換效率，增加壓縮機耗電負載。因此，商用與中央空調保養時，通管與水垢化學清洗顯得格外重要。</p>
+              <p className="text-slate-200 text-base sm:text-lg leading-[1.8]">答：因為高雄部分地區自來水硬度偏高，水中鈣鎂離子在冷卻水塔運行時容易在大氣蒸發下累積成水垢，可能影響冷卻熱交換能效。因此，商用與中央空調保養時，通管與專用藥劑循環清洗保養顯得格外重要。</p>
             </div>
             
             <div className="bg-slate-900/30 p-6 rounded-2xl border border-slate-850">
