@@ -169,7 +169,7 @@ export default function AcSmellCleaningClient() {
               </p>
               <ul className="list-disc pl-6 space-y-2.5">
                 <li><strong>室內機清洗</strong>：使用水袋與防塵防護措施，將水盤、蒸發器鰭片、鼓風輪用專業高壓水槍徹底沖洗，主要是改善風量、異味、粉塵飛散以及內部霉垢，並暢通排水孔防止溢水。</li>
-                <li><strong>室外機清洗</strong>：室外機主要是鰭片散熱。若鰭片堆積棉垢或油垢，熱交換率下降會導致主機跳機甚至耗電增加。高壓沖洗鰭片有助於恢復散熱效率，達到省電目的。</li>
+                <li><strong>室外機清洗</strong>：室外機主要是鰭片散熱。若鰭片堆積棉垢或油垢，熱交換率下降會導致主機跳機甚至耗電增加。高壓沖洗鰭片有助於恢復散熱效率，維持冷氣原有節電能效。</li>
               </ul>
             </section>
 
@@ -248,7 +248,7 @@ export default function AcSmellCleaningClient() {
               <div className="space-y-6 max-w-3xl mx-auto">
                 <div className="bg-slate-900/30 p-6 rounded-2xl border border-slate-850">
                   <h3 className="font-bold text-white mb-2 text-lg">Q：冷氣有霉味一定需要清洗嗎？</h3>
-                  <p className="text-slate-200 text-base sm:text-lg leading-[1.8]">答：不一定。若只是防塵濾網上有灰塵，自行清洗濾網即可改善；但若異味來自蒸發器內部鰭片、深處的水盤或風鼓（鼓風輪）上的黴菌與果凍狀生物膜，則需要專業人員使用高壓清洗機搭配無毒藥劑進行深層清洗才能改善。</p>
+                  <p className="text-slate-200 text-base sm:text-lg leading-[1.8]">答：不一定。若只是防塵濾網上有灰塵，自行清洗濾網即可改善；但若異味來自蒸發器內部鰭片、深處的水盤或風鼓（鼓風輪）上的黴菌與果凍狀生物膜，則需要專業人員使用高壓清洗機搭配環保中性藥劑進行深層清洗才能改善。</p>
                 </div>
                 <div className="bg-slate-900/30 p-6 rounded-2xl border border-slate-850">
                   <h3 className="font-bold text-white mb-2 text-lg">Q：冷氣風量變小一定是髒污嗎？</h3>
@@ -260,7 +260,7 @@ export default function AcSmellCleaningClient() {
                 </div>
                 <div className="bg-slate-900/30 p-6 rounded-2xl border border-slate-850">
                   <h3 className="font-bold text-white mb-2 text-lg">Q：室外機也需要清洗嗎？</h3>
-                  <p className="text-slate-200 text-base sm:text-lg leading-[1.8]">答：需要。室外機長期置於室外，冷凝鰭片容易累積塵垢、寵物毛髮或落葉。當散熱鰭片被嚴重堵塞時，主機散熱不良會使壓縮機高溫過載而跳機，同時提高耗電量。清洗室外機有助於恢復散熱效率，達到省電目的並延長壓縮機壽命。</p>
+                  <p className="text-slate-200 text-base sm:text-lg leading-[1.8]">答：需要。室外機長期置於室外，冷凝鰭片容易累積塵垢、寵物毛髮或落葉。當散熱鰭片被嚴重堵塞時，主機散熱不良會使壓縮機高溫過載而跳機，同時提高耗電量。清洗室外機有助於恢復散熱效率，維護冷氣原有節電能效，並有助於降低主機超載運轉風險。</p>
                 </div>
                 <div className="bg-slate-900/30 p-6 rounded-2xl border border-slate-850">
                   <h3 className="font-bold text-white mb-2 text-lg">Q：清洗和維修怎麼判斷？</h3>
