@@ -24,7 +24,7 @@ const services = [
   },
   {
     title: "屏東在地服務",
-    description: "屏東在地工程團隊，公司登記地址位於屏東市建南路。實地場勘規劃，估價透明，維護便利有保障。"
+    description: "本團隊登記地址位於屏東市建南路，均採派工到府行動服務（無對外開放實體門市）。實地場勘規劃，估價透明，維護便利有保障。"
   }
 ];
 
@@ -48,7 +48,7 @@ export default function PingtungAreaClient() {
             屏東冷氣空調服務｜冷氣安裝、維修、清洗與商用空調規劃
           </h1>
           <p className="text-base sm:text-lg text-slate-200 mt-4 leading-[1.8] max-w-2xl mx-auto">
-            焓耀空調位於屏東市，為高屏在地合規登記的冷凍空調公司。提供家用及商用空調到府巡檢與場勘，依排程儘速為您安排。
+            我們為高屏地區合規登記之冷凍空調公司，提供屏東在地到府規劃與安裝維護（均採派工到府行動服務，無對外開放實體門市）。提供家用及商用空調到府巡檢與場勘，將依當期派工狀況依序為您安排。
           </p>
         </div>
       </section>
@@ -136,7 +136,7 @@ export default function PingtungAreaClient() {
             
             <div className="bg-slate-900/30 p-6 rounded-2xl border border-slate-850">
               <h3 className="font-bold text-white mb-2 text-lg">Q：屏東地區預約冷氣安裝或清洗，一般排程需要多久？</h3>
-              <p className="text-slate-200 text-base sm:text-lg leading-[1.8]">答：我們在屏東市設有在地工程團隊。預約到府場勘或施作，客服會依據目前的派工排程與技師路線，儘速為您安排。一般情況下在接單後會與您電話約定合適的施工時間，以期提供您順暢的服務體驗。</p>
+              <p className="text-slate-200 text-base sm:text-lg leading-[1.8]">答：我們提供屏東地區到府服務，均由技師排工到府施作（無對外開放實體門市）。預約到府場勘或施作，客服會依據目前的派工排程與技師路線，依實際派工狀況排定。一般情況下在接單後會與您電話約定合適的施工時間，以期提供您順暢的服務體驗。</p>
             </div>
           </div>
         </div>
