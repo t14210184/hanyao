@@ -107,7 +107,7 @@ export default function KaohsiungAreaClient() {
             <div className="bg-slate-950 p-6 rounded-2xl border border-slate-850/60">
               <h3 className="text-lg font-bold text-white mb-3">2. 局部硬水質挑戰（商用中央空調水垢防範）</h3>
               <p>
-                高雄部分行政區（如鳳山、大寮、仁武、楠梓）水質硬度偏高，水中富含鈣、鎂等礦物質。對於使用冷卻水塔與冰水主機的商用中央空調而言，冷卻水在循環蒸發過程中容易結晶沉積形成水垢，可能影響冷媒散熱管路的熱交換效率。技師在施作保養時，會針對水質狀況進行<strong>通管清洗、冷卻水塔專用藥劑循環清洗</strong>與定期排污，以有助於維持系統原有能效。
+                當空調冷卻水系統中的鈣、鎂等礦物質離子濃度偏高時，對於使用冷卻水塔與冰水主機的商用中央空調而言，冷卻水在循環蒸發過程中容易結晶沉積形成水垢，可能影響冷媒散熱管路的熱交換效率。技師在施作保養時，會針對水質狀況進行<strong>通管清洗、冷卻水塔專用藥劑循環清洗</strong>與定期排污，以有助於維持系統原有能效。
               </p>
             </div>
 
@@ -134,7 +134,7 @@ export default function KaohsiungAreaClient() {
             
             <div className="bg-slate-900/30 p-6 rounded-2xl border border-slate-850">
               <h3 className="font-bold text-white mb-2 text-lg">Q：為什麼高雄商用中央空調或冰水主機需要定期通管？</h3>
-              <p className="text-slate-200 text-base sm:text-lg leading-[1.8]">答：因為高雄部分地區自來水硬度偏高，水中鈣鎂離子在冷卻水塔運行時容易在大氣蒸發下累積成水垢，可能影響冷卻熱交換能效。因此，商用與中央空調保養時，通管與專用藥劑循環清洗保養顯得格外重要。</p>
+              <p className="text-slate-200 text-base sm:text-lg leading-[1.8]">答：當空調冷卻水系統中的鈣、鎂等礦物質離子濃度累積較高時，冷卻水在塔體運行蒸發過程中容易沈積成水垢，可能影響冷卻熱交換能效。因此，商用與中央空調保養時，定期進行通管與專用藥劑循環清洗保養，有助於維持系統原有運轉能效。</p>
             </div>
             
             <div className="bg-slate-900/30 p-6 rounded-2xl border border-slate-850">
