@@ -139,7 +139,7 @@ export default function KaohsiungAreaClient() {
             
             <div className="bg-slate-900/30 p-6 rounded-2xl border border-slate-850">
               <h3 className="font-bold text-white mb-2 text-lg">Q：大樓外牆冷氣安裝時，會額外收取吊車或危險施工費嗎？</h3>
-              <p className="text-slate-200 text-base sm:text-lg leading-[1.8]">答：這需要視現場環境而定。如果室外機吊掛在完全無站立點的外牆、需要技師跨出陽台懸空施作，或現場樓層過高無法配合室內施工，我們會依規定評估是否需要吊車或特殊高空安全防護作業，並在現場估價時清楚列明，雙方同意後才會施作，絕無後續惡意加價。</p>
+              <p className="text-slate-200 text-base sm:text-lg leading-[1.8]">答：這需要視現場環境而定。如果室外機吊掛在完全無站立點的外牆、需要技師跨出陽台懸空施作，或現場樓層過高無法配合室內施工，我們會依規定評估是否需要吊車或特殊高空安全防護作業，並在現場估價時清楚列明，雙方同意後才會施作，避免產生後續加價爭議。</p>
             </div>
           </div>
         </div>
