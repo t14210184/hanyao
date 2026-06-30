@@ -62,23 +62,23 @@ const services = [
 const steps = [
   {
     step: "01",
-    title: "LINE傳照或電話說明",
-    desc: "加 LINE 傳現場照片或電話描述水電狀況，專員初步判斷問題類型，並為您安排合適師傅。"
+    title: "LINE 傳照片或電話描述",
+    desc: "請傳現場照片、影片或描述故障狀況與您的地址，讓師傅初步判斷問題性質"
   },
   {
     step: "02",
-    title: "到場精確檢測",
-    desc: "高雄屏東在地師傅快速抵達現場診斷，確認故障範圍，向您說明處理方案並提供現場透明報價。"
+    title: "師傅評估，告知費用與時間",
+    desc: "師傅根據您的地點與狀況，告知可出勤時間與預估費用，您確認後才安排派工"
   },
   {
     step: "03",
-    title: "確認後立即施工",
-    desc: "雙方確認報價與方案後，師傅立即展開施作。過程使用合格材料，透明合理，絕不任意追加費用。"
+    title: "確認後到場施工",
+    desc: "雙方確認費用與時間後，師傅準時到場，依實際狀況施工，不隨意追加費用"
   },
   {
     step: "04",
-    title: "完工測試與保固",
-    desc: "施工完成後現場開機或通水測試，確認功能完全恢復正常，提供施工保障與後續保固說明。"
+    title: "完工驗收，提供保固說明",
+    desc: "完工後說明保固範圍與注意事項，讓您對後續維護有明確預期"
   }
 ];
 
@@ -127,7 +127,7 @@ export default function EmergencyPlumbingRepairClient() {
             高雄屏東 24 小時緊急水電搶修<br className="sm:hidden" />｜跳電、水管爆裂、堵塞，我們立刻到
           </h1>
           <p className="text-sm sm:text-base text-slate-400 mt-4 leading-relaxed max-w-3xl mx-auto">
-            基本出工費 NT$300~500，確認施工後全額折抵｜高雄屏東在地師傅，30 分鐘內報到
+            遇到水電緊急狀況？先傳照片或影片給我們，師傅評估現場狀況與您的地點後，告知可出勤時間與費用——您確認後才派工，不會有事後追加帳單
           </p>
 
           {/* Hero CTA Side-by-Side */}
@@ -142,7 +142,7 @@ export default function EmergencyPlumbingRepairClient() {
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
               </svg>
-              <span>LINE 傳照片馬上估</span>
+              <span>LINE 傳照片讓師傅評估</span>
             </CTAButton>
 
             <CTAButton
@@ -154,7 +154,7 @@ export default function EmergencyPlumbingRepairClient() {
               <svg className="w-5 h-5 text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.94.725l.548 2.2a1 1 0 01-.321.988l-1.305.98a10.582 10.582 0 004.872 4.872l.98-1.305a1 1 0 01.988-.321l2.2.548a1 1 0 01.725.94V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
               </svg>
-              <span>立即電話叫修</span>
+              <span>電話說明狀況，評估後報價</span>
             </CTAButton>
           </div>
 
@@ -166,15 +166,15 @@ export default function EmergencyPlumbingRepairClient() {
             </div>
             <div className="flex items-center justify-center gap-2 text-xs sm:text-sm text-slate-350">
               <span className="w-2 h-2 bg-sky-400 rounded-full"></span>
-              <span>到場透明報價</span>
+              <span>傳照片評估，確認後才派工</span>
             </div>
             <div className="flex items-center justify-center gap-2 text-xs sm:text-sm text-slate-350">
               <span className="w-2 h-2 bg-sky-400 rounded-full"></span>
-              <span>同意後才施工</span>
+              <span>費用透明說明在前</span>
             </div>
             <div className="flex items-center justify-center gap-2 text-xs sm:text-sm text-slate-350">
               <span className="w-2 h-2 bg-sky-400 rounded-full"></span>
-              <span>24 小時緊急出勤</span>
+              <span>施工保固，不額外追加</span>
             </div>
           </div>
         </div>
@@ -222,7 +222,7 @@ export default function EmergencyPlumbingRepairClient() {
               trackParams={{ service_type: "emergency_plumbing", cta_position: "painpoints_line" }}
               className="inline-flex py-3 px-8 bg-green-600 hover:bg-green-500 text-white font-bold rounded-xl items-center gap-2 text-xs sm:text-sm shadow-md transition-all"
             >
-              <span>立即 LINE 告知狀況</span>
+              <span>LINE 傳照片讓師傅評估</span>
             </CTAButton>
           </div>
         </div>
@@ -277,40 +277,40 @@ export default function EmergencyPlumbingRepairClient() {
           {/* Pricing Card */}
           <div className="bg-slate-900/50 border border-slate-850 p-6 sm:p-8 rounded-3xl space-y-6 mb-16 animate-pulse-slow">
             <p className="text-sm sm:text-base text-slate-300 leading-relaxed text-center font-semibold">
-              「到場基本出工費 NT$300~500，確認施作後全額折抵工資，不重複計費」
+              「水電故障的修繕費用，取決於故障類型、施工難度、地點與出勤時間，無法給出固定價格。我們的做法是：您先 LINE 傳照片與地址，師傅評估後告知費用，雙方確認後才派工。」
             </p>
             
             <div className="border-t border-slate-850 pt-6">
-              <ul className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs sm:text-sm text-slate-450">
-                <li className="flex justify-between items-center bg-slate-900/40 p-3.5 rounded-xl border border-slate-850/60">
-                  <span>基本出工檢測費（高屏市區）</span>
-                  <span className="text-sky-400 font-bold">NT$300 ~ 500</span>
+              <ul className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs sm:text-sm text-slate-400">
+                <li className="flex items-start gap-2 bg-slate-900/40 p-3.5 rounded-xl border border-slate-850/60">
+                  <span className="text-sky-400 mr-1.5 font-bold">✓</span>
+                  <span>故障類型與複雜程度：跳電查修、水管封管、馬達維修等，所需工時與材料各不相同</span>
                 </li>
-                <li className="flex justify-between items-center bg-slate-900/40 p-3.5 rounded-xl border border-slate-850/60">
-                  <span>夜間緊急叫修加成（22:00–06:00）</span>
-                  <span className="text-sky-400 font-bold">加收 NT$500 ~ 1,000</span>
+                <li className="flex items-start gap-2 bg-slate-900/40 p-3.5 rounded-xl border border-slate-850/60">
+                  <span className="text-sky-400 mr-1.5 font-bold">✓</span>
+                  <span>施工地點與距離：高雄市區、屏東市區與偏遠鄉鎮的出勤費用不同</span>
                 </li>
-                <li className="flex justify-between items-center bg-slate-900/40 p-3.5 rounded-xl border border-slate-850/60">
-                  <span>通馬桶 / 排水管疏通</span>
-                  <span className="text-sky-400 font-bold">NT$1,500 ~ 3,500</span>
+                <li className="flex items-start gap-2 bg-slate-900/40 p-3.5 rounded-xl border border-slate-850/60">
+                  <span className="text-sky-400 mr-1.5 font-bold">✓</span>
+                  <span>出勤時間：夜間與假日緊急叫修有相應的加成費用，出勤前會告知</span>
                 </li>
-                <li className="flex justify-between items-center bg-slate-900/40 p-3.5 rounded-xl border border-slate-850/60">
-                  <span>水管破裂緊急封管</span>
-                  <span className="text-sky-400 font-bold">NT$2,000 ~ 5,000</span>
+                <li className="flex items-start gap-2 bg-slate-900/40 p-3.5 rounded-xl border border-slate-850/60">
+                  <span className="text-sky-400 mr-1.5 font-bold">✓</span>
+                  <span>現場材料規格：管徑、線徑與材料等級均影響材料費用</span>
                 </li>
-                <li className="flex justify-between items-center bg-slate-900/40 p-3.5 rounded-xl border border-slate-850/60">
-                  <span>跳電查修排除</span>
-                  <span className="text-sky-400 font-bold">NT$800 ~ 2,500</span>
+                <li className="flex items-start gap-2 bg-slate-900/40 p-3.5 rounded-xl border border-slate-850/60">
+                  <span className="text-sky-400 mr-1.5 font-bold">✓</span>
+                  <span>是否需要特殊設備：高壓疏通、抓漏儀器等有相應設備使用費</span>
                 </li>
-                <li className="flex justify-between items-center bg-slate-900/40 p-3.5 rounded-xl border border-slate-850/60">
-                  <span>加壓馬達維修</span>
-                  <span className="text-sky-400 font-bold">NT$1,500 ~ 4,000</span>
+                <li className="flex items-start gap-2 bg-slate-900/40 p-3.5 rounded-xl border border-slate-850/60">
+                  <span className="text-sky-400 mr-1.5 font-bold">✓</span>
+                  <span>施工後是否需要泥作修復：部分工程完工後牆面或地磚需另行復原</span>
                 </li>
               </ul>
             </div>
             
             <p className="text-[11px] text-slate-500 text-center leading-relaxed">
-              * 實際費用依現場狀況、材料與施工難度評估，報價確認後才施工，無追加項目。以上價格為參考區間。
+              「以上因素均會影響最終費用。請先 LINE 傳照片與地址，師傅評估後說明費用，您確認後才出勤——所有費用在施工前透明告知，不會有事後意外帳單。」
             </p>
           </div>
 
@@ -350,7 +350,7 @@ export default function EmergencyPlumbingRepairClient() {
               trackParams={{ service_type: "emergency_plumbing", cta_position: "process_line" }}
               className="inline-flex py-3 px-8 bg-green-600 hover:bg-green-500 text-white font-bold rounded-xl items-center gap-2 text-xs sm:text-sm shadow-md transition-all"
             >
-              <span>LINE 預約緊急叫修</span>
+              <span>LINE 傳照片讓師傅評估</span>
             </CTAButton>
           </div>
         </div>
@@ -369,6 +369,62 @@ export default function EmergencyPlumbingRepairClient() {
           </div>
 
           <FAQAccordion items={faqs} />
+        </div>
+      </section>
+
+      {/* More Scenarios Section */}
+      <section className="py-16 bg-slate-900/20 border-t border-slate-900">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+              關於緊急叫修，我們想讓您事先了解的事
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-400 mt-2">
+              誠實說明我們的服務範圍與方式，幫助您做出適合的決定
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="bg-slate-900/40 border border-slate-850 p-6 rounded-2xl space-y-3">
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <span className="w-1.5 h-1.5 bg-sky-400 rounded-full"></span>
+                我們服務高雄、屏東，但不是每個地點都能立即到達
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
+                我們的師傅以高雄市區及屏東市區為主要服務範圍。若您位於偏遠鄉鎮，我們會如實告知出勤費用與可排程的時間，絕不讓您等了很久才說無法到達。建議先 LINE 告知地址，確認師傅可出勤後再安排。
+              </p>
+            </div>
+            
+            <div className="bg-slate-900/40 border border-slate-850 p-6 rounded-2xl space-y-3">
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <span className="w-1.5 h-1.5 bg-sky-400 rounded-full"></span>
+                照片比文字描述更能幫助師傅準確判斷
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
+                同樣是「跳電」，可能是迴路過載、漏電、電器故障或配電箱老化，所需的處理方式差異很大。一張配電箱照片或一段現場影片，往往能讓師傅在到場前就有初步判斷，減少您等待與溝通的時間，也讓報價更貼近實際。
+              </p>
+            </div>
+            
+            <div className="bg-slate-900/40 border border-slate-850 p-6 rounded-2xl space-y-3">
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <span className="w-1.5 h-1.5 bg-sky-400 rounded-full"></span>
+                我們不提供電話報價，是為了保護您
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
+                師傅沒看到現場說出的任何數字，對您都沒有保障意義——到場後可能差很多，那才是真正的困擾。我們的做法是師傅到場後依實際狀況告知費用，您同意才施工。這是保護您不被亂報價的方式。
+              </p>
+            </div>
+            
+            <div className="bg-slate-900/40 border border-slate-850 p-6 rounded-2xl space-y-3">
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <span className="w-1.5 h-1.5 bg-sky-400 rounded-full"></span>
+                緊急出勤費是真實存在的，但不會在完工後才告知
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
+                夜間或假日緊急出勤會有相應的加成費用。我們在您確認出勤前就會說明這項費用，您同意才出發。所有費用在施工前告知，不會有完工後才出現的「額外項目」。
+              </p>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -413,8 +469,8 @@ export default function EmergencyPlumbingRepairClient() {
       {/* Final CTA */}
       <FinalCTA
         serviceType="emergency_plumbing"
-        phoneText="立即電話叫修"
-        lineText="LINE 傳照片估價"
+        phoneText="電話說明狀況，評估後報價"
+        lineText="LINE 傳照片讓師傅評估"
       />
     </main>
   );

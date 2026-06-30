@@ -62,23 +62,23 @@ const services = [
 const steps = [
   {
     step: "01",
-    title: "LINE 傳照或電話說明",
-    desc: "您可以將滲水處或水費單照片透過 LINE 傳送給我們，由專員為您初步判斷並安排技師到府。"
+    title: "LINE 傳照片或電話描述現象",
+    desc: "傳滲水位置照片或描述發生時間與現象，讓師傅初步判斷可能的漏水類型"
   },
   {
     step: "02",
-    title: "精密抓漏 + 現場報價",
-    desc: "技師攜帶紅外線與打壓檢測設備到場，精確鎖定漏水位置或滲漏來源，出具書面修繕報價單。"
+    title: "到場精密抓漏",
+    desc: "攜帶熱顯像儀與聽音棒到場，在合理範圍內精密定位漏水位置，確認後才報價"
   },
   {
     step: "03",
-    title: "確認後立即施工",
-    desc: "在您簽字確認報價後，師傅立即開始修繕。精準開孔修復漏水點，過程迅速，最大化保護既有裝潢。"
+    title: "確認報價後施工修繕",
+    desc: "您同意報價後才進行修繕，縮小開挖範圍，精準處理漏水位置"
   },
   {
     step: "04",
-    title: "完工測試 + 防水保固",
-    desc: "施工完成後再次進行管路加壓試漏與功能確認，清理現場，並出具 1 年施工與防水保固。"
+    title: "完工測試，說明保固與後續注意事項",
+    desc: "加壓測試確認無漏，說明保固範圍，並告知哪些後續狀況需要另外處理"
   }
 ];
 
@@ -127,7 +127,7 @@ export default function PlumbingLeakRepairClient() {
             高雄屏東專業水管更換與漏水修繕<br className="sm:hidden" />｜精密抓漏，找不到不收費
           </h1>
           <p className="text-sm sm:text-base text-slate-400 mt-4 leading-relaxed max-w-3xl mx-auto">
-            牆面滲水、天花板滴水、水費暴增？LINE 傳照片即時評估｜修繕後提供防水保固
+            漏水位置與管路狀況決定修法與費用，無法事先給出固定數字。請 LINE 傳滲水照片或描述現象，我們初步判斷後安排到場精密抓漏——找到才報價，您確認後才施工
           </p>
 
           {/* Hero CTA Side-by-Side */}
@@ -142,7 +142,7 @@ export default function PlumbingLeakRepairClient() {
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
               </svg>
-              <span>LINE 傳照片免費估價</span>
+              <span>LINE 傳照片讓師傅評估</span>
             </CTAButton>
 
             <CTAButton
@@ -154,7 +154,7 @@ export default function PlumbingLeakRepairClient() {
               <svg className="w-5 h-5 text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.94.725l.548 2.2a1 1 0 01-.321.988l-1.305.98a10.582 10.582 0 004.872 4.872l.98-1.305a1 1 0 01.988-.321l2.2.548a1 1 0 01.725.94V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
               </svg>
-              <span>立即電話叫修</span>
+              <span>電話說明狀況，評估後報價</span>
             </CTAButton>
           </div>
 
@@ -170,11 +170,11 @@ export default function PlumbingLeakRepairClient() {
             </div>
             <div className="flex items-center justify-center gap-2 text-xs sm:text-sm text-slate-350">
               <span className="w-2 h-2 bg-sky-400 rounded-full"></span>
-              <span>熱顯像儀精密抓漏</span>
+              <span>找到才報價，確認後施工</span>
             </div>
             <div className="flex items-center justify-center gap-2 text-xs sm:text-sm text-slate-350">
               <span className="w-2 h-2 bg-sky-400 rounded-full"></span>
-              <span>修繕保固 1 年</span>
+              <span>施工保固，範圍明確說明</span>
             </div>
           </div>
         </div>
@@ -222,7 +222,7 @@ export default function PlumbingLeakRepairClient() {
               trackParams={{ service_type: "plumbing_leak", cta_position: "painpoints_line" }}
               className="inline-flex py-3 px-8 bg-green-600 hover:bg-green-500 text-white font-bold rounded-xl items-center gap-2 text-xs sm:text-sm shadow-md transition-all"
             >
-              <span>LINE 傳照片免費評估</span>
+              <span>LINE 傳照片讓師傅評估</span>
             </CTAButton>
           </div>
         </div>
@@ -276,41 +276,41 @@ export default function PlumbingLeakRepairClient() {
 
           {/* Pricing Card */}
           <div className="bg-slate-900/50 border border-slate-850 p-6 sm:p-8 rounded-3xl space-y-6 mb-16">
-            <p className="text-sm sm:text-base text-slate-300 leading-relaxed text-center font-bold">
-              「找不到漏水點，當次出工費全額免收」
+            <p className="text-sm sm:text-base text-slate-300 leading-relaxed text-center font-semibold">
+              「漏水修繕費用取決於漏水位置、管路狀況、是否需要打牆開挖，以及施工地點與材料規格。我們的原則是先精密抓漏、確認問題後才報價；若在合理檢測範圍內找不到漏水點，不收出工費。」
             </p>
             
             <div className="border-t border-slate-850 pt-6">
-              <ul className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs sm:text-sm text-slate-450">
-                <li className="flex justify-between items-center bg-slate-900/40 p-3.5 rounded-xl border border-slate-850/60">
-                  <span>出工抓漏檢測費（高屏市區）</span>
-                  <span className="text-sky-400 font-bold">NT$300 ~ 500（找不到全額免收）</span>
+              <ul className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs sm:text-sm text-slate-400">
+                <li className="flex items-start gap-2 bg-slate-900/40 p-3.5 rounded-xl border border-slate-850/60">
+                  <span className="text-sky-400 mr-1.5 font-bold">✓</span>
+                  <span>漏水位置與管路深度：明管處理簡單，暗管需儀器定位，確認範圍後才開挖</span>
                 </li>
-                <li className="flex justify-between items-center bg-slate-900/40 p-3.5 rounded-xl border border-slate-850/60">
-                  <span>局部管路漏水修繕</span>
-                  <span className="text-sky-400 font-bold">NT$3,000 ~ 8,000</span>
+                <li className="flex items-start gap-2 bg-slate-900/40 p-3.5 rounded-xl border border-slate-850/60">
+                  <span className="text-sky-400 mr-1.5 font-bold">✓</span>
+                  <span>是否需要打牆開挖：縮小開挖範圍可降低後續泥作修復的費用與時間</span>
                 </li>
-                <li className="flex justify-between items-center bg-slate-900/40 p-3.5 rounded-xl border border-slate-850/60">
-                  <span>水龍頭 / 止水閥更換</span>
-                  <span className="text-sky-400 font-bold">NT$800 ~ 2,500</span>
+                <li className="flex items-start gap-2 bg-slate-900/40 p-3.5 rounded-xl border border-slate-850/60">
+                  <span className="text-sky-400 mr-1.5 font-bold">✓</span>
+                  <span>管材規格與更換長度：鍍鋅管、不鏽鋼管、PEX 管的材料費各不相同</span>
                 </li>
-                <li className="flex justify-between items-center bg-slate-900/40 p-3.5 rounded-xl border border-slate-850/60">
-                  <span>冷熱水管段落更換（1~2 米）</span>
-                  <span className="text-sky-400 font-bold">NT$2,500 ~ 6,000</span>
+                <li className="flex items-start gap-2 bg-slate-900/40 p-3.5 rounded-xl border border-slate-850/60">
+                  <span className="text-sky-400 mr-1.5 font-bold">✓</span>
+                  <span>施工地點：高雄市區與屏東各鄉鎮的到場費用不同</span>
                 </li>
-                <li className="flex justify-between items-center bg-slate-900/40 p-3.5 rounded-xl border border-slate-850/60">
-                  <span>全室水管汰換（30 坪）</span>
-                  <span className="text-sky-400 font-bold">約 NT$80,000 ~ 150,000</span>
+                <li className="flex items-start gap-2 bg-slate-900/40 p-3.5 rounded-xl border border-slate-850/60">
+                  <span className="text-sky-400 mr-1.5 font-bold">✓</span>
+                  <span>樓層與施工空間：高樓層或管道間狹窄會影響工時與施工難度</span>
                 </li>
-                <li className="flex justify-between items-center bg-slate-900/40 p-3.5 rounded-xl border border-slate-850/60">
-                  <span>樓板防水工程</span>
-                  <span className="text-sky-400 font-bold">依範圍現場評估</span>
+                <li className="flex items-start gap-2 bg-slate-900/40 p-3.5 rounded-xl border border-slate-850/60">
+                  <span className="text-sky-400 mr-1.5 font-bold">✓</span>
+                  <span>是否需要搭配防水工程：樓板或浴室防水層修復需另行評估</span>
                 </li>
               </ul>
             </div>
             
             <p className="text-[11px] text-slate-500 text-center leading-relaxed">
-              * 實際費用依現場漏水位置、管路狀況與施工範圍評估，書面報價確認後才施工。
+              「漏水問題越拖損失越大，但貿然施工可能修錯地方。請先 LINE 傳滲水照片與發生時間，我們初步判斷後安排到場，找到才報價。」
             </p>
           </div>
 
@@ -350,7 +350,7 @@ export default function PlumbingLeakRepairClient() {
               trackParams={{ service_type: "plumbing_leak", cta_position: "process_line" }}
               className="inline-flex py-3 px-8 bg-green-600 hover:bg-green-500 text-white font-bold rounded-xl items-center gap-2 text-xs sm:text-sm shadow-md transition-all"
             >
-              <span>LINE 預約免費抓漏評估</span>
+              <span>LINE 傳照片讓師傅評估</span>
             </CTAButton>
           </div>
         </div>
@@ -369,6 +369,62 @@ export default function PlumbingLeakRepairClient() {
           </div>
 
           <FAQAccordion items={faqs} />
+        </div>
+      </section>
+
+      {/* More Scenarios Section */}
+      <section className="py-16 bg-slate-900/20 border-t border-slate-900">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+              關於漏水修繕，您可能沒想到的幾件事
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-400 mt-2">
+              誠實說明漏水工程的複雜性，讓您做出不後悔的決定
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="bg-slate-900/40 border border-slate-850 p-6 rounded-2xl space-y-3">
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <span className="w-1.5 h-1.5 bg-sky-400 rounded-full"></span>
+                『找不到不收費』是真的，但有前提
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
+                我們攜帶專業儀器在合理的檢測範圍內做精密定位，若無法確認漏水位置，不收取出工費。但若您的管路非常老舊、問題發生在無法進入的公設管道間，或需要特殊條件才能檢測，我們會如實說明情況與後續可能的處理方向。
+              </p>
+            </div>
+            
+            <div className="bg-slate-900/40 border border-slate-850 p-6 rounded-2xl space-y-3">
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <span className="w-1.5 h-1.5 bg-sky-400 rounded-full"></span>
+                漏水的來源不一定在您以為的位置
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
+                水會沿著結構縫隙流動，天花板滴水不代表正上方有問題，牆面滲水也不一定是同層管路造成的。我們使用熱顯像儀與聽音棒協助定位，有時需要排除多種可能性才能確認——這個過程值得花，否則修了錯的地方，漏水還是繼續。
+              </p>
+            </div>
+            
+            <div className="bg-slate-900/40 border border-slate-850 p-6 rounded-2xl space-y-3">
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <span className="w-1.5 h-1.5 bg-sky-400 rounded-full"></span>
+                修漏水可能需要搭配泥作，我們會提前說清楚
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
+                若漏水位置需要打牆開挖，修完管路後的地磚、牆磚或防水層修復，通常需要另外找泥作師傅，費用不含在我們的報價內。我們在施工前會明確說明哪些是我們負責的範圍，讓您對整體費用有完整預期，不會出現驚喜帳單。
+              </p>
+            </div>
+            
+            <div className="bg-slate-900/40 border border-slate-850 p-6 rounded-2xl space-y-3">
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <span className="w-1.5 h-1.5 bg-sky-400 rounded-full"></span>
+                樓層漏水糾紛，我們可以協助釐清責任歸屬
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
+                面臨樓上樓下的漏水糾紛時，我們到場後可出具技術說明，協助您釐清水源方向與可能的責任範圍。我們提供的是客觀的現場技術判斷，幫助您與鄰居或房東溝通，讓糾紛有客觀的依據可以討論。
+              </p>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -413,8 +469,8 @@ export default function PlumbingLeakRepairClient() {
       {/* Final CTA */}
       <FinalCTA
         serviceType="plumbing_leak"
-        phoneText="立即電話叫修"
-        lineText="LINE 傳照片免費估價"
+        phoneText="電話說明狀況，評估後報價"
+        lineText="LINE 傳照片讓師傅評估"
       />
     </main>
   );

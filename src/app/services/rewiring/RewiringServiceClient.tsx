@@ -62,23 +62,23 @@ const services = [
 const steps = [
   {
     step: "01",
-    title: "LINE傳照或現場丈量",
-    desc: "您可以先加 LINE 傳送電箱外貌與告知坪數獲取初步估算，亦可預約技術專員到府現場精準丈量。"
+    title: "LINE 傳照片或電話初步說明",
+    desc: "傳配電箱照片與房屋格局說明，或電話描述現況，讓我們初步了解工程規模"
   },
   {
     step: "02",
-    title: "出具書面報價單",
-    desc: "詳細列明全屋坪數、迴路規劃、線材規格及材料工資，提供透明且具有合約效力的書面報價，絕無隱藏收費。"
+    title: "預約到場丈量評估",
+    desc: "師傅到府勘查現有配線狀況、確認迴路需求，丈量後出具書面報價單"
   },
   {
     step: "03",
-    title: "排期分區施工",
-    desc: "依約定時間進場，採用「分區斷電施工法」，當日施工完後即恢復基本生活用電，盡可能降低生活影響。"
+    title: "確認報價後分區施工",
+    desc: "您同意書面報價後才開工，分區斷電施工，每日恢復部分生活用電，不影響基本生活"
   },
   {
     step: "04",
-    title: "完工測試保固交屋",
-    desc: "施作完畢後進行全室插座極性、電壓與跳電功能測試。提供 1 年施工保障與售後服務，確認安全後完工交屋。"
+    title: "通電測試，說明保固範圍",
+    desc: "全室通電測試確認正常，說明保固範圍與注意事項，讓您清楚知道後續維護責任"
   }
 ];
 
@@ -127,7 +127,7 @@ export default function RewiringServiceClient() {
             高雄屏東老屋電線重拉<br className="sm:hidden" />｜全室電路更新、配電箱換新，不用搬家也能完工
           </h1>
           <p className="text-sm sm:text-base text-slate-400 mt-4 leading-relaxed max-w-3xl mx-auto">
-            採用 CNS 國家標準合格線材，分區施作不影響生活｜施工保固，安全有保障
+            舊屋換線不是簡單的工程——坪數、現有配線狀況、迴路需求都會影響工法與費用。歡迎 LINE 傳現場照片，我們評估後提供書面報價，您確認再施工，不貿然開工
           </p>
 
           {/* Hero CTA Side-by-Side */}
@@ -142,7 +142,7 @@ export default function RewiringServiceClient() {
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
               </svg>
-              <span>LINE 傳照片免費詢價</span>
+              <span>LINE 傳照片讓師傅評估</span>
             </CTAButton>
 
             <CTAButton
@@ -154,7 +154,7 @@ export default function RewiringServiceClient() {
               <svg className="w-5 h-5 text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.94.725l.548 2.2a1 1 0 01-.321.988l-1.305.98a10.582 10.582 0 004.872 4.872l.98-1.305a1 1 0 01.988-.321l2.2.548a1 1 0 01.725.94V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
               </svg>
-              <span>立即電話諮詢</span>
+              <span>電話諮詢，到場評估後報價</span>
             </CTAButton>
           </div>
 
@@ -166,15 +166,15 @@ export default function RewiringServiceClient() {
             </div>
             <div className="flex items-center justify-center gap-2 text-xs sm:text-sm text-slate-350">
               <span className="w-2 h-2 bg-sky-400 rounded-full"></span>
-              <span>CNS 國家標準線材</span>
+              <span>到場丈量，出具書面報價</span>
             </div>
             <div className="flex items-center justify-center gap-2 text-xs sm:text-sm text-slate-350">
               <span className="w-2 h-2 bg-sky-400 rounded-full"></span>
-              <span>分區施作不需搬家</span>
+              <span>確認後才施工，不貿然開工</span>
             </div>
             <div className="flex items-center justify-center gap-2 text-xs sm:text-sm text-slate-350">
               <span className="w-2 h-2 bg-sky-400 rounded-full"></span>
-              <span>施工完工保固 1 年</span>
+              <span>施工保固，範圍明確說明</span>
             </div>
           </div>
         </div>
@@ -222,7 +222,7 @@ export default function RewiringServiceClient() {
               trackParams={{ service_type: "rewiring", cta_position: "painpoints_line" }}
               className="inline-flex py-3 px-8 bg-green-600 hover:bg-green-500 text-white font-bold rounded-xl items-center gap-2 text-xs sm:text-sm shadow-md transition-all"
             >
-              <span>LINE 傳照片免費評估</span>
+              <span>LINE 傳照片讓師傅評估</span>
             </CTAButton>
           </div>
         </div>
@@ -277,36 +277,40 @@ export default function RewiringServiceClient() {
           {/* Pricing Card */}
           <div className="bg-slate-900/50 border border-slate-850 p-6 sm:p-8 rounded-3xl space-y-6 mb-12">
             <p className="text-sm sm:text-base text-slate-300 leading-relaxed text-center font-semibold">
-              「全室電線重拉依坪數、迴路數與線材規格評估，到場後出具書面報價，同意後才施工」
+              「電線重拉的費用變數非常大，坪數、現有配線狀況、所需迴路數量、線材規格與施工難度都有影響。我們不做電話估價——必須到場評估後，才能提供對您有實質保障的書面報價。」
             </p>
             
             <div className="border-t border-slate-850 pt-6">
-              <ul className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs sm:text-sm text-slate-450">
-                <li className="flex justify-between items-center bg-slate-900/40 p-3.5 rounded-xl border border-slate-850/60">
-                  <span>全室電線抽換（30 坪，連工帶料）</span>
-                  <span className="text-sky-400 font-bold">約 NT$120,000 ~ 200,000</span>
+              <ul className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs sm:text-sm text-slate-400">
+                <li className="flex items-start gap-2 bg-slate-900/40 p-3.5 rounded-xl border border-slate-850/60">
+                  <span className="text-sky-400 mr-1.5 font-bold">✓</span>
+                  <span>坪數與格局複雜度：坪數越大、格局越複雜，管線走法越多，工時越長</span>
                 </li>
-                <li className="flex justify-between items-center bg-slate-900/40 p-3.5 rounded-xl border border-slate-850/60">
-                  <span>配電箱更新（10~20 迴路）</span>
-                  <span className="text-sky-400 font-bold">約 NT$15,000 ~ 35,000</span>
+                <li className="flex items-start gap-2 bg-slate-900/40 p-3.5 rounded-xl border border-slate-850/60">
+                  <span className="text-sky-400 mr-1.5 font-bold">✓</span>
+                  <span>現有配線狀況：鋁線、老舊細銅線的安全風險與處理方式不同，影響工程範圍</span>
                 </li>
-                <li className="flex justify-between items-center bg-slate-900/40 p-3.5 rounded-xl border border-slate-850/60">
-                  <span>冷氣獨立迴路（每條）</span>
-                  <span className="text-sky-400 font-bold">約 NT$3,500 ~ 6,000</span>
+                <li className="flex items-start gap-2 bg-slate-900/40 p-3.5 rounded-xl border border-slate-850/60">
+                  <span className="text-sky-400 mr-1.5 font-bold">✓</span>
+                  <span>所需迴路數量與規格：冷氣、廚房、一般插座各需不同安培數的迴路</span>
                 </li>
-                <li className="flex justify-between items-center bg-slate-900/40 p-3.5 rounded-xl border border-slate-850/60">
-                  <span>局部問題迴路更換</span>
-                  <span className="text-sky-400 font-bold">約 NT$3,000 ~ 8,000 / 迴路</span>
+                <li className="flex items-start gap-2 bg-slate-900/40 p-3.5 rounded-xl border border-slate-850/60">
+                  <span className="text-sky-400 mr-1.5 font-bold">✓</span>
+                  <span>是否同步更新配電箱：配電箱規格影響整體安全性與工程造價</span>
                 </li>
-                <li className="flex justify-between items-center bg-slate-900/40 p-3.5 rounded-xl border border-slate-850/60">
-                  <span>電動車充電樁迴路配線</span>
-                  <span className="text-sky-400 font-bold">約 NT$5,000 ~ 10,000</span>
+                <li className="flex items-start gap-2 bg-slate-900/40 p-3.5 rounded-xl border border-slate-850/60">
+                  <span className="text-sky-400 mr-1.5 font-bold">✓</span>
+                  <span>施工地點：高雄市區與屏東各鄉鎮的到場評估費用不同</span>
+                </li>
+                <li className="flex items-start gap-2 bg-slate-900/40 p-3.5 rounded-xl border border-slate-850/60">
+                  <span className="text-sky-400 mr-1.5 font-bold">✓</span>
+                  <span>是否有裝潢配合需求：配合室內設計進場有額外協調成本</span>
                 </li>
               </ul>
             </div>
             
-            <p className="text-[11px] text-slate-550 text-center leading-relaxed">
-              * 實際費用依現場坪數、迴路數量與線材規格評估，書面報價確認後才施工。
+            <p className="text-[11px] text-slate-500 text-center leading-relaxed">
+              「電線工程的報價差距可能很大，我們不猜測、不電話估價。請 LINE 傳配電箱照片與房屋格局說明，安排到場丈量後出具書面報價，您確認後才施工。」
             </p>
           </div>
 
@@ -353,7 +357,7 @@ export default function RewiringServiceClient() {
               trackParams={{ service_type: "rewiring", cta_position: "process_line" }}
               className="inline-flex py-3 px-8 bg-green-600 hover:bg-green-500 text-white font-bold rounded-xl items-center gap-2 text-xs sm:text-sm shadow-md transition-all"
             >
-              <span>LINE 預約免費評估</span>
+              <span>LINE 傳照片讓師傅評估</span>
             </CTAButton>
           </div>
         </div>
@@ -372,6 +376,62 @@ export default function RewiringServiceClient() {
           </div>
 
           <FAQAccordion items={faqs} />
+        </div>
+      </section>
+
+      {/* More Scenarios Section */}
+      <section className="py-16 bg-slate-900/20 border-t border-slate-900">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+              換線工程前，這些觀念可以幫您做出更好的決定
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-400 mt-2">
+              誠實面對換線工程的複雜性，幫助您與師傅建立合理預期
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="bg-slate-900/40 border border-slate-850 p-6 rounded-2xl space-y-3">
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <span className="w-1.5 h-1.5 bg-sky-400 rounded-full"></span>
+                不是每個老屋都需要全室換線
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
+                有些老屋只是特定迴路老化或配電箱容量不足，局部更新就能解決問題。我們到場評估的目的是幫您判斷「必要的範圍」，而不是推銷全室施工。您的預算與實際安全需求，我們都會誠實說明。
+              </p>
+            </div>
+            
+            <div className="bg-slate-900/40 border border-slate-850 p-6 rounded-2xl space-y-3">
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <span className="w-1.5 h-1.5 bg-sky-400 rounded-full"></span>
+                為什麼我們不做電話或 LINE 報價？
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
+                電線工程的費用差距可能超過十萬元，取決於您家的坪數、現有配線狀況、需要幾條冷氣迴路、是否換配電箱——這些都必須現場看才能確認。給您一個「大約多少」的電話數字，對您沒有任何保障意義，到場後差很多才是真正的困擾。
+              </p>
+            </div>
+            
+            <div className="bg-slate-900/40 border border-slate-850 p-6 rounded-2xl space-y-3">
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <span className="w-1.5 h-1.5 bg-sky-400 rounded-full"></span>
+                施工期間不需要搬出去，但需要您的配合
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
+                我們採分區斷電施工，每天工作結束後會恢復部分生活用電。施工期間需要有人在家配合師傅作業或能讓師傅自由進出。建議在正式開工前與師傅討論每日施工時間與配合方式，避免影響您的生活作息。
+              </p>
+            </div>
+            
+            <div className="bg-slate-900/40 border border-slate-850 p-6 rounded-2xl space-y-3">
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <span className="w-1.5 h-1.5 bg-sky-400 rounded-full"></span>
+                保固是有條件的，完工時我們會清楚說明
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
+                我們提供施工保固，保固期內因施工問題造成的故障免費回場處理。但若是後來自行改動、新增電器超過迴路負荷或其他外部原因造成的問題，則不在保固範圍內。這些在完工交屋時都會清楚說明，讓您知道自己的責任範圍。
+              </p>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -416,8 +476,8 @@ export default function RewiringServiceClient() {
       {/* Final CTA */}
       <FinalCTA
         serviceType="rewiring"
-        phoneText="立即電話諮詢換線"
-        lineText="LINE 傳照片免費評估"
+        phoneText="電話諮詢，到場評估後報價"
+        lineText="LINE 傳照片讓師傅評估"
       />
     </main>
   );

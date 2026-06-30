@@ -16,7 +16,10 @@ export const footerLinks = {
     { name: "商用空調工程", path: "/services/commercial-ac/" },
     { name: "空調冷氣安裝", path: "/services/ac-installation/" },
     { name: "冷氣清洗保養", path: "/services/ac-cleaning/" },
-    { name: "冷氣維修檢修", path: "/services/ac-repair/" }
+    { name: "冷氣維修檢修", path: "/services/ac-repair/" },
+    { name: "緊急水電維修", path: "/services/emergency-plumbing-repair/" },
+    { name: "老屋電線重拉", path: "/services/rewiring/" },
+    { name: "水管更換漏水修繕", path: "/services/plumbing-leak-repair/" }
   ],
   support: [
     { name: "常見問題 FAQ", path: "/faq/" },
