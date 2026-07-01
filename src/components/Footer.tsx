@@ -128,15 +128,7 @@ export default function Footer() {
                     trackParams={{ cta_position: "footer_info" }}
                     className="hover:text-white font-semibold transition-colors"
                   >
-                    {siteConfig.phone1} (師傅)
-                  </CTAButton>
-                  <CTAButton
-                    href={siteConfig.phone2Link}
-                    trackEventName="phone_click"
-                    trackParams={{ cta_position: "footer_info" }}
-                    className="hover:text-white transition-colors"
-                  >
-                    {siteConfig.phone2} (客服)
+                    {siteConfig.phone1}
                   </CTAButton>
                 </div>
               </li>
