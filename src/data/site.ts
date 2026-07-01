@@ -1,9 +1,9 @@
 export const siteConfig = {
   brandName: "焓耀空調工程",
-  phone1: "0931-940-133",
-  phone1Link: "tel:0931940133",
-  phone2: "0905-828-620",
-  phone2Link: "tel:0905828620",
+  phone1: "08-7552260",
+  phone1Link: "tel:087552260",
+  phone2: "08-7552260",
+  phone2Link: "tel:087552260",
   lineUrl: "https://line.me/R/ti/p/@451vpomq",
   email: "hanyao0105@gmail.com",
   companyAddress: "900 屏東縣屏東市建南路106號",

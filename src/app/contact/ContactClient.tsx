@@ -4,6 +4,7 @@ import React from "react";
 import ContactForm from "@/components/ContactForm";
 import FinalCTA from "@/components/FinalCTA";
 import { trackEvent } from "@/lib/tracking";
+import { siteConfig } from "@/data/site";
 
 export default function ContactClient() {
   return (
@@ -56,8 +57,7 @@ export default function ContactClient() {
                     </div>
                     <div>
                       <span className="text-xs text-slate-500 block">諮詢專線</span>
-                      <a href="tel:0931940133" onClick={() => trackEvent("phone_click", { service_type: "contact_page", cta_position: "contact_info" })} className="text-white hover:text-sky-400 font-bold block text-sm sm:text-base transition-colors">0931-940-133</a>
-                      <a href="tel:0905828620" onClick={() => trackEvent("phone_click", { service_type: "contact_page", cta_position: "contact_info" })} className="text-white hover:text-sky-400 font-bold block text-sm transition-colors">0905-828-620</a>
+                      <a href={siteConfig.phone1Link} onClick={() => trackEvent("phone_click", { service_type: "contact_page", cta_position: "contact_info" })} className="text-white hover:text-sky-400 font-bold block text-sm sm:text-base transition-colors">{siteConfig.phone1}</a>
                     </div>
                   </div>
 

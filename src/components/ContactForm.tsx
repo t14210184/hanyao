@@ -333,7 +333,7 @@ export default function ContactForm({
               required
               value={formData.phone}
               onChange={handleChange}
-              placeholder="例如：0931-940-133"
+              placeholder="例如：08-7552260"
               className="bg-slate-950 border border-slate-600 focus:border-sky-400 focus:ring-1 focus:ring-sky-400 text-white rounded-xl py-4 px-5 outline-none transition-all placeholder:text-slate-400 text-lg sm:text-xl min-h-[64px] w-full font-medium"
             />
           </div>

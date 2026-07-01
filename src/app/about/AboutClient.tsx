@@ -96,8 +96,7 @@ export default function AboutClient() {
                 <p><strong className="text-slate-200">電子信箱：</strong>hanyao0105@gmail.com</p>
               </div>
               <div className="space-y-3">
-                <p><strong className="text-slate-200">聯絡電話一：</strong>0931-940-133</p>
-                <p><strong className="text-slate-200">聯絡電話二：</strong>0905-828-620</p>
+                <p><strong className="text-slate-200">聯絡電話：</strong>{siteConfig.phone1}</p>
                 <p><strong className="text-slate-200">官方 LINE ID：</strong>@451vpomq</p>
               </div>
             </div>
