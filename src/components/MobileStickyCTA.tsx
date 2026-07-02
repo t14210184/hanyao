@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { siteConfig } from "@/data/site";
 import CTAButton from "./CTAButton";
+import { trackEvent } from "@/lib/tracking";
 
 export default function MobileStickyCTA() {
   const pathname = usePathname();
@@ -35,6 +36,12 @@ export default function MobileStickyCTA() {
   const handleAppointmentClick = (e: React.MouseEvent) => {
     if (hasContactSection) {
       e.preventDefault();
+
+      trackEvent("sticky_cta_scroll", {
+        cta_position: "mobile_sticky_bar",
+        destination_element: "contact-section",
+      });
+
       const element = document.getElementById("contact-section");
       if (element) {
         element.scrollIntoView({ behavior: "smooth" });

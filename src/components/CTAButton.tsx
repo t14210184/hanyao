@@ -27,7 +27,15 @@ export default function CTAButton({
     // Push event to dataLayer only if it matches approved events
     if (
       trackEventName &&
-      ["phone_click", "line_click", "line_quote_copy"].includes(trackEventName)
+      [
+        "phone_click",
+        "line_click",
+        "line_quote_copy",
+        "line_open_attempt",
+        "form_start",
+        "form_error",
+        "sticky_cta_scroll"
+      ].includes(trackEventName)
     ) {
       trackEvent(trackEventName, trackParams);
     }

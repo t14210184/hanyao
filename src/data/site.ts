@@ -12,5 +12,5 @@ export const siteConfig = {
   serviceAreas: ["高雄市", "屏東縣"],
   gtmId: "GTM-5GS4HFP2",
   gaId: "G-L87XJM1TKZ",
-  adsId: "AW-4801404246",
+  adsId: "AW-18132851851",
 };

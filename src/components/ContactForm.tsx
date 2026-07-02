@@ -44,6 +44,7 @@ export default function ContactForm({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [copyFallbackText, setCopyFallbackText] = useState<string>("");
+  const [hasStartedTyping, setHasStartedTyping] = useState(false);
 
   // Read ?service= from URL to pre-select, fallback to defaultService prop
   useEffect(() => {
@@ -71,6 +72,15 @@ export default function ContactForm({
         return next;
       });
     }
+
+    // Trigger form_start on first interaction
+    if (!hasStartedTyping) {
+      setHasStartedTyping(true);
+      trackEvent("form_start", {
+        form_location: formLocation,
+        service_type: name === "service" ? value : formData.service,
+      });
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -79,18 +89,42 @@ export default function ContactForm({
     // 1. Validate required fields
     if (!formData.name.trim()) {
       setErrors({ form: "請填寫您的聯絡姓名" });
+      trackEvent("form_error", {
+        form_location: formLocation,
+        service_type: formData.service,
+        error_field: "name",
+        error_message: "請填寫您的聯絡姓名",
+      });
       return;
     }
     if (!formData.phone.trim()) {
       setErrors({ form: "請填寫您的聯絡電話" });
+      trackEvent("form_error", {
+        form_location: formLocation,
+        service_type: formData.service,
+        error_field: "phone",
+        error_message: "請填寫您的聯絡電話",
+      });
       return;
     }
     if (formData.phone.replace(/[- ]/g, "").length < 8) {
       setErrors({ form: "請填寫正確的電話號碼格式" });
+      trackEvent("form_error", {
+        form_location: formLocation,
+        service_type: formData.service,
+        error_field: "phone",
+        error_message: "請填寫正確的電話號碼格式",
+      });
       return;
     }
     if (!formData.service) {
       setErrors({ form: "請選擇您需要的服務項目" });
+      trackEvent("form_error", {
+        form_location: formLocation,
+        service_type: "",
+        error_field: "service",
+        error_message: "請選擇您需要的服務項目",
+      });
       return;
     }
 
@@ -173,9 +207,18 @@ export default function ContactForm({
     // 6. Show success UI
     setIsSubmitted(true);
 
+    // 6.5 Fire line_open_attempt event
+    const isMobileDevice = typeof window !== "undefined" && /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    trackEvent("line_open_attempt", {
+      form_location: formLocation,
+      service_type: formData.service,
+      device_platform: isMobileDevice ? "mobile" : "desktop",
+    });
+
     // 7. Fire line_click event
     trackEvent("line_click", {
-      click_location: formLocation,
+      cta_position: formLocation,
+      service_type: formData.service,
       link_type: "line",
     });
 
@@ -199,6 +242,7 @@ export default function ContactForm({
     setErrors({});
     setIsSubmitted(false);
     setCopyFallbackText("");
+    setHasStartedTyping(false);
   };
 
   // ── Success / redirect screen ──────────────────────────────────────────────

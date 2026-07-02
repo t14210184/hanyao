@@ -69,7 +69,7 @@ export default function ContactClient() {
                     </div>
                     <div>
                       <span className="text-xs text-slate-500 block">官方 LINE 帳號</span>
-                      <a href="https://line.me/R/ti/p/@451vpomq" target="_blank" rel="noopener noreferrer" onClick={() => trackEvent("line_click", { service_type: "contact_page", cta_position: "contact_info" })} className="text-white hover:text-green-400 font-bold block text-sm sm:text-base transition-colors">@451vpomq</a>
+                      <a href="https://line.me/R/ti/p/@451vpomq" target="_blank" rel="noopener noreferrer" onClick={() => trackEvent("line_click", { service_type: "contact_page", cta_position: "contact_info", link_type: "line" })} className="text-white hover:text-green-400 font-bold block text-sm sm:text-base transition-colors">@451vpomq</a>
                       <span className="text-xs text-slate-400">（可 LINE 傳平面圖或現場舊機照片，以利初步判斷）</span>
                     </div>
                   </div>

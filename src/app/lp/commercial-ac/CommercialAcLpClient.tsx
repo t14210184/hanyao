@@ -203,7 +203,8 @@ export default function CommercialAcLpClient() {
       landing_page_type: "google_ads",
       cta_position: ctaPosition,
       lead_method: "line",
-      keyword_intent: "commercial_ac"
+      keyword_intent: "commercial_ac",
+      link_type: "line"
     });
   };
 
