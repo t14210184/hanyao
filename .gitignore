@@ -73,3 +73,7 @@ secrets/
 *oauth*.json
 *token*.json
 application_default_credentials.json
+*google-ads*.json
+*google-ads*.env
+*refresh_token*
+*developer_token*
