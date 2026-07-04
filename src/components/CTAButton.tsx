@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { trackEvent } from "@/lib/tracking";
+import { trackEvent, trackLineContactAttempt, trackPhoneClickAttempt } from "@/lib/tracking";
 
 interface CTAButtonProps {
   href?: string;
@@ -24,20 +24,46 @@ export default function CTAButton({
   external = false
 }: CTAButtonProps) {
   const handleClick = (e: React.MouseEvent<HTMLElement>) => {
-    // Push event to dataLayer only if it matches approved events
-    if (
-      trackEventName &&
-      [
-        "phone_click",
-        "line_click",
-        "line_quote_copy",
-        "line_open_attempt",
-        "form_start",
-        "form_error",
-        "sticky_cta_scroll"
-      ].includes(trackEventName)
-    ) {
-      trackEvent(trackEventName, trackParams);
+    const resolveSource = (pos?: unknown): "header_cta" | "sticky_cta" | "hero_cta" | "service_page" | "footer_cta" | "contact_page" | "contact_form" | "unknown" => {
+      if (!pos || typeof pos !== "string") return "unknown";
+      const p = pos.toLowerCase();
+      if (p.includes("header")) return "header_cta";
+      if (p.includes("sticky") || p.includes("bar")) return "sticky_cta";
+      if (p.includes("hero")) return "hero_cta";
+      if (p.includes("form") || p.includes("quote")) return "contact_form";
+      if (p.includes("footer")) return "footer_cta";
+      if (p.includes("contact")) return "contact_page";
+      if (
+        p.includes("service") ||
+        p.includes("guide") ||
+        p.includes("area") ||
+        p.includes("cases") ||
+        p.includes("faq")
+      ) {
+        return "service_page";
+      }
+      return "unknown";
+    };
+
+    const isTel = href?.startsWith("tel:");
+
+    if (trackEventName) {
+      if (trackEventName === "line_click") {
+        const source = resolveSource(trackParams?.cta_position || trackParams?.cta_location);
+        trackLineContactAttempt({
+          contact_method: "line_link_open",
+          event_source: source,
+        });
+      } else if (trackEventName === "phone_click") {
+        if (isTel) {
+          const source = resolveSource(trackParams?.cta_position || trackParams?.cta_location);
+          trackPhoneClickAttempt({
+            event_source: source,
+          });
+        }
+      } else {
+        trackEvent(trackEventName, trackParams);
+      }
     }
 
     if (onClick) {

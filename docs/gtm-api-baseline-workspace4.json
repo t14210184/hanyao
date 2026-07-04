@@ -1,0 +1,834 @@
+{
+  "timestamp": "2026-07-04T10:13:42.525Z",
+  "variables": {
+    "variable": [
+      {
+        "path": "accounts/6362127895/containers/256158171/workspaces/4/variables/15",
+        "accountId": "6362127895",
+        "containerId": "256158171",
+        "workspaceId": "4",
+        "variableId": "15",
+        "name": "DLV - contact_channel",
+        "type": "v",
+        "parameter": [
+          {
+            "type": "template",
+            "key": "name",
+            "value": "contact_channel"
+          }
+        ],
+        "fingerprint": "1783159795508",
+        "tagManagerUrl": "https://tagmanager.google.com/#/container/accounts/6362127895/containers/256158171/workspaces/4/variables/15?apiLink=variable"
+      },
+      {
+        "path": "accounts/6362127895/containers/256158171/workspaces/4/variables/16",
+        "accountId": "6362127895",
+        "containerId": "256158171",
+        "workspaceId": "4",
+        "variableId": "16",
+        "name": "DLV - contact_method",
+        "type": "v",
+        "parameter": [
+          {
+            "type": "template",
+            "key": "name",
+            "value": "contact_method"
+          }
+        ],
+        "fingerprint": "1783159796757",
+        "tagManagerUrl": "https://tagmanager.google.com/#/container/accounts/6362127895/containers/256158171/workspaces/4/variables/16?apiLink=variable"
+      },
+      {
+        "path": "accounts/6362127895/containers/256158171/workspaces/4/variables/17",
+        "accountId": "6362127895",
+        "containerId": "256158171",
+        "workspaceId": "4",
+        "variableId": "17",
+        "name": "DLV - lead_id",
+        "type": "v",
+        "parameter": [
+          {
+            "type": "template",
+            "key": "name",
+            "value": "lead_id"
+          }
+        ],
+        "fingerprint": "1783159798134",
+        "tagManagerUrl": "https://tagmanager.google.com/#/container/accounts/6362127895/containers/256158171/workspaces/4/variables/17?apiLink=variable"
+      },
+      {
+        "path": "accounts/6362127895/containers/256158171/workspaces/4/variables/18",
+        "accountId": "6362127895",
+        "containerId": "256158171",
+        "workspaceId": "4",
+        "variableId": "18",
+        "name": "DLV - page_path",
+        "type": "v",
+        "parameter": [
+          {
+            "type": "template",
+            "key": "name",
+            "value": "page_path"
+          }
+        ],
+        "fingerprint": "1783159799351",
+        "tagManagerUrl": "https://tagmanager.google.com/#/container/accounts/6362127895/containers/256158171/workspaces/4/variables/18?apiLink=variable"
+      },
+      {
+        "path": "accounts/6362127895/containers/256158171/workspaces/4/variables/19",
+        "accountId": "6362127895",
+        "containerId": "256158171",
+        "workspaceId": "4",
+        "variableId": "19",
+        "name": "DLV - event_source",
+        "type": "v",
+        "parameter": [
+          {
+            "type": "template",
+            "key": "name",
+            "value": "event_source"
+          }
+        ],
+        "fingerprint": "1783159800569",
+        "tagManagerUrl": "https://tagmanager.google.com/#/container/accounts/6362127895/containers/256158171/workspaces/4/variables/19?apiLink=variable"
+      },
+      {
+        "path": "accounts/6362127895/containers/256158171/workspaces/4/variables/20",
+        "accountId": "6362127895",
+        "containerId": "256158171",
+        "workspaceId": "4",
+        "variableId": "20",
+        "name": "DLV - timestamp",
+        "type": "v",
+        "parameter": [
+          {
+            "type": "template",
+            "key": "name",
+            "value": "timestamp"
+          }
+        ],
+        "fingerprint": "1783159801940",
+        "tagManagerUrl": "https://tagmanager.google.com/#/container/accounts/6362127895/containers/256158171/workspaces/4/variables/20?apiLink=variable"
+      }
+    ]
+  },
+  "triggers": {
+    "trigger": [
+      {
+        "path": "accounts/6362127895/containers/256158171/workspaces/4/triggers/5",
+        "accountId": "6362127895",
+        "containerId": "256158171",
+        "workspaceId": "4",
+        "triggerId": "5",
+        "name": "CE - phone_click",
+        "type": "customEvent",
+        "customEventFilter": [
+          {
+            "type": "equals",
+            "parameter": [
+              {
+                "type": "template",
+                "key": "arg0",
+                "value": "{{_event}}"
+              },
+              {
+                "type": "template",
+                "key": "arg1",
+                "value": "phone_click"
+              }
+            ]
+          }
+        ],
+        "fingerprint": "1782107370369",
+        "tagManagerUrl": "https://tagmanager.google.com/#/container/accounts/6362127895/containers/256158171/workspaces/4/triggers/5?apiLink=trigger"
+      },
+      {
+        "path": "accounts/6362127895/containers/256158171/workspaces/4/triggers/6",
+        "accountId": "6362127895",
+        "containerId": "256158171",
+        "workspaceId": "4",
+        "triggerId": "6",
+        "name": "CE - line_click",
+        "type": "customEvent",
+        "customEventFilter": [
+          {
+            "type": "equals",
+            "parameter": [
+              {
+                "type": "template",
+                "key": "arg0",
+                "value": "{{_event}}"
+              },
+              {
+                "type": "template",
+                "key": "arg1",
+                "value": "line_click"
+              }
+            ]
+          }
+        ],
+        "fingerprint": "1782107430615",
+        "tagManagerUrl": "https://tagmanager.google.com/#/container/accounts/6362127895/containers/256158171/workspaces/4/triggers/6?apiLink=trigger"
+      },
+      {
+        "path": "accounts/6362127895/containers/256158171/workspaces/4/triggers/7",
+        "accountId": "6362127895",
+        "containerId": "256158171",
+        "workspaceId": "4",
+        "triggerId": "7",
+        "name": "CE - line_quote_copy",
+        "type": "customEvent",
+        "customEventFilter": [
+          {
+            "type": "equals",
+            "parameter": [
+              {
+                "type": "template",
+                "key": "arg0",
+                "value": "{{_event}}"
+              },
+              {
+                "type": "template",
+                "key": "arg1",
+                "value": "line_quote_copy"
+              }
+            ]
+          }
+        ],
+        "fingerprint": "1782107474856",
+        "tagManagerUrl": "https://tagmanager.google.com/#/container/accounts/6362127895/containers/256158171/workspaces/4/triggers/7?apiLink=trigger"
+      },
+      {
+        "path": "accounts/6362127895/containers/256158171/workspaces/4/triggers/21",
+        "accountId": "6362127895",
+        "containerId": "256158171",
+        "workspaceId": "4",
+        "triggerId": "21",
+        "name": "CE - line_contact_attempt",
+        "type": "customEvent",
+        "customEventFilter": [
+          {
+            "type": "equals",
+            "parameter": [
+              {
+                "type": "template",
+                "key": "arg0",
+                "value": "{{_event}}"
+              },
+              {
+                "type": "template",
+                "key": "arg1",
+                "value": "line_contact_attempt"
+              }
+            ]
+          }
+        ],
+        "fingerprint": "1783159804142",
+        "tagManagerUrl": "https://tagmanager.google.com/#/container/accounts/6362127895/containers/256158171/workspaces/4/triggers/21?apiLink=trigger"
+      },
+      {
+        "path": "accounts/6362127895/containers/256158171/workspaces/4/triggers/22",
+        "accountId": "6362127895",
+        "containerId": "256158171",
+        "workspaceId": "4",
+        "triggerId": "22",
+        "name": "CE - phone_click_attempt",
+        "type": "customEvent",
+        "customEventFilter": [
+          {
+            "type": "equals",
+            "parameter": [
+              {
+                "type": "template",
+                "key": "arg0",
+                "value": "{{_event}}"
+              },
+              {
+                "type": "template",
+                "key": "arg1",
+                "value": "phone_click_attempt"
+              }
+            ]
+          }
+        ],
+        "fingerprint": "1783159804657",
+        "tagManagerUrl": "https://tagmanager.google.com/#/container/accounts/6362127895/containers/256158171/workspaces/4/triggers/22?apiLink=trigger"
+      }
+    ]
+  },
+  "tags": {
+    "tag": [
+      {
+        "path": "accounts/6362127895/containers/256158171/workspaces/4/tags/14",
+        "accountId": "6362127895",
+        "containerId": "256158171",
+        "workspaceId": "4",
+        "tagId": "14",
+        "name": "Google Ads - Google Tag - All Pages",
+        "type": "googtag",
+        "parameter": [
+          {
+            "type": "template",
+            "key": "tagId",
+            "value": "AW-18132851851"
+          }
+        ],
+        "fingerprint": "1783005671960",
+        "firingTriggerId": [
+          "2147479573"
+        ],
+        "tagFiringOption": "oncePerEvent",
+        "tagManagerUrl": "https://tagmanager.google.com/#/container/accounts/6362127895/containers/256158171/workspaces/4/tags/14?apiLink=tag",
+        "monitoringMetadata": {
+          "type": "map"
+        },
+        "consentSettings": {
+          "consentStatus": "notSet"
+        }
+      },
+      {
+        "path": "accounts/6362127895/containers/256158171/workspaces/4/tags/3",
+        "accountId": "6362127895",
+        "containerId": "256158171",
+        "workspaceId": "4",
+        "tagId": "3",
+        "name": "Conversion Linker - All Pages",
+        "type": "gclidw",
+        "parameter": [
+          {
+            "type": "boolean",
+            "key": "enableCrossDomain",
+            "value": "false"
+          },
+          {
+            "type": "boolean",
+            "key": "enableUrlPassthrough",
+            "value": "true"
+          },
+          {
+            "type": "boolean",
+            "key": "enableCookieOverrides",
+            "value": "false"
+          }
+        ],
+        "fingerprint": "1782107024290",
+        "firingTriggerId": [
+          "2147479553"
+        ],
+        "tagFiringOption": "oncePerEvent",
+        "tagManagerUrl": "https://tagmanager.google.com/#/container/accounts/6362127895/containers/256158171/workspaces/4/tags/3?apiLink=tag",
+        "monitoringMetadata": {
+          "type": "map"
+        },
+        "consentSettings": {
+          "consentStatus": "notSet"
+        }
+      },
+      {
+        "path": "accounts/6362127895/containers/256158171/workspaces/4/tags/4",
+        "accountId": "6362127895",
+        "containerId": "256158171",
+        "workspaceId": "4",
+        "tagId": "4",
+        "name": "GA4 - Google Tag - All Pages",
+        "type": "googtag",
+        "parameter": [
+          {
+            "type": "template",
+            "key": "tagId",
+            "value": "G-L87XJM1TKZ"
+          }
+        ],
+        "fingerprint": "1782107196717",
+        "firingTriggerId": [
+          "2147479573"
+        ],
+        "tagFiringOption": "oncePerEvent",
+        "tagManagerUrl": "https://tagmanager.google.com/#/container/accounts/6362127895/containers/256158171/workspaces/4/tags/4?apiLink=tag",
+        "monitoringMetadata": {
+          "type": "map"
+        },
+        "consentSettings": {
+          "consentStatus": "notSet"
+        }
+      },
+      {
+        "path": "accounts/6362127895/containers/256158171/workspaces/4/tags/8",
+        "accountId": "6362127895",
+        "containerId": "256158171",
+        "workspaceId": "4",
+        "tagId": "8",
+        "name": "GA4 Event - phone_click",
+        "type": "gaawe",
+        "parameter": [
+          {
+            "type": "boolean",
+            "key": "sendEcommerceData",
+            "value": "false"
+          },
+          {
+            "type": "template",
+            "key": "eventName",
+            "value": "phone_click"
+          },
+          {
+            "type": "template",
+            "key": "measurementIdOverride",
+            "value": "G-L87XJM1TKZ"
+          }
+        ],
+        "fingerprint": "1782107623489",
+        "firingTriggerId": [
+          "5"
+        ],
+        "tagFiringOption": "oncePerEvent",
+        "tagManagerUrl": "https://tagmanager.google.com/#/container/accounts/6362127895/containers/256158171/workspaces/4/tags/8?apiLink=tag",
+        "monitoringMetadata": {
+          "type": "map"
+        },
+        "consentSettings": {
+          "consentStatus": "notSet"
+        }
+      },
+      {
+        "path": "accounts/6362127895/containers/256158171/workspaces/4/tags/9",
+        "accountId": "6362127895",
+        "containerId": "256158171",
+        "workspaceId": "4",
+        "tagId": "9",
+        "name": "GA4 Event - line_click",
+        "type": "gaawe",
+        "parameter": [
+          {
+            "type": "boolean",
+            "key": "sendEcommerceData",
+            "value": "false"
+          },
+          {
+            "type": "template",
+            "key": "eventName",
+            "value": "line_click"
+          },
+          {
+            "type": "template",
+            "key": "measurementIdOverride",
+            "value": "G-L87XJM1TKZ"
+          }
+        ],
+        "fingerprint": "1782107707449",
+        "firingTriggerId": [
+          "6"
+        ],
+        "tagFiringOption": "oncePerEvent",
+        "tagManagerUrl": "https://tagmanager.google.com/#/container/accounts/6362127895/containers/256158171/workspaces/4/tags/9?apiLink=tag",
+        "monitoringMetadata": {
+          "type": "map"
+        },
+        "consentSettings": {
+          "consentStatus": "notSet"
+        }
+      },
+      {
+        "path": "accounts/6362127895/containers/256158171/workspaces/4/tags/10",
+        "accountId": "6362127895",
+        "containerId": "256158171",
+        "workspaceId": "4",
+        "tagId": "10",
+        "name": "GA4 Event - line_quote_copy",
+        "type": "gaawe",
+        "parameter": [
+          {
+            "type": "boolean",
+            "key": "sendEcommerceData",
+            "value": "false"
+          },
+          {
+            "type": "template",
+            "key": "eventName",
+            "value": "line_quote_copy"
+          },
+          {
+            "type": "template",
+            "key": "measurementIdOverride",
+            "value": "G-L87XJM1TKZ"
+          }
+        ],
+        "fingerprint": "1782107767569",
+        "firingTriggerId": [
+          "7"
+        ],
+        "tagFiringOption": "oncePerEvent",
+        "tagManagerUrl": "https://tagmanager.google.com/#/container/accounts/6362127895/containers/256158171/workspaces/4/tags/10?apiLink=tag",
+        "monitoringMetadata": {
+          "type": "map"
+        },
+        "consentSettings": {
+          "consentStatus": "notSet"
+        }
+      },
+      {
+        "path": "accounts/6362127895/containers/256158171/workspaces/4/tags/11",
+        "accountId": "6362127895",
+        "containerId": "256158171",
+        "workspaceId": "4",
+        "tagId": "11",
+        "name": "Deprecated - Google Ads Conversion - phone_click",
+        "type": "awct",
+        "parameter": [
+          {
+            "type": "boolean",
+            "key": "enableNewCustomerReporting",
+            "value": "false"
+          },
+          {
+            "type": "boolean",
+            "key": "enableConversionLinker",
+            "value": "true"
+          },
+          {
+            "type": "boolean",
+            "key": "enableProductReporting",
+            "value": "false"
+          },
+          {
+            "type": "boolean",
+            "key": "enableShippingData",
+            "value": "false"
+          },
+          {
+            "type": "template",
+            "key": "conversionId",
+            "value": "18132851851"
+          },
+          {
+            "type": "template",
+            "key": "conversionLabel",
+            "value": "4UaqCJDSq7McEIu5tcZD"
+          },
+          {
+            "type": "boolean",
+            "key": "rdp",
+            "value": "false"
+          }
+        ],
+        "fingerprint": "1783159906877",
+        "firingTriggerId": [
+          "5"
+        ],
+        "tagFiringOption": "oncePerEvent",
+        "tagManagerUrl": "https://tagmanager.google.com/#/container/accounts/6362127895/containers/256158171/workspaces/4/tags/11?apiLink=tag",
+        "paused": true,
+        "monitoringMetadata": {
+          "type": "map"
+        },
+        "consentSettings": {
+          "consentStatus": "notSet"
+        }
+      },
+      {
+        "path": "accounts/6362127895/containers/256158171/workspaces/4/tags/12",
+        "accountId": "6362127895",
+        "containerId": "256158171",
+        "workspaceId": "4",
+        "tagId": "12",
+        "name": "Deprecated - Google Ads Conversion - line_click",
+        "type": "awct",
+        "parameter": [
+          {
+            "type": "boolean",
+            "key": "enableNewCustomerReporting",
+            "value": "false"
+          },
+          {
+            "type": "boolean",
+            "key": "enableConversionLinker",
+            "value": "true"
+          },
+          {
+            "type": "boolean",
+            "key": "enableProductReporting",
+            "value": "false"
+          },
+          {
+            "type": "boolean",
+            "key": "enableShippingData",
+            "value": "false"
+          },
+          {
+            "type": "template",
+            "key": "conversionId",
+            "value": "18132851851"
+          },
+          {
+            "type": "template",
+            "key": "conversionLabel",
+            "value": "9RTwCPWxwrMcEIu5tcZD"
+          },
+          {
+            "type": "boolean",
+            "key": "rdp",
+            "value": "false"
+          }
+        ],
+        "fingerprint": "1783159905632",
+        "firingTriggerId": [
+          "6"
+        ],
+        "tagFiringOption": "oncePerEvent",
+        "tagManagerUrl": "https://tagmanager.google.com/#/container/accounts/6362127895/containers/256158171/workspaces/4/tags/12?apiLink=tag",
+        "paused": true,
+        "monitoringMetadata": {
+          "type": "map"
+        },
+        "consentSettings": {
+          "consentStatus": "notSet"
+        }
+      },
+      {
+        "path": "accounts/6362127895/containers/256158171/workspaces/4/tags/23",
+        "accountId": "6362127895",
+        "containerId": "256158171",
+        "workspaceId": "4",
+        "tagId": "23",
+        "name": "GA4 Event - line_contact_attempt",
+        "type": "gaawe",
+        "parameter": [
+          {
+            "type": "boolean",
+            "key": "sendEcommerceData",
+            "value": "false"
+          },
+          {
+            "type": "list",
+            "key": "eventSettingsTable",
+            "list": [
+              {
+                "type": "map",
+                "map": [
+                  {
+                    "type": "template",
+                    "key": "parameter",
+                    "value": "contact_channel"
+                  },
+                  {
+                    "type": "template",
+                    "key": "parameterValue",
+                    "value": "{{DLV - contact_channel}}"
+                  }
+                ]
+              },
+              {
+                "type": "map",
+                "map": [
+                  {
+                    "type": "template",
+                    "key": "parameter",
+                    "value": "contact_method"
+                  },
+                  {
+                    "type": "template",
+                    "key": "parameterValue",
+                    "value": "{{DLV - contact_method}}"
+                  }
+                ]
+              },
+              {
+                "type": "map",
+                "map": [
+                  {
+                    "type": "template",
+                    "key": "parameter",
+                    "value": "page_path"
+                  },
+                  {
+                    "type": "template",
+                    "key": "parameterValue",
+                    "value": "{{DLV - page_path}}"
+                  }
+                ]
+              },
+              {
+                "type": "map",
+                "map": [
+                  {
+                    "type": "template",
+                    "key": "parameter",
+                    "value": "event_source"
+                  },
+                  {
+                    "type": "template",
+                    "key": "parameterValue",
+                    "value": "{{DLV - event_source}}"
+                  }
+                ]
+              },
+              {
+                "type": "map",
+                "map": [
+                  {
+                    "type": "template",
+                    "key": "parameter",
+                    "value": "event_timestamp"
+                  },
+                  {
+                    "type": "template",
+                    "key": "parameterValue",
+                    "value": "{{DLV - timestamp}}"
+                  }
+                ]
+              },
+              {
+                "type": "map",
+                "map": [
+                  {
+                    "type": "template",
+                    "key": "parameter",
+                    "value": "lead_id"
+                  },
+                  {
+                    "type": "template",
+                    "key": "parameterValue",
+                    "value": "{{DLV - lead_id}}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "template",
+            "key": "eventName",
+            "value": "line_contact_attempt"
+          },
+          {
+            "type": "template",
+            "key": "measurementIdOverride",
+            "value": "G-L87XJM1TKZ"
+          }
+        ],
+        "fingerprint": "1783159874973",
+        "firingTriggerId": [
+          "21"
+        ],
+        "tagManagerUrl": "https://tagmanager.google.com/#/container/accounts/6362127895/containers/256158171/workspaces/4/tags/23?apiLink=tag",
+        "consentSettings": {
+          "consentStatus": "notSet"
+        }
+      },
+      {
+        "path": "accounts/6362127895/containers/256158171/workspaces/4/tags/24",
+        "accountId": "6362127895",
+        "containerId": "256158171",
+        "workspaceId": "4",
+        "tagId": "24",
+        "name": "GA4 Event - phone_click_attempt",
+        "type": "gaawe",
+        "parameter": [
+          {
+            "type": "boolean",
+            "key": "sendEcommerceData",
+            "value": "false"
+          },
+          {
+            "type": "list",
+            "key": "eventSettingsTable",
+            "list": [
+              {
+                "type": "map",
+                "map": [
+                  {
+                    "type": "template",
+                    "key": "parameter",
+                    "value": "contact_channel"
+                  },
+                  {
+                    "type": "template",
+                    "key": "parameterValue",
+                    "value": "{{DLV - contact_channel}}"
+                  }
+                ]
+              },
+              {
+                "type": "map",
+                "map": [
+                  {
+                    "type": "template",
+                    "key": "parameter",
+                    "value": "contact_method"
+                  },
+                  {
+                    "type": "template",
+                    "key": "parameterValue",
+                    "value": "{{DLV - contact_method}}"
+                  }
+                ]
+              },
+              {
+                "type": "map",
+                "map": [
+                  {
+                    "type": "template",
+                    "key": "parameter",
+                    "value": "page_path"
+                  },
+                  {
+                    "type": "template",
+                    "key": "parameterValue",
+                    "value": "{{DLV - page_path}}"
+                  }
+                ]
+              },
+              {
+                "type": "map",
+                "map": [
+                  {
+                    "type": "template",
+                    "key": "parameter",
+                    "value": "event_source"
+                  },
+                  {
+                    "type": "template",
+                    "key": "parameterValue",
+                    "value": "{{DLV - event_source}}"
+                  }
+                ]
+              },
+              {
+                "type": "map",
+                "map": [
+                  {
+                    "type": "template",
+                    "key": "parameter",
+                    "value": "event_timestamp"
+                  },
+                  {
+                    "type": "template",
+                    "key": "parameterValue",
+                    "value": "{{DLV - timestamp}}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "template",
+            "key": "eventName",
+            "value": "phone_click_attempt"
+          },
+          {
+            "type": "template",
+            "key": "measurementIdOverride",
+            "value": "G-L87XJM1TKZ"
+          }
+        ],
+        "fingerprint": "1783159876239",
+        "firingTriggerId": [
+          "22"
+        ],
+        "tagManagerUrl": "https://tagmanager.google.com/#/container/accounts/6362127895/containers/256158171/workspaces/4/tags/24?apiLink=tag",
+        "consentSettings": {
+          "consentStatus": "notSet"
+        }
+      }
+    ]
+  }
+}

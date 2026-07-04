@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { siteConfig } from "@/data/site";
 import { servicesData } from "@/data/services";
-import { trackEvent } from "@/lib/tracking";
+import { trackEvent, generateLeadId, trackLineContactAttempt } from "@/lib/tracking";
 
 interface ServiceOption {
   id: string;
@@ -140,9 +140,13 @@ export default function ContactForm({
     };
     const areaLabel = areaMap[formData.area] ?? formData.area;
 
-    // 3. Build LINE consultation text
+    // 3. Generate dynamic lead_id
+    const leadId = generateLeadId();
+
+    // 3.5 Build LINE consultation text (including leadId)
     const lineText = [
       "您好，我想諮詢焓耀空調工程：",
+      `【諮詢編號】${leadId}`,
       "",
       `姓名：${formData.name}`,
       `電話：${formData.phone}`,
@@ -195,32 +199,15 @@ export default function ContactForm({
       setCopyFallbackText(lineText);
     }
 
-    // 5. Fire line_quote_copy event
-    trackEvent("line_quote_copy", {
-      form_location: formLocation,
-      service_type: formData.service,
-      area: formData.area,
-      has_phone: formData.phone.trim().length > 0,
-      has_description: formData.message.trim().length > 0,
+    // 5. Fire semantic trackLineContactAttempt event (DO NOT send sensitive data)
+    trackLineContactAttempt({
+      contact_method: "form_copy_open_line",
+      lead_id: leadId,
+      event_source: "contact_form",
     });
 
     // 6. Show success UI
     setIsSubmitted(true);
-
-    // 6.5 Fire line_open_attempt event
-    const isMobileDevice = typeof window !== "undefined" && /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-    trackEvent("line_open_attempt", {
-      form_location: formLocation,
-      service_type: formData.service,
-      device_platform: isMobileDevice ? "mobile" : "desktop",
-    });
-
-    // 7. Fire line_click event
-    trackEvent("line_click", {
-      cta_position: formLocation,
-      service_type: formData.service,
-      link_type: "line",
-    });
 
     // 8. Navigate to LINE after short delay so user can see the success message
     //    Using window.location.href (not window.open) to avoid popup blocker
