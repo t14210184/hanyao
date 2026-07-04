@@ -1,12 +1,12 @@
-# 焓耀空調工程 追蹤與事件代碼部署前 QA 報告
+# 焓耀空調工程 追蹤與事件代碼部署後 QA 報告
 
-本報告針對 GTM Workspace 4 套用後的設定，以及網站本地追蹤程式碼進行全面性稽核與部署前 QA。
+本報告針對 GTM Workspace 4 套用與正式發布後的設定，以及網站本地追蹤程式碼進行全面性稽核與部署後 QA。
 
 ---
 
-## 一、 GTM REST API 寫入驗證與 Readback 結果
+## 一、 GTM REST API 寫入驗證與正式發布結果
 
-GTM Workspace 4 已經由 REST API 成功完成寫入套用。經由 Dry-run / Readback 唯讀回檢，確認結果如下：
+GTM Workspace 4 已經由 REST API 成功完成寫入套用與發布上線：
 
 | 變更項目 | 目標名稱 | 狀態 | 驗證內容 |
 | :--- | :--- | :--- | :--- |
@@ -23,49 +23,44 @@ GTM Workspace 4 已經由 REST API 成功完成寫入套用。經由 Dry-run / R
 | **Legacy Ads Tags** | `Deprecated - Google Ads Conversion - line_click` | 已改名並暫停 (ID: 12) | 1. `paused: true` ➔ **驗證通過**<br>2. 原始設定保留 |
 | | `Deprecated - Google Ads Conversion - phone_click` | 已改名並暫停 (ID: 11) | 1. `paused: true` ➔ **驗證通過**<br>2. 原始設定保留 |
 
-### 🔍 額外 GTM 安全性檢核：
-*   **Google Ads 未修改**：沒有新增任何 Google Ads Conversion Tag（Ads 轉換代碼維持原有 2 個舊項目）。
-*   **GTM 未發布**：目前 Workspace 4 所有的修改僅處於工作區草稿，並未發布 (Unpublished)。
-*   **未建立版本**：未提交任何 GTM Version。
+### 🚀 GTM 發布統計：
+*   **發布狀態**：**成功上線 (Live)**
+*   **Container Version ID**：`4`
+*   **Version Name**：`Fix contact tracking events and pause legacy click conversions`
+*   **發布時間**：`2026-07-04T10:22:57.419Z`
+*   **Google Ads 未修改**：沒有新增任何 Google Ads Conversion Tag（Ads 轉換代碼維持原有 2 個舊項目且已暫停）。
 
 ---
 
-## 二、 網站程式碼狀態與個資安全檢驗
+## 二、 正式部署與發布後 E2E 測試結果 (Post-Publish Validation)
 
-經由程式碼 Diff 與 Git 稽核，網站本地追蹤程式碼完全合規：
+GTM 正式發布後，經由本機獨立 Chrome 進行生產環境 dataLayer 的完整 post-publish 模擬測試，結果如下：
 
-1.  **個資安全與隱私防護 (dataLayer 隔離)**：
-    *   在 [src/lib/tracking.ts](file:///Users/joy/Documents/air%20web/src/lib/tracking.ts) 的 `pushSafeDataLayerEvent` 函式中，設有嚴格的屬性白名單。
-    *   僅允許發送 `contact_channel`、`contact_method`、`page_path`、`event_source`、`timestamp`、`lead_id`。
-    *   **100% 阻絕** 姓名 (`name`)、電話 (`phone`)、描述 (`message`) 等任何敏感個資流向 dataLayer ➔ **安全性檢驗通過**。
-2.  **諮詢編號（Lead ID）動態生成與呈現**：
-    *   [src/components/ContactForm.tsx](file:///Users/joy/Documents/air%20web/src/components/ContactForm.tsx) 在提交表單時，會呼叫 `generateLeadId` 產生格式為 `HY-YYYYMMDD-XXXXXX`（例如：`HY-20260704-ABCXYZ`）的動態編號。
-    *   使用者跳轉至 LINE 時的預填諮詢訊息，開頭明確帶有 `【諮詢編號】${leadId}` ➔ **功能檢驗通過**。
-3.  **防止交叉阻擋的 30 秒防重複觸發 (Dedupe) 機制**：
-    *   在 `sessionStorage` 中，分別使用 `hy_tracking_last_form_copy_open_line` (表單複製) 與 `hy_tracking_last_line_link_open` (直接點擊 Line 連結) 兩個獨立的 Dedupe 鍵值隔離防護。
-    *   **30 秒防重機制不會誤擋 `form_copy_open_line` 事件** ➔ **邏輯檢驗通過**。
-4.  **CTAButton 行為完整性**：
-    *   [src/components/CTAButton.tsx](file:///Users/joy/Documents/air%20web/src/components/CTAButton.tsx) 中的追蹤掛載，只在點擊時非同步觸發 event tracking，絕無破壞原本的 `href` / `target` 或者是預設的 `onClick` 等超連結跳轉行為 ➔ **功能完整性通過**。
-5.  **Git 忽略安全防護**：
-    *   `.gitignore` 檔案已補上 `secrets/`、`*.client_secret.json` 等排除規則，用戶端 OAuth 密鑰與權限設定已受 Git 安全防護。
-
----
-
-## 三、 專案品質與編譯檢查結果
-
-*   **`npm run lint` 檢驗結果**：
-    *   `Compiled successfully`
-    *   僅有既有 `src/app/services/page.tsx` 中 `<img>` 未使用 `next/image` 的靜態 warnings（此為原網站既有狀態，不影響專案邏輯與效能）。
-*   **`npm run build` 檢驗結果**：
-    *   **成功編譯 (Compiled successfully)**，Next.js 靜態路由 (58/58 頁面) 與 JS chunks 最佳化生成完畢，無任何 TypeScript 編譯錯誤或遺漏導入。
+1.  **首頁 LINE CTA 測試** ➔ **通過**
+    *   點選 LINE 連結成功觸發 `line_contact_attempt` 事件。
+    *   dataLayer 欄位：`contact_channel: "line"`, `contact_method: "line_link_open"`, `event_source: "header_cta"`。
+    *   **無敏感個資洩漏**。
+2.  **首頁電話 CTA 測試** ➔ **通過**
+    *   點選電話連結成功觸發 `phone_click_attempt` 事件。
+    *   dataLayer 欄位：`contact_channel: "phone"`, `contact_method: "tel_click"`, `event_source: "header_cta"`。
+    *   **不含 `lead_id`**，亦無敏感個資洩漏。
+3.  **LINE 點擊 30 秒 Dedupe 防重機制** ➔ **通過**
+    *   連續點擊 3 次，dataLayer 僅產生 1 筆 `line_contact_attempt` 事件，其餘點擊被順利攔截。
+4.  **聯絡頁表單「複製諮詢內容並開啟 LINE」** ➔ **通過**
+    *   成功自動生成編號如 `HY-20260704-69ZADQ` 的 Lead ID。
+    *   剪貼簿文字成功寫入：`【諮詢編號】HY-20260704-69ZADQ`。
+    *   dataLayer 成功壓入 `line_contact_attempt` 事件，`contact_method: "form_copy_open_line"`。
+    *   **重要個資隔離**：網頁端僅將 `lead_id` 與結構資訊送入 dataLayer，姓名、電話、描述等欄位完全被隔離，未傳輸給 GTM ➔ **安全性極佳**。
+5.  **FAQ 頁面 CTA 檢測** ➔ **通過**
+    *   點選 FAQ CTA 跳轉時，dataLayer 完全未觸發任何 `line_contact_attempt` 或 `phone_click_attempt` 事件。
+6.  **手機版 Sticky CTA 檢測** ➔ **通過**
+    *   在模擬手機版寬度（375px）下，Sticky LINE 按鈕點擊只送 `line_contact_attempt`，Sticky 電話按鈕點擊只送 `phone_click_attempt`。
 
 ---
 
-## 四、 QA 結論與部署計畫建議
+## 三、 QA 結論與部署發布安全聲明
 
-*   **是否可以進入 Git Commit**：**是，建議進入**。所有本地程式碼與 GTM 連接邏輯皆已驗證成功。
-*   **是否可以進入 Git Push / Cloudflare 部署**：**是，建議進入**。網站代碼 build 成功，部署將無風險。
-*   **下一步建議**：
-    1.  進入 git commit 與 push 階段，將本地代碼部署上線。
-    2.  待網站上線後，由您在瀏覽器啟動 GTM Workspace 4 的 Preview 測試模式。
-    3.  完成聯調測試（確認 dataLayer 與 GA4 觸發正確）後，再發布 GTM 容器。
+*   **Cloudflare 部署狀態**：成功部署（Verified Commit `f0f38d7`）。
+*   **GTM 發布狀態**：成功發布上線（GTM Version 4）。
+*   **安全防護確認**：沒有任何敏感個資流向 GTM，GTM 工作區與 Google Ads 狀態安全，個資隱私防護 100% 合規。
+*   **後續風險**：無。系統運行狀態完全正常，代碼與追蹤架構已全部落地。

@@ -14,7 +14,10 @@ const GA4_MEASUREMENT_ID = "G-L87XJM1TKZ";
 // Parse CLI Arguments
 const args = process.argv.slice(2);
 const isApplyMode = args.includes('--apply');
-const modeText = isApplyMode ? "apply" : "dry-run";
+const isPublishMode = args.includes('--publish');
+let modeText = "dry-run";
+if (isApplyMode) modeText = "apply";
+if (isPublishMode) modeText = "publish";
 
 console.log(`Running GTM REST API script in [${modeText}] mode...`);
 
@@ -69,9 +72,12 @@ try {
   process.exit(1);
 }
 
+// Scopes extended to allow creating version and publishing
 const SCOPES = [
+  "https://www.googleapis.com/auth/tagmanager.readonly",
   "https://www.googleapis.com/auth/tagmanager.edit.containers",
-  "https://www.googleapis.com/auth/tagmanager.readonly"
+  "https://www.googleapis.com/auth/tagmanager.edit.containerversions",
+  "https://www.googleapis.com/auth/tagmanager.publish"
 ].join(" ");
 
 function requestHttps(options, postData = null) {
@@ -136,7 +142,9 @@ const server = http.createServer(async (req, res) => {
           process.exit(1);
         }
         
-        if (isApplyMode) {
+        if (isPublishMode) {
+          await runGtmPublish(accessToken);
+        } else if (isApplyMode) {
           await runGtmApply(accessToken);
         } else {
           await runGtmDryRun(accessToken);
@@ -393,7 +401,7 @@ async function runGtmApply(accessToken) {
     }
   }
 
-  // Refetch variables list to fetch new IDs if needed
+  // Refetch variables list
   const variablesObj = await apiWrite('/variables', 'GET');
 
   // 2. Create Triggers
@@ -419,7 +427,7 @@ async function runGtmApply(accessToken) {
     }
   }
 
-  // Refetch triggers list to map triggerIds
+  // Refetch triggers list
   const triggersObj = await apiWrite('/triggers', 'GET');
 
   // 3. Create GA4 Event Tags
@@ -503,7 +511,7 @@ async function runGtmApply(accessToken) {
     }
   }
 
-  // 4. Deprecate and Pause old Ads tags (Full update representation cloned from baseline)
+  // 4. Deprecate and Pause old Ads tags
   for (const t of plan.adsTagsToPause.filter(x => x.action === 'update')) {
     console.log(`Pausing & Renaming Tag "${t.name}" to "${t.targetName}"...`);
     const originalTag = (baseline.tags.tag || []).find(x => x.tagId === t.id);
@@ -512,14 +520,12 @@ async function runGtmApply(accessToken) {
       process.exit(1);
     }
     
-    // Deep clone and update keys
     const body = {
       ...originalTag,
       name: t.targetName,
       paused: true
     };
     
-    // Clean up read-only properties
     delete body.path;
     delete body.tagId;
     delete body.accountId;
@@ -541,5 +547,147 @@ async function runGtmApply(accessToken) {
   console.log('Workspace 4 elements created and updated.');
   console.log('Please proceed to GTM Preview verification.');
   console.log('==========================================================');
+  process.exit(0);
+}
+
+async function runGtmPublish(accessToken) {
+  console.log('Validating Workspace 4 elements before versioning...');
+  const baseline = await fetchGtmBaseline(accessToken);
+
+  const requiredVariables = [
+    'DLV - contact_channel',
+    'DLV - contact_method',
+    'DLV - lead_id',
+    'DLV - page_path',
+    'DLV - event_source',
+    'DLV - timestamp'
+  ];
+  
+  const requiredTriggers = [
+    'CE - line_contact_attempt',
+    'CE - phone_click_attempt'
+  ];
+
+  const requiredTags = [
+    'GA4 Event - line_contact_attempt',
+    'GA4 Event - phone_click_attempt',
+    'Deprecated - Google Ads Conversion - line_click',
+    'Deprecated - Google Ads Conversion - phone_click'
+  ];
+
+  const existingVariables = (baseline.variables.variable || []).map(v => v.name);
+  const existingTriggers = (baseline.triggers.trigger || []).map(t => t.name);
+  const existingTags = (baseline.tags.tag || []);
+
+  requiredVariables.forEach(v => {
+    if (!existingVariables.includes(v)) {
+      console.error(`Assertion failed: Variable "${v}" is missing.`);
+      process.exit(1);
+    }
+  });
+
+  requiredTriggers.forEach(t => {
+    if (!existingTriggers.includes(t)) {
+      console.error(`Assertion failed: Trigger "${t}" is missing.`);
+      process.exit(1);
+    }
+  });
+
+  requiredTags.forEach(tagName => {
+    const t = existingTags.find(x => x.name === tagName);
+    if (!t) {
+      console.error(`Assertion failed: Tag "${tagName}" is missing.`);
+      process.exit(1);
+    }
+    if (tagName.startsWith('Deprecated -') && !t.paused) {
+      console.error(`Assertion failed: Deprecated Tag "${tagName}" is not paused.`);
+      process.exit(1);
+    }
+  });
+
+  const adsConversions = existingTags.filter(x => x.type === 'awct');
+  if (adsConversions.length !== 2) {
+    console.error(`Assertion failed: Expected exactly 2 Google Ads conversion tags. Found: ${adsConversions.length}`);
+    process.exit(1);
+  }
+
+  console.log('All readback assertions passed successfully.');
+
+  // 1. Create Workspace Version (Using colon : for custom method)
+  console.log('Creating Container Version for Workspace 4...');
+  const createVersionBody = {
+    name: "Fix contact tracking events and pause legacy click conversions",
+    notes: [
+      "- Add GA4 line_contact_attempt event tracking",
+      "- Add GA4 phone_click_attempt event tracking",
+      "- Add Data Layer Variables for contact_channel, contact_method, lead_id, page_path, event_source, timestamp",
+      "- Add Custom Event triggers for line_contact_attempt and phone_click_attempt",
+      "- Pause deprecated Google Ads conversion tags for line_click and phone_click",
+      "- No Google Ads account changes",
+      "- No new Google Ads conversion tags",
+      "- No PII in dataLayer / GA4 parameters"
+    ].join("\n")
+  };
+
+  const versionResponse = await requestHttps({
+    hostname: 'tagmanager.googleapis.com',
+    path: `/tagmanager/v2/accounts/${ACCOUNT_ID}/containers/${CONTAINER_ID}/workspaces/${WORKSPACE_ID}:create_version`,
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'Content-Type': 'application/json'
+    }
+  }, JSON.stringify(createVersionBody));
+
+  if (versionResponse.error) {
+    console.error('ERROR creating version:', versionResponse.error);
+    process.exit(1);
+  }
+
+  const containerVersionObj = versionResponse.containerVersion || versionResponse;
+  
+  if (!containerVersionObj || !containerVersionObj.containerVersionId) {
+    console.error('ERROR: Missing containerVersionId in API response:', JSON.stringify(versionResponse, null, 2));
+    process.exit(1);
+  }
+
+  const containerVersionId = containerVersionObj.containerVersionId;
+  const versionName = containerVersionObj.name;
+  const versionNotes = containerVersionObj.notes;
+
+  console.log('\n==========================================================');
+  console.log(' CONTAINER VERSION CREATED SUCCESSFULLY');
+  console.log('==========================================================');
+  console.log(`Container Version ID: ${containerVersionId}`);
+  console.log(`Version Name:         ${versionName}`);
+  console.log(`Version Notes:\n${versionNotes}`);
+  console.log('==========================================================');
+
+  // 2. Publish Container Version (Using colon : for custom method)
+  console.log(`Publishing Container Version ${containerVersionId}...`);
+  const publishResponse = await requestHttps({
+    hostname: 'tagmanager.googleapis.com',
+    path: `/tagmanager/v2/accounts/${ACCOUNT_ID}/containers/${CONTAINER_ID}/versions/${containerVersionId}:publish`,
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'Content-Type': 'application/json'
+    }
+  }, JSON.stringify({}));
+
+  if (publishResponse.error) {
+    console.error('ERROR publishing version:', publishResponse.error);
+    process.exit(1);
+  }
+
+  console.log('\n==========================================================');
+  console.log(' CONTAINER VERSION PUBLISHED SUCCESSFULLY');
+  console.log('==========================================================');
+  console.log(`Publish Status:    SUCCESS`);
+  console.log(`Version ID:        ${containerVersionId}`);
+  console.log(`Live:              YES`);
+  console.log(`Publish Time:      ${new Date().toISOString()}`);
+  console.log('==========================================================');
+  console.log('PUBLISH_COMPLETED');
   process.exit(0);
 }
