@@ -77,3 +77,4 @@ application_default_credentials.json
 *google-ads*.env
 *refresh_token*
 *developer_token*
+scratch/
