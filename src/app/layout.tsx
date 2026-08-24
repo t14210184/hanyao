@@ -6,6 +6,7 @@ import "./globals.css";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import MobileStickyCTA from "@/components/MobileStickyCTA";
+import AttributionBootstrap from "@/components/AttributionBootstrap";
 import JsonLd from "@/components/JsonLd";
 import { siteConfig } from "@/data/site";
 
@@ -88,6 +89,7 @@ export default function RootLayout({
         <JsonLd schema={businessSchema} />
       </head>
       <body className="min-h-full flex flex-col bg-slate-950 text-slate-100 font-sans">
+        <AttributionBootstrap />
         {/* GTM noscript fallback */}
         <noscript>
           <iframe
