@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test:c1b1:unit": "node --experimental-strip-types --test scripts/c1b1-unit.test.ts",
+    "test:c1b1:http": "node scripts/c1b1-http-integration.mjs"
   },
   "dependencies": {
     "@next/third-parties": "^16.2.9",
@@ -15,6 +17,7 @@
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "5.20260823.1",
     "@tailwindcss/postcss": "^4.0.0",
     "@types/node": "^20.11.24",
     "@types/react": "^19.0.8",
@@ -23,6 +26,7 @@
     "eslint-config-next": "15.1.7",
     "puppeteer-core": "^25.1.0",
     "tailwindcss": "^4.0.0",
-    "typescript": "^5.7.3"
+    "typescript": "^5.7.3",
+    "wrangler": "4.125.0"
   }
 }
