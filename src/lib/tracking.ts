@@ -3,49 +3,43 @@
  * Only runs in the browser; no-op on the server (SSR / Static Export).
  */
 
-// 1. generateLeadId
-// 格式：HY-YYYYMMDD-XXXXXX
-export const generateLeadId = (): string => {
-  if (typeof window === "undefined") return "";
-  const now = new Date();
-  
-  // 以台灣時區/系統本地時間格式化日期
-  const yyyy = now.getFullYear();
-  const mm = String(now.getMonth() + 1).padStart(2, '0');
-  const dd = String(now.getDate()).padStart(2, '0');
-  const dateStr = `${yyyy}${mm}${dd}`;
-
-  // 產生 6 位隨機大寫英數，防止 random 錯誤
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-  let randStr = "";
-  for (let i = 0; i < 6; i++) {
-    randStr += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-
-  return `HY-${dateStr}-${randStr}`;
-};
-
 // 30 秒防重複觸發機制
 const DEDUPE_WINDOW_MS = 30000; // 30 seconds
+const memoryDedupe = new Map<string, number>();
 
 const checkAndSetDedupe = (key: string, eventName: string): boolean => {
-  if (typeof window === "undefined" || !window.sessionStorage) return true;
-  try {
-    const now = Date.now();
-    const lastTimeStr = sessionStorage.getItem(key);
-    if (lastTimeStr) {
-      const lastTime = parseInt(lastTimeStr, 10);
-      if (now - lastTime < DEDUPE_WINDOW_MS) {
-        if (process.env.NODE_ENV === "development") {
-          console.log(`[Dedupe Blocked] ${eventName} was sent less than 30s ago.`);
-        }
-        return false; // Block repeating trigger
+  if (typeof window === "undefined") return true;
+
+  const now = Date.now();
+  const isBlocked = (lastTime: number | null): boolean => {
+    if (lastTime !== null && now - lastTime < DEDUPE_WINDOW_MS) {
+      if (process.env.NODE_ENV === "development") {
+        console.log(`[Dedupe Blocked] ${eventName} was sent less than 30s ago.`);
       }
+      return false;
     }
-    sessionStorage.setItem(key, now.toString());
-    return true; // Proceed
+    return true;
+  };
+
+  try {
+    const lastTimeStr = window.sessionStorage?.getItem(key);
+    const lastTime = lastTimeStr ? Number.parseInt(lastTimeStr, 10) : null;
+    if (!isBlocked(lastTime !== null && !Number.isNaN(lastTime) ? lastTime : null)) {
+      return false;
+    }
+    try {
+      window.sessionStorage?.setItem(key, now.toString());
+    } catch {
+      const memoryLastTime = memoryDedupe.get(key) ?? null;
+      if (!isBlocked(memoryLastTime)) return false;
+    }
+    memoryDedupe.set(key, now);
+    return true;
   } catch {
-    return true; // Fallback if storage fails (e.g. incognito)
+    const memoryLastTime = memoryDedupe.get(key) ?? null;
+    if (!isBlocked(memoryLastTime)) return false;
+    memoryDedupe.set(key, now);
+    return true;
   }
 };
 

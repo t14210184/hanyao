@@ -3,7 +3,12 @@
 import React, { useState, useEffect } from "react";
 import { siteConfig } from "@/data/site";
 import { servicesData } from "@/data/services";
-import { trackEvent, generateLeadId, trackLineContactAttempt } from "@/lib/tracking";
+import { trackEvent, trackLineContactAttempt } from "@/lib/tracking";
+import {
+  buildLineOaMessageUrl,
+  isMobileLineClient,
+  prepareLineLead,
+} from "@/lib/line-contact";
 
 interface ServiceOption {
   id: string;
@@ -45,6 +50,9 @@ export default function ContactForm({
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [copyFallbackText, setCopyFallbackText] = useState<string>("");
   const [hasStartedTyping, setHasStartedTyping] = useState(false);
+  const [isPreparing, setIsPreparing] = useState(false);
+  const [lineLeadToken, setLineLeadToken] = useState<string | null>(null);
+  const [linePrepareFailed, setLinePrepareFailed] = useState(false);
 
   // Read ?service= from URL to pre-select, fallback to defaultService prop
   useEffect(() => {
@@ -85,6 +93,7 @@ export default function ContactForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isPreparing) return;
 
     // 1. Validate required fields
     if (!formData.name.trim()) {
@@ -140,13 +149,15 @@ export default function ContactForm({
     };
     const areaLabel = areaMap[formData.area] ?? formData.area;
 
-    // 3. Generate dynamic lead_id
-    const leadId = generateLeadId();
+    // Prepare only the anonymous intent and attribution. Form PII remains in
+    // browser memory and is appended to the message only after preparation.
+    setIsPreparing(true);
+    const prepared = await prepareLineLead();
+    const serverLeadToken = prepared?.lead_token ?? null;
 
-    // 3.5 Build LINE consultation text (including leadId)
     const lineText = [
       "您好，我想諮詢焓耀空調工程：",
-      `【諮詢編號】${leadId}`,
+      ...(serverLeadToken ? [`【詢價編號】${serverLeadToken}`] : []),
       "",
       `姓名：${formData.name}`,
       `電話：${formData.phone}`,
@@ -199,21 +210,27 @@ export default function ContactForm({
       setCopyFallbackText(lineText);
     }
 
-    // 5. Fire semantic trackLineContactAttempt event (DO NOT send sensitive data)
+    // Emit only safe diagnostic data; form PII never enters this payload.
     trackLineContactAttempt({
       contact_method: "form_copy_open_line",
-      lead_id: leadId,
+      lead_id: serverLeadToken ?? undefined,
       event_source: "contact_form",
     });
 
-    // 6. Show success UI
+    setLineLeadToken(serverLeadToken);
+    setLinePrepareFailed(!prepared);
+    setIsPreparing(false);
     setIsSubmitted(true);
 
-    // 8. Navigate to LINE after short delay so user can see the success message
-    //    Using window.location.href (not window.open) to avoid popup blocker
+    // Mobile success uses the official oaMessage URL. Any failure, and every
+    // desktop path, falls back to the configured official profile URL.
+    const destination =
+      prepared && isMobileLineClient()
+        ? buildLineOaMessageUrl(lineText)
+        : siteConfig.lineUrl;
     setTimeout(() => {
       if (typeof window !== "undefined") {
-        window.location.href = siteConfig.lineUrl;
+        window.location.assign(destination);
       }
     }, 1200);
   };
@@ -230,6 +247,9 @@ export default function ContactForm({
     setIsSubmitted(false);
     setCopyFallbackText("");
     setHasStartedTyping(false);
+    setIsPreparing(false);
+    setLineLeadToken(null);
+    setLinePrepareFailed(false);
   };
 
   // ── Success / redirect screen ──────────────────────────────────────────────
@@ -254,13 +274,17 @@ export default function ContactForm({
         </div>
 
         <h3 className="text-2xl sm:text-3xl font-bold text-white mb-4">
-          已複製諮詢內容！
+          {lineLeadToken ? "正在準備 LINE 訊息" : "正在開啟 LINE 官方帳號"}
         </h3>
         <p className="text-slate-200 text-lg sm:text-xl mb-3 leading-relaxed font-medium">
-          正在為您開啟 LINE 聯絡視窗…
+          {linePrepareFailed
+            ? "準備訊息暫時無法完成，將開啟 LINE 官方帳號頁面…"
+            : "正在為您開啟 LINE 訊息視窗…"}
         </p>
         <p className="text-slate-300 text-base sm:text-lg mb-6 leading-relaxed">
-          請在 LINE 中貼上剛才複製的內容傳送給我們。
+          {lineLeadToken
+            ? `詢價編號：${lineLeadToken}。請確認訊息內容後按「送出」。`
+            : "請在 LINE 中貼上剛才複製的內容，確認後按「送出」。"}
         </p>
 
         {/* Fallback: show text if clipboard failed */}
@@ -433,7 +457,8 @@ export default function ContactForm({
           <button
             type="submit"
             id="contact-form-submit"
-            className="w-full min-h-[72px] bg-green-600 hover:bg-green-500 active:scale-[0.99] text-white font-bold rounded-2xl shadow-lg shadow-green-500/20 tracking-wide transition-all flex items-center justify-center gap-3 text-xl sm:text-2xl px-6 py-4"
+            disabled={isPreparing}
+            className="w-full min-h-[72px] bg-green-600 hover:bg-green-500 disabled:opacity-60 disabled:cursor-wait active:scale-[0.99] text-white font-bold rounded-2xl shadow-lg shadow-green-500/20 tracking-wide transition-all flex items-center justify-center gap-3 text-xl sm:text-2xl px-6 py-4"
           >
             <svg
               className="w-6 h-6 sm:w-7 h-7"
@@ -448,7 +473,7 @@ export default function ContactForm({
                 d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
               />
             </svg>
-            複製諮詢內容並開啟 LINE
+            {isPreparing ? "正在準備 LINE…" : "複製諮詢內容並開啟 LINE"}
           </button>
         </div>
 
@@ -469,13 +494,17 @@ export default function ContactForm({
             <span className="text-sm sm:text-base text-slate-300 font-semibold">※ 提示：建議使用手機瀏覽本站以獲得最順暢的 LINE 諮詢體驗。</span>
           </div>
           {/* 電腦瀏覽時的按鈕 */}
-          <div className="hidden md:flex flex-col items-center gap-3 pt-4 border-t border-slate-900">
+          <div
+            className="hidden md:flex flex-col items-center gap-3 pt-4 border-t border-slate-900"
+            data-line-desktop-state="DESKTOP_CROSS_DEVICE_TOKEN_HANDOFF_PENDING"
+          >
             <span className="text-sm sm:text-base font-bold text-slate-200">電腦瀏覽加 LINE：</span>
             <div className="flex gap-4 items-center">
               <a
                 href={siteConfig.lineUrl}
                 target="_blank"
                 rel="noopener noreferrer"
+                data-line-stage="DESKTOP_TOKEN_HANDOFF_PENDING_LINE1B2B"
                 className="inline-flex items-center justify-center gap-2 py-3 px-6 bg-green-700 hover:bg-green-600 text-white text-base sm:text-lg font-bold rounded-xl min-h-[56px] transition-colors shadow"
               >
                 開啟 LINE 加好友頁面

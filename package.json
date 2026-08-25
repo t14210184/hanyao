@@ -15,6 +15,8 @@
     "test:line1a:http": "node scripts/line1a-http-integration.mjs",
     "test:line1b1:unit": "node --experimental-strip-types --test scripts/line1b1-unit.test.ts",
     "test:line1b1:http": "node scripts/line1b1-http-integration.mjs",
+    "test:line1b2a:unit": "node --experimental-strip-types --test scripts/line1b2a-unit.test.ts",
+    "test:line1b2a:local": "node --experimental-strip-types scripts/line1b2a-local-integration.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

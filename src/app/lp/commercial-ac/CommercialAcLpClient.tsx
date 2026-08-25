@@ -196,18 +196,6 @@ export default function CommercialAcLpClient() {
     });
   };
 
-  const handleLineClick = (ctaPosition: string) => {
-    trackEvent("line_click", {
-      service_type: "commercial_ac",
-      area: currentArea,
-      landing_page_type: "google_ads",
-      cta_position: ctaPosition,
-      lead_method: "line",
-      keyword_intent: "commercial_ac",
-      link_type: "line"
-    });
-  };
-
   const handleAppointmentClick = () => {
     // Action tracking placeholder
   };
@@ -231,7 +219,6 @@ export default function CommercialAcLpClient() {
           area: currentArea
         }}
         onPhoneClick={() => handlePhoneClick("lp_hero")}
-        onLineClick={() => handleLineClick("lp_hero")}
         onAppointmentClick={() => handleAppointmentClick()}
       />
 
@@ -295,7 +282,6 @@ export default function CommercialAcLpClient() {
                       lead_method: "line",
                       keyword_intent: "commercial_ac"
                     }}
-                    onClick={() => handleLineClick(`field_card_${field.title}_line`)}
                     className="w-full text-center py-2.5 bg-slate-850 hover:bg-slate-800 text-slate-300 hover:text-white font-semibold rounded-xl border border-slate-800 transition-colors text-sm block"
                   >
                     {field.ctaLine}
@@ -403,7 +389,6 @@ export default function CommercialAcLpClient() {
         phoneText="撥打商用工程諮詢"
         lineText="LINE 傳平面圖與照片"
         onPhoneClick={() => handlePhoneClick("final_cta_section")}
-        onLineClick={() => handleLineClick("final_cta_section")}
       />
     </main>
   );

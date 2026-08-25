@@ -1,8 +1,17 @@
 "use client";
 
-import React from "react";
+import React, { useRef } from "react";
 import Link from "next/link";
 import { trackEvent, trackLineContactAttempt, trackPhoneClickAttempt } from "@/lib/tracking";
+import { siteConfig } from "@/data/site";
+import {
+  buildGenericLineMessage,
+  buildLineOaMessageUrl,
+  createLinePrepareRequestId,
+  isMobileLineClient,
+  isOfficialLineProfileUrl,
+  prepareLineLead,
+} from "@/lib/line-contact";
 
 interface CTAButtonProps {
   href?: string;
@@ -23,7 +32,9 @@ export default function CTAButton({
   trackParams = {},
   external = false
 }: CTAButtonProps) {
-  const handleClick = (e: React.MouseEvent<HTMLElement>) => {
+  const lineAttemptInFlight = useRef(false);
+
+  const handleClick = async (e: React.MouseEvent<HTMLElement>) => {
     const resolveSource = (pos?: unknown): "header_cta" | "sticky_cta" | "hero_cta" | "service_page" | "footer_cta" | "contact_page" | "contact_form" | "unknown" => {
       if (!pos || typeof pos !== "string") return "unknown";
       const p = pos.toLowerCase();
@@ -46,6 +57,38 @@ export default function CTAButton({
     };
 
     const isTel = href?.startsWith("tel:");
+    const isLineCta =
+      trackEventName === "line_click" || isOfficialLineProfileUrl(href);
+
+    if (isLineCta && isMobileLineClient()) {
+      e.preventDefault();
+      if (lineAttemptInFlight.current) return;
+      lineAttemptInFlight.current = true;
+
+      if (onClick) onClick(e);
+
+      const eventSource = resolveSource(
+        trackParams?.cta_position || trackParams?.cta_location
+      );
+      const prepared = await prepareLineLead({
+        requestId: createLinePrepareRequestId(),
+      });
+      const message = buildGenericLineMessage(prepared?.lead_token);
+
+      trackLineContactAttempt({
+        contact_method: "line_link_open",
+        lead_id: prepared?.lead_token,
+        event_source: eventSource,
+      });
+
+      const destination = message
+        ? buildLineOaMessageUrl(message)
+        : siteConfig.lineUrl;
+      if (typeof window !== "undefined") {
+        window.location.assign(destination);
+      }
+      return;
+    }
 
     if (trackEventName) {
       if (trackEventName === "line_click") {

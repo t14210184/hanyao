@@ -554,7 +554,17 @@ export default function ServicesOverviewPage() {
                   <span className="shrink-0 w-6 h-6 rounded-full bg-green-950 text-green-400 flex items-center justify-center text-xs font-bold mt-0.5">!</span>
                   <div>
                     <span className="text-white font-bold">不確定問題類型：</span>
-                    可透過官方 <a href={siteConfig.lineUrl} target="_blank" rel="noopener noreferrer" className="text-green-400 hover:underline font-semibold">LINE 傳照片、影片、故障燈號或平面圖</a> 先行詢問。
+                    可透過官方{" "}
+                    <CTAButton
+                      href={siteConfig.lineUrl}
+                      external
+                      trackEventName="line_click"
+                      trackParams={{ service_type: "services_index", cta_position: "services_inline_guidance" }}
+                      className="text-green-400 hover:underline font-semibold"
+                    >
+                      LINE 傳照片、影片、故障燈號或平面圖
+                    </CTAButton>{" "}
+                    先行詢問。
                   </div>
                 </li>
               </ul>

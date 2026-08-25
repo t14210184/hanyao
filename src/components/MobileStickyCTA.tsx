@@ -25,14 +25,6 @@ export default function MobileStickyCTA() {
   const appointmentHref = hasContactSection ? "#contact-section" : "/contact/";
   const appointmentText = hasContactSection ? (isCommercial ? "預約場勘" : "預約估價") : "聯絡表單";
 
-  const handlePhoneClick = () => {
-    // No-op or custom behavior (unallowed event tracker removed)
-  };
-
-  const handleLineClick = () => {
-    // No-op or custom behavior (unallowed event tracker removed)
-  };
-
   const handleAppointmentClick = (e: React.MouseEvent) => {
     if (hasContactSection) {
       e.preventDefault();
@@ -54,7 +46,6 @@ export default function MobileStickyCTA() {
       {/* 📞 Call CTA */}
       <CTAButton
         href={siteConfig.phone1Link}
-        onClick={handlePhoneClick}
         trackEventName="phone_click"
         trackParams={{ service_type: serviceType, cta_position: "mobile_sticky_bar" }}
         className="flex-1 flex flex-col items-center justify-center bg-slate-800 text-white hover:bg-slate-700 py-3 rounded-xl font-bold border border-slate-700 text-base sm:text-lg min-h-[64px] gap-1 transition-colors"
@@ -69,7 +60,6 @@ export default function MobileStickyCTA() {
       <CTAButton
         href={siteConfig.lineUrl}
         external
-        onClick={handleLineClick}
         trackEventName="line_click"
         trackParams={{ service_type: serviceType, cta_position: "mobile_sticky_bar" }}
         className="flex-1 flex flex-col items-center justify-center bg-green-600 hover:bg-green-500 text-white py-3 rounded-xl font-bold text-base sm:text-lg min-h-[64px] gap-1 shadow-md shadow-green-950/20 transition-colors"
