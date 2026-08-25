@@ -14,6 +14,7 @@ import {
   issueLeadToken,
   syncAttributionToServer,
 } from "../src/lib/attribution-server.ts";
+import { enforceAbuseControl } from "../functions/_lib/abuse-control.ts";
 import type { AttributionV1 } from "../src/lib/attribution.ts";
 
 const uuid = "11111111-1111-4111-8111-111111111111";
@@ -186,4 +187,38 @@ test("client server helpers serialize only the C1B1 contract and are opt-in", as
   const leadResult = await issueLeadToken("phone", "session-A", uuid, fetcher);
   assert.equal(leadResult.ok, true);
   assert.equal(syncCalls, 2);
+});
+
+test("abuse control fails open only when the deferred binding is absent or unavailable", async () => {
+  const request = new Request("https://www.xusen.pro/api/attribution/v1/session");
+  assert.deepEqual(await enforceAbuseControl(request), {
+    allowed: true,
+    mode: "fail-open",
+    reason: "REMOTE_BINDING_DEFERRED",
+  });
+
+  const limited = await enforceAbuseControl(request, {
+    limit: async () => ({ success: false }),
+  });
+  assert.deepEqual(limited, {
+    allowed: false,
+    mode: "fail-closed",
+    reason: "RATE_LIMITED",
+  });
+
+  assert.deepEqual(
+    await enforceAbuseControl(request, { limit: async () => ({ success: true }) }),
+    { allowed: true, mode: "binding", reason: "ALLOWED" }
+  );
+
+  const bindingError = await enforceAbuseControl(request, {
+    limit: async () => {
+      throw new Error("unavailable");
+    },
+  });
+  assert.deepEqual(bindingError, {
+    allowed: true,
+    mode: "fail-open",
+    reason: "BINDING_ERROR_FAIL_OPEN",
+  });
 });

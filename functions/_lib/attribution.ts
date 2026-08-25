@@ -17,8 +17,6 @@ const TOUCH_FIELDS = [
   "utm_content",
 ] as const;
 
-type TouchField = (typeof TOUCH_FIELDS)[number];
-
 export interface ClientTouchInput {
   captured_at?: unknown;
   landing_url?: unknown;
@@ -160,6 +158,15 @@ const normalizeUrlPart = (
 export const hasAttributionSource = (touch: NormalizedTouch): boolean =>
   TOUCH_FIELDS.some((field) => touch[field] !== null);
 
+const sourceColumnsAreNull = (prefix: "first" | "last"): string =>
+  TOUCH_FIELDS.map((field) => `${prefix}_${field} IS NULL`).join(" AND ");
+
+const FIRST_SOURCE_COLUMNS_EMPTY_SQL = sourceColumnsAreNull("first");
+const LAST_SOURCE_COLUMNS_EMPTY_SQL = sourceColumnsAreNull("last");
+
+export const ATTRIBUTION_CLEANUP_BATCH_SIZE = 25;
+export const ATTRIBUTION_CLEANUP_SAMPLE_MODULUS = 16;
+
 export const validateAttributionTouch = (
   value: unknown
 ): ValidationResult<NormalizedTouch> => {
@@ -256,39 +263,6 @@ const touchColumns = (touch: NormalizedTouch): (string | null)[] => [
   touch.utm_content,
 ];
 
-const firstTouchColumns = (row: AttributionSessionRow): (string | null)[] => [
-  row.first_captured_at,
-  row.first_landing_path,
-  row.first_referrer_origin,
-  row.first_gclid,
-  row.first_gbraid,
-  row.first_wbraid,
-  row.first_utm_source,
-  row.first_utm_medium,
-  row.first_utm_campaign,
-  row.first_utm_id,
-  row.first_utm_term,
-  row.first_utm_content,
-];
-
-const lastTouchColumns = (row: AttributionSessionRow): (string | null)[] => [
-  row.last_captured_at,
-  row.last_landing_path,
-  row.last_referrer_origin,
-  row.last_gclid,
-  row.last_gbraid,
-  row.last_wbraid,
-  row.last_utm_source,
-  row.last_utm_medium,
-  row.last_utm_campaign,
-  row.last_utm_id,
-  row.last_utm_term,
-  row.last_utm_content,
-];
-
-const isEmptyStoredTouch = (columns: (string | null)[]): boolean =>
-  TOUCH_FIELDS.every((_, index) => columns[index + 3] === null);
-
 export const upsertAttributionSession = async (
   database: D1Database,
   payload: NormalizedAttributionPayload,
@@ -299,83 +273,86 @@ export const upsertAttributionSession = async (
     now.getTime() + ATTRIBUTION_RETENTION_DAYS * 24 * 60 * 60 * 1000
   ).toISOString();
 
-  const existing = await database
-    .prepare("SELECT * FROM attribution_sessions WHERE session_id = ?1")
-    .bind(payload.session_id)
-    .first<AttributionSessionRow>();
+  await database
+    .prepare(
+      `INSERT OR IGNORE INTO attribution_sessions (
+        session_id, schema_version,
+        first_captured_at, first_landing_path, first_referrer_origin,
+        first_gclid, first_gbraid, first_wbraid,
+        first_utm_source, first_utm_medium, first_utm_campaign,
+        first_utm_id, first_utm_term, first_utm_content,
+        last_captured_at, last_landing_path, last_referrer_origin,
+        last_gclid, last_gbraid, last_wbraid,
+        last_utm_source, last_utm_medium, last_utm_campaign,
+        last_utm_id, last_utm_term, last_utm_content,
+        server_created_at, server_updated_at, expires_at
+      ) VALUES (
+        ?1, ?2,
+        ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14,
+        ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25, ?26,
+        ?27, ?28, ?29
+      )`
+    )
+    .bind(
+      payload.session_id,
+      payload.schema_version,
+      ...touchColumns(payload.first_touch),
+      ...touchColumns(payload.last_touch),
+      serverNow,
+      serverNow,
+      expiresAt
+    )
+    .run();
 
-  if (!existing) {
+  if (hasAttributionSource(payload.first_touch)) {
     await database
       .prepare(
-        `INSERT INTO attribution_sessions (
-          session_id, schema_version,
-          first_captured_at, first_landing_path, first_referrer_origin,
-          first_gclid, first_gbraid, first_wbraid,
-          first_utm_source, first_utm_medium, first_utm_campaign,
-          first_utm_id, first_utm_term, first_utm_content,
-          last_captured_at, last_landing_path, last_referrer_origin,
-          last_gclid, last_gbraid, last_wbraid,
-          last_utm_source, last_utm_medium, last_utm_campaign,
-          last_utm_id, last_utm_term, last_utm_content,
-          server_created_at, server_updated_at, expires_at
-        ) VALUES (
-          ?1, ?2,
-          ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14,
-          ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25, ?26,
-          ?27, ?28, ?29
+        `UPDATE attribution_sessions SET
+          first_captured_at = ?1, first_landing_path = ?2, first_referrer_origin = ?3,
+          first_gclid = ?4, first_gbraid = ?5, first_wbraid = ?6,
+          first_utm_source = ?7, first_utm_medium = ?8, first_utm_campaign = ?9,
+          first_utm_id = ?10, first_utm_term = ?11, first_utm_content = ?12
+        WHERE session_id = ?13 AND ${FIRST_SOURCE_COLUMNS_EMPTY_SQL}`
+      )
+      .bind(...touchColumns(payload.first_touch), payload.session_id)
+      .run();
+  }
+
+  if (hasAttributionSource(payload.last_touch)) {
+    const incomingCapturedAt = payload.last_touch.captured_at;
+    await database
+      .prepare(
+        `UPDATE attribution_sessions SET
+          schema_version = ?1,
+          last_captured_at = ?2, last_landing_path = ?3, last_referrer_origin = ?4,
+          last_gclid = ?5, last_gbraid = ?6, last_wbraid = ?7,
+          last_utm_source = ?8, last_utm_medium = ?9, last_utm_campaign = ?10,
+          last_utm_id = ?11, last_utm_term = ?12, last_utm_content = ?13,
+          server_updated_at = ?14, expires_at = ?15
+        WHERE session_id = ?16 AND (
+          (${LAST_SOURCE_COLUMNS_EMPTY_SQL})
+          OR (?17 IS NOT NULL AND (last_captured_at IS NULL OR last_captured_at < ?17))
         )`
       )
       .bind(
-        payload.session_id,
         payload.schema_version,
-        ...touchColumns(payload.first_touch),
         ...touchColumns(payload.last_touch),
         serverNow,
-        serverNow,
-        expiresAt
+        expiresAt,
+        payload.session_id,
+        incomingCapturedAt
       )
       .run();
-
-    const inserted = await database
-      .prepare("SELECT * FROM attribution_sessions WHERE session_id = ?1")
-      .bind(payload.session_id)
-      .first<AttributionSessionRow>();
-    if (!inserted) throw new Error("ATTRIBUTION_INSERT_READBACK_FAILED");
-    return inserted;
+  } else {
+    await database
+      .prepare(
+        `UPDATE attribution_sessions
+         SET schema_version = ?1, server_updated_at = ?2, expires_at = ?3
+         WHERE session_id = ?4`
+      )
+      .bind(payload.schema_version, serverNow, expiresAt, payload.session_id)
+      .run();
   }
-
-  const firstColumns = isEmptyStoredTouch(firstTouchColumns(existing)) &&
-    hasAttributionSource(payload.first_touch)
-    ? touchColumns(payload.first_touch)
-    : firstTouchColumns(existing);
-  const lastColumns = hasAttributionSource(payload.last_touch)
-    ? touchColumns(payload.last_touch)
-    : lastTouchColumns(existing);
-
-  await database
-    .prepare(
-      `UPDATE attribution_sessions SET
-        schema_version = ?1,
-        first_captured_at = ?2, first_landing_path = ?3, first_referrer_origin = ?4,
-        first_gclid = ?5, first_gbraid = ?6, first_wbraid = ?7,
-        first_utm_source = ?8, first_utm_medium = ?9, first_utm_campaign = ?10,
-        first_utm_id = ?11, first_utm_term = ?12, first_utm_content = ?13,
-        last_captured_at = ?14, last_landing_path = ?15, last_referrer_origin = ?16,
-        last_gclid = ?17, last_gbraid = ?18, last_wbraid = ?19,
-        last_utm_source = ?20, last_utm_medium = ?21, last_utm_campaign = ?22,
-        last_utm_id = ?23, last_utm_term = ?24, last_utm_content = ?25,
-        server_updated_at = ?26, expires_at = ?27
-      WHERE session_id = ?28`
-    )
-    .bind(
-      payload.schema_version,
-      ...firstColumns,
-      ...lastColumns,
-      serverNow,
-      expiresAt,
-      payload.session_id
-    )
-    .run();
 
   const updated = await database
     .prepare("SELECT * FROM attribution_sessions WHERE session_id = ?1")
@@ -383,4 +360,47 @@ export const upsertAttributionSession = async (
     .first<AttributionSessionRow>();
   if (!updated) throw new Error("ATTRIBUTION_UPDATE_READBACK_FAILED");
   return updated;
+};
+
+const stableCleanupSample = (value: string): number =>
+  Array.from(value).reduce(
+    (sum, character) => (sum + character.codePointAt(0)!) % ATTRIBUTION_CLEANUP_SAMPLE_MODULUS,
+    0
+  );
+
+export const shouldRunOpportunisticCleanup = (sampleKey: string): boolean =>
+  stableCleanupSample(sampleKey) === 0;
+
+export const cleanupExpiredAttribution = async (
+  database: D1Database,
+  serverNow = new Date(),
+  batchSize = ATTRIBUTION_CLEANUP_BATCH_SIZE
+): Promise<number> => {
+  const boundedBatchSize = Math.max(1, Math.min(batchSize, 100));
+  const result = await database
+    .prepare(
+      `DELETE FROM attribution_sessions
+       WHERE session_id IN (
+         SELECT session_id FROM attribution_sessions
+         WHERE expires_at <= ?1
+         ORDER BY expires_at, session_id
+         LIMIT ?2
+       )`
+    )
+    .bind(serverNow.toISOString(), boundedBatchSize)
+    .run();
+  return result.meta?.changes ?? 0;
+};
+
+export const opportunisticCleanupExpiredAttribution = async (
+  database: D1Database,
+  sampleKey: string,
+  serverNow = new Date()
+): Promise<number> => {
+  if (!shouldRunOpportunisticCleanup(sampleKey)) return 0;
+  try {
+    return await cleanupExpiredAttribution(database, serverNow);
+  } catch {
+    return 0;
+  }
 };

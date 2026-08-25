@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "next lint",
     "test:c1b1:unit": "node --experimental-strip-types --test scripts/c1b1-unit.test.ts",
-    "test:c1b1:http": "node scripts/c1b1-http-integration.mjs"
+    "test:c1b1:http": "node scripts/c1b1-http-integration.mjs",
+    "test:c1b1:r1": "node scripts/c1b1-r1-regression.mjs",
+    "test:c1b1:config": "node scripts/c1b1-config-safety.mjs"
   },
   "dependencies": {
     "@next/third-parties": "^16.2.9",

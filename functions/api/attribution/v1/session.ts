@@ -7,8 +7,13 @@ import {
 } from "../../../_lib/http";
 import {
   upsertAttributionSession,
+  opportunisticCleanupExpiredAttribution,
   validateAttributionPayload,
 } from "../../../_lib/attribution";
+import {
+  ABUSE_CONTROL_RETRY_AFTER_SECONDS,
+  enforceAbuseControl,
+} from "../../../_lib/abuse-control";
 import type { PageHandler } from "../../../_lib/types";
 
 export const onRequest: PageHandler = async ({ request, env }) => {
@@ -23,7 +28,21 @@ export const onRequest: PageHandler = async ({ request, env }) => {
   const payload = validateAttributionPayload(body.value);
   if (!payload.ok) return errorResponse(payload.code, 400);
 
+  const abuseDecision = await enforceAbuseControl(
+    request,
+    env.ATTRIBUTION_RATE_LIMITER
+  );
+  if (!abuseDecision.allowed) {
+    return errorResponse("RATE_LIMITED", 429, {
+      retry_after_seconds: ABUSE_CONTROL_RETRY_AFTER_SECONDS,
+    });
+  }
+
   try {
+    await opportunisticCleanupExpiredAttribution(
+      env.ATTRIBUTION_DB,
+      payload.value.session_id
+    );
     const row = await upsertAttributionSession(env.ATTRIBUTION_DB, payload.value);
     return jsonResponse({
       session_id: row.session_id,

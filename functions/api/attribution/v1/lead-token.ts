@@ -10,6 +10,11 @@ import {
   SessionNotFoundError,
   validateLeadTokenRequest,
 } from "../../../_lib/lead-token";
+import {
+  ABUSE_CONTROL_RETRY_AFTER_SECONDS,
+  enforceAbuseControl,
+} from "../../../_lib/abuse-control";
+import { opportunisticCleanupExpiredAttribution } from "../../../_lib/attribution";
 import type { PageHandler } from "../../../_lib/types";
 
 export const onRequest: PageHandler = async ({ request, env }) => {
@@ -24,7 +29,21 @@ export const onRequest: PageHandler = async ({ request, env }) => {
   const payload = validateLeadTokenRequest(body.value);
   if (!payload.ok) return errorResponse(payload.code, 400);
 
+  const abuseDecision = await enforceAbuseControl(
+    request,
+    env.ATTRIBUTION_RATE_LIMITER
+  );
+  if (!abuseDecision.allowed) {
+    return errorResponse("RATE_LIMITED", 429, {
+      retry_after_seconds: ABUSE_CONTROL_RETRY_AFTER_SECONDS,
+    });
+  }
+
   try {
+    await opportunisticCleanupExpiredAttribution(
+      env.ATTRIBUTION_DB,
+      payload.value.request_id
+    );
     const result = await issueLeadToken(env.ATTRIBUTION_DB, payload.value);
     return jsonResponse({
       lead_token: result.lead_token,

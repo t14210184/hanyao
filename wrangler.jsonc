@@ -1,14 +1,6 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
-  "name": "hanyao-c1b1-local",
+  "name": "hanyao-pages",
   "compatibility_date": "2026-08-24",
-  "pages_build_output_dir": "./out",
-  "d1_databases": [
-    {
-      "binding": "ATTRIBUTION_DB",
-      "database_name": "hanyao-attribution-local",
-      "database_id": "C1B1_LOCAL_ONLY_NO_PRODUCTION_ID",
-      "preview_database_id": "c1b1-local-attribution"
-    }
-  ]
+  "pages_build_output_dir": "./out"
 }
