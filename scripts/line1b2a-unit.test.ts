@@ -180,18 +180,16 @@ test("diagnostic line_contact_attempt emits once for one link intent", () => {
   try {
     trackLineContactAttempt({
       contact_method: "line_link_open",
-      lead_id: token,
       event_source: "service_page",
     });
     trackLineContactAttempt({
       contact_method: "line_link_open",
-      lead_id: token,
       event_source: "service_page",
     });
 
     assert.equal(dataLayer.length, 1);
     assert.equal(dataLayer[0].event, "line_contact_attempt");
-    assert.equal(dataLayer[0].lead_id, token);
+    assert.equal("lead_id" in dataLayer[0], false);
     assert.equal("phone" in dataLayer[0], false);
     assert.equal("message" in dataLayer[0], false);
   } finally {
@@ -210,7 +208,7 @@ test("source boundary removes the browser-generated LINE lead ID", () => {
   assert.match(contactForm, /prepareLineLead/);
   assert.match(contactForm, /【詢價編號】/);
   assert.match(contactForm, /window\.location\.assign/);
-  assert.match(contactForm, /DESKTOP_CROSS_DEVICE_TOKEN_HANDOFF_PENDING/);
+  assert.match(contactForm, /DESKTOP_QR_HANDOFF_READY_LINE1B2B/);
   assert.match(ctaButton, /e\.preventDefault\(\)/);
   assert.match(ctaButton, /window\.location\.assign/);
   assert.equal(ctaButton.includes("window.open"), false);

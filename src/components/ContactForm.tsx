@@ -3,8 +3,11 @@
 import React, { useState, useEffect } from "react";
 import { siteConfig } from "@/data/site";
 import { servicesData } from "@/data/services";
+import CTAButton from "@/components/CTAButton";
+import LineDesktopQrDialog from "@/components/LineDesktopQrDialog";
 import { trackEvent, trackLineContactAttempt } from "@/lib/tracking";
 import {
+  buildDesktopLineQrHandoff,
   buildLineOaMessageUrl,
   isMobileLineClient,
   prepareLineLead,
@@ -53,6 +56,9 @@ export default function ContactForm({
   const [isPreparing, setIsPreparing] = useState(false);
   const [lineLeadToken, setLineLeadToken] = useState<string | null>(null);
   const [linePrepareFailed, setLinePrepareFailed] = useState(false);
+  const [lineQrHandoff, setLineQrHandoff] = useState<ReturnType<
+    typeof buildDesktopLineQrHandoff
+  >>(null);
 
   // Read ?service= from URL to pre-select, fallback to defaultService prop
   useEffect(() => {
@@ -154,6 +160,10 @@ export default function ContactForm({
     setIsPreparing(true);
     const prepared = await prepareLineLead();
     const serverLeadToken = prepared?.lead_token ?? null;
+    const isMobile = isMobileLineClient();
+    const desktopHandoff = isMobile
+      ? null
+      : buildDesktopLineQrHandoff(serverLeadToken);
 
     const lineText = [
       "您好，我想諮詢焓耀空調工程：",
@@ -213,26 +223,31 @@ export default function ContactForm({
     // Emit only safe diagnostic data; form PII never enters this payload.
     trackLineContactAttempt({
       contact_method: "form_copy_open_line",
-      lead_id: serverLeadToken ?? undefined,
       event_source: "contact_form",
     });
 
     setLineLeadToken(serverLeadToken);
-    setLinePrepareFailed(!prepared);
+    setLinePrepareFailed(!prepared || (!isMobile && !desktopHandoff));
+    setLineQrHandoff(desktopHandoff);
     setIsPreparing(false);
     setIsSubmitted(true);
 
-    // Mobile success uses the official oaMessage URL. Any failure, and every
-    // desktop path, falls back to the configured official profile URL.
-    const destination =
-      prepared && isMobileLineClient()
-        ? buildLineOaMessageUrl(lineText)
-        : siteConfig.lineUrl;
-    setTimeout(() => {
-      if (typeof window !== "undefined") {
-        window.location.assign(destination);
-      }
-    }, 1200);
+    // Mobile success uses the full local form message in the official
+    // oaMessage URL. Desktop success stays on this page and shows a QR with
+    // only the generic message + HY token. Any failure uses the profile URL.
+    if (prepared && isMobile) {
+      setTimeout(() => {
+        if (typeof window !== "undefined") {
+          window.location.assign(buildLineOaMessageUrl(lineText));
+        }
+      }, 1200);
+    } else if (!desktopHandoff) {
+      setTimeout(() => {
+        if (typeof window !== "undefined") {
+          window.location.assign(siteConfig.lineUrl);
+        }
+      }, 1200);
+    }
   };
 
   const handleReset = () => {
@@ -250,12 +265,20 @@ export default function ContactForm({
     setIsPreparing(false);
     setLineLeadToken(null);
     setLinePrepareFailed(false);
+    setLineQrHandoff(null);
   };
 
   // ── Success / redirect screen ──────────────────────────────────────────────
   if (isSubmitted) {
     return (
-      <div className="bg-slate-900/60 backdrop-blur-md border border-slate-800 p-8 sm:p-12 rounded-3xl text-center shadow-xl max-w-xl mx-auto">
+      <>
+        {lineQrHandoff && (
+          <LineDesktopQrDialog
+            handoff={lineQrHandoff}
+            onClose={() => setLineQrHandoff(null)}
+          />
+        )}
+        <div className="bg-slate-900/60 backdrop-blur-md border border-slate-800 p-8 sm:p-12 rounded-3xl text-center shadow-xl max-w-xl mx-auto">
         {/* Icon */}
         <div className="w-16 h-16 bg-green-950 border border-green-500/30 text-green-400 rounded-full flex items-center justify-center mx-auto mb-6">
           <svg
@@ -274,12 +297,18 @@ export default function ContactForm({
         </div>
 
         <h3 className="text-2xl sm:text-3xl font-bold text-white mb-4">
-          {lineLeadToken ? "正在準備 LINE 訊息" : "正在開啟 LINE 官方帳號"}
+          {lineQrHandoff
+            ? "請使用手機 LINE 掃描"
+            : lineLeadToken
+              ? "正在準備 LINE 訊息"
+              : "正在開啟 LINE 官方帳號"}
         </h3>
         <p className="text-slate-200 text-lg sm:text-xl mb-3 leading-relaxed font-medium">
           {linePrepareFailed
             ? "準備訊息暫時無法完成，將開啟 LINE 官方帳號頁面…"
-            : "正在為您開啟 LINE 訊息視窗…"}
+            : lineQrHandoff
+              ? "QR 只帶入詢價編號，表單完整內容仍保留在本機。"
+              : "正在為您開啟 LINE 訊息視窗…"}
         </p>
         <p className="text-slate-300 text-base sm:text-lg mb-6 leading-relaxed">
           {lineLeadToken
@@ -322,7 +351,8 @@ export default function ContactForm({
         >
           重新填寫
         </button>
-      </div>
+        </div>
+      </>
     );
   }
 
@@ -487,7 +517,7 @@ export default function ContactForm({
             </p>
             <p className="flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-2">
               <span className="shrink-0 font-bold text-white">💻 電腦瀏覽：</span>
-              <span>電腦瀏覽時，無法直接把內容送到您的手機 LINE。按下按鈕後會先複製諮詢內容，並嘗試開啟 LINE 官方帳號加好友頁面；請再用手機 LINE 搜尋官方 ID <strong className="text-white font-bold text-lg sm:text-xl bg-slate-900 px-2 py-0.5 rounded border border-slate-800">@451vpomq</strong>，或開啟加好友頁面後，將內容貼上傳送。</span>
+              <span>電腦瀏覽時，送出後會在本頁顯示本機 QR。掃描只會帶入詢價編號，表單完整內容不會上傳或編進 QR；請在手機 LINE 確認後送出，再補充需求或照片。</span>
             </p>
           </div>
           <div className="pt-3 text-center md:hidden border-t border-slate-900">
@@ -496,19 +526,20 @@ export default function ContactForm({
           {/* 電腦瀏覽時的按鈕 */}
           <div
             className="hidden md:flex flex-col items-center gap-3 pt-4 border-t border-slate-900"
-            data-line-desktop-state="DESKTOP_CROSS_DEVICE_TOKEN_HANDOFF_PENDING"
+            data-line-desktop-state="DESKTOP_QR_HANDOFF_READY_LINE1B2B"
           >
             <span className="text-sm sm:text-base font-bold text-slate-200">電腦瀏覽加 LINE：</span>
             <div className="flex gap-4 items-center">
-              <a
+              <CTAButton
                 href={siteConfig.lineUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                data-line-stage="DESKTOP_TOKEN_HANDOFF_PENDING_LINE1B2B"
+                external
+                trackEventName="line_click"
+                trackParams={{ cta_position: "contact_form_desktop_helper" }}
+                dataLineStage="DESKTOP_QR_HANDOFF_LINE1B2B"
                 className="inline-flex items-center justify-center gap-2 py-3 px-6 bg-green-700 hover:bg-green-600 text-white text-base sm:text-lg font-bold rounded-xl min-h-[56px] transition-colors shadow"
               >
-                開啟 LINE 加好友頁面
-              </a>
+                使用手機 LINE 掃描
+              </CTAButton>
               <span className="text-sm text-slate-300">
                 （LINE 官方帳號 ID: <strong className="text-white font-bold">@451vpomq</strong>，加好友後貼上諮詢內容傳送）
               </span>

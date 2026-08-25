@@ -1,10 +1,12 @@
 "use client";
 
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
 import Link from "next/link";
 import { trackEvent, trackLineContactAttempt, trackPhoneClickAttempt } from "@/lib/tracking";
 import { siteConfig } from "@/data/site";
+import LineDesktopQrDialog from "@/components/LineDesktopQrDialog";
 import {
+  buildDesktopLineQrHandoff,
   buildGenericLineMessage,
   buildLineOaMessageUrl,
   createLinePrepareRequestId,
@@ -21,6 +23,7 @@ interface CTAButtonProps {
   trackEventName?: string;
   trackParams?: Record<string, unknown>;
   external?: boolean;
+  dataLineStage?: string;
 }
 
 export default function CTAButton({
@@ -30,9 +33,13 @@ export default function CTAButton({
   children,
   trackEventName,
   trackParams = {},
-  external = false
+  external = false,
+  dataLineStage,
 }: CTAButtonProps) {
   const lineAttemptInFlight = useRef(false);
+  const [desktopLineQrHandoff, setDesktopLineQrHandoff] = useState<ReturnType<
+    typeof buildDesktopLineQrHandoff
+  >>(null);
 
   const handleClick = async (e: React.MouseEvent<HTMLElement>) => {
     const resolveSource = (pos?: unknown): "header_cta" | "sticky_cta" | "hero_cta" | "service_page" | "footer_cta" | "contact_page" | "contact_form" | "unknown" => {
@@ -77,7 +84,6 @@ export default function CTAButton({
 
       trackLineContactAttempt({
         contact_method: "line_link_open",
-        lead_id: prepared?.lead_token,
         event_source: eventSource,
       });
 
@@ -86,6 +92,38 @@ export default function CTAButton({
         : siteConfig.lineUrl;
       if (typeof window !== "undefined") {
         window.location.assign(destination);
+      }
+      return;
+    }
+
+    if (isLineCta) {
+      e.preventDefault();
+      if (lineAttemptInFlight.current) return;
+      lineAttemptInFlight.current = true;
+
+      if (onClick) onClick(e);
+
+      const eventSource = resolveSource(
+        trackParams?.cta_position || trackParams?.cta_location
+      );
+      const prepared = await prepareLineLead({
+        requestId: createLinePrepareRequestId(),
+      });
+      const handoff = buildDesktopLineQrHandoff(prepared?.lead_token);
+
+      trackLineContactAttempt({
+        contact_method: "line_link_open",
+        event_source: eventSource,
+      });
+
+      if (handoff) {
+        setDesktopLineQrHandoff(handoff);
+        return;
+      }
+
+      lineAttemptInFlight.current = false;
+      if (typeof window !== "undefined") {
+        window.location.assign(siteConfig.lineUrl);
       }
       return;
     }
@@ -117,38 +155,60 @@ export default function CTAButton({
   const isTel = href?.startsWith("tel:");
   const isMail = href?.startsWith("mailto:");
 
+  const desktopQrDialog = desktopLineQrHandoff ? (
+    <LineDesktopQrDialog
+      handoff={desktopLineQrHandoff}
+      onClose={() => {
+        setDesktopLineQrHandoff(null);
+        lineAttemptInFlight.current = false;
+      }}
+    />
+  ) : null;
+
   if (href) {
     if (external || isTel || isMail) {
       return (
-        <a
-          href={href}
-          onClick={handleClick as React.MouseEventHandler<HTMLAnchorElement>}
-          className={className}
-          target={external ? "_blank" : undefined}
-          rel={external ? "noopener noreferrer" : undefined}
-        >
-          {children}
-        </a>
+        <>
+          <a
+            href={href}
+            onClick={handleClick as React.MouseEventHandler<HTMLAnchorElement>}
+            className={className}
+            target={external ? "_blank" : undefined}
+            rel={external ? "noopener noreferrer" : undefined}
+            data-line-stage={dataLineStage}
+          >
+            {children}
+          </a>
+          {desktopQrDialog}
+        </>
       );
     }
 
     return (
-      <Link
-        href={href}
-        onClick={handleClick as React.MouseEventHandler<HTMLAnchorElement>}
-        className={className}
-      >
-        {children}
-      </Link>
+      <>
+        <Link
+          href={href}
+          onClick={handleClick as React.MouseEventHandler<HTMLAnchorElement>}
+          className={className}
+          data-line-stage={dataLineStage}
+        >
+          {children}
+        </Link>
+        {desktopQrDialog}
+      </>
     );
   }
 
   return (
-    <button
-      onClick={handleClick as React.MouseEventHandler<HTMLButtonElement>}
-      className={className}
-    >
-      {children}
-    </button>
+    <>
+      <button
+        onClick={handleClick as React.MouseEventHandler<HTMLButtonElement>}
+        className={className}
+        data-line-stage={dataLineStage}
+      >
+        {children}
+      </button>
+      {desktopQrDialog}
+    </>
   );
 }

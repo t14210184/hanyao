@@ -131,6 +131,26 @@ export const buildGenericLineMessage = (
   ].join("\n");
 };
 
+export interface LineDesktopQrHandoff {
+  leadToken: string;
+  message: string;
+  oaMessageUrl: string;
+}
+
+/** Build the minimal cross-device payload used by every desktop LINE intent. */
+export const buildDesktopLineQrHandoff = (
+  leadToken: string | null | undefined
+): LineDesktopQrHandoff | null => {
+  const message = buildGenericLineMessage(leadToken);
+  if (!message || !isLeadToken(leadToken)) return null;
+
+  return {
+    leadToken,
+    message,
+    oaMessageUrl: buildLineOaMessageUrl(message),
+  };
+};
+
 const isRetryableStatus = (status: number): boolean =>
   status === 408 || status === 429 || status >= 500;
 

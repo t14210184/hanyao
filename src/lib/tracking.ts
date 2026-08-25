@@ -58,7 +58,7 @@ export const pushSafeDataLayerEvent = (
 
     win.dataLayer = win.dataLayer || [];
 
-    // dataLayer 只允許送 lead_id、contact_channel、contact_method、page_path、event_source、timestamp 這類非敏感資料。
+    // LINE diagnostics are intentionally limited to these non-identifying fields.
     const safePayload: Record<string, unknown> = {
       event: eventName,
       contact_channel: payload.contact_channel,
@@ -67,10 +67,6 @@ export const pushSafeDataLayerEvent = (
       event_source: payload.event_source || "unknown",
       timestamp: Date.now(),
     };
-
-    if (payload.lead_id !== undefined) {
-      safePayload.lead_id = payload.lead_id;
-    }
 
     win.dataLayer.push(safePayload);
 
@@ -87,7 +83,6 @@ export const pushSafeDataLayerEvent = (
 // 3. trackLineContactAttempt
 export interface LineContactOptions {
   contact_method: "line_link_open" | "form_copy_open_line";
-  lead_id?: string;
   event_source?:
     | "header_cta"
     | "sticky_cta"
@@ -128,7 +123,6 @@ export const trackLineContactAttempt = (options: LineContactOptions) => {
   pushSafeDataLayerEvent("line_contact_attempt", {
     contact_channel: "line",
     contact_method: options.contact_method,
-    lead_id: options.lead_id,
     page_path: options.page_path,
     event_source: event_source,
   });
@@ -178,6 +172,14 @@ export const trackPhoneClickAttempt = (options: PhoneClickOptions) => {
 
 // 舊事件相容與對應層，以防 GA4 舊報表斷裂，但防止重複送 Google Ads
 const ALLOWED_LEGACY_EVENTS = ["form_start", "form_error", "sticky_cta_scroll"];
+const ALLOWED_LEGACY_PARAM_KEYS = new Set([
+  "form_location",
+  "service_type",
+  "error_field",
+  "error_message",
+  "cta_position",
+  "destination_element",
+]);
 
 export const trackEvent = (
   eventName: string,
@@ -234,10 +236,13 @@ export const trackEvent = (
         dataLayer?: Array<Record<string, unknown>>;
       };
       win.dataLayer = win.dataLayer || [];
+      const safeParams = Object.fromEntries(
+        Object.entries(params).filter(([key]) => ALLOWED_LEGACY_PARAM_KEYS.has(key))
+      );
       win.dataLayer.push({
         event: eventName,
         page_path: window.location.pathname,
-        ...params,
+        ...safeParams,
       });
     } catch {
       // safe fallback
