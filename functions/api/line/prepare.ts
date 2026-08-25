@@ -4,19 +4,22 @@ import {
   methodNotAllowed,
   readJsonBody,
   sameOriginRequest,
-} from "../../../_lib/http";
+} from "../../_lib/http";
+import {
+  ABUSE_CONTROL_RETRY_AFTER_SECONDS,
+  enforceAbuseControl,
+} from "../../_lib/abuse-control";
+import {
+  opportunisticCleanupExpiredAttribution,
+  upsertAttributionSession,
+} from "../../_lib/attribution";
 import {
   issueLeadToken,
   LeadTokenIdempotencyConflictError,
   SessionNotFoundError,
-  validateLeadTokenRequest,
-} from "../../../_lib/lead-token";
-import {
-  ABUSE_CONTROL_RETRY_AFTER_SECONDS,
-  enforceAbuseControl,
-} from "../../../_lib/abuse-control";
-import { opportunisticCleanupExpiredAttribution } from "../../../_lib/attribution";
-import type { PageHandler } from "../../../_lib/types";
+} from "../../_lib/lead-token";
+import { validateLinePreparePayload } from "../../_lib/line-prepare";
+import type { PageHandler } from "../../_lib/types";
 
 export const onRequest: PageHandler = async ({ request, env }) => {
   if (request.method !== "POST") return methodNotAllowed();
@@ -27,7 +30,7 @@ export const onRequest: PageHandler = async ({ request, env }) => {
   const body = await readJsonBody(request);
   if (!body.ok) return body.response;
 
-  const payload = validateLeadTokenRequest(body.value);
+  const payload = validateLinePreparePayload(body.value);
   if (!payload.ok) return errorResponse(payload.code, 400);
 
   const abuseDecision = await enforceAbuseControl(
@@ -41,16 +44,28 @@ export const onRequest: PageHandler = async ({ request, env }) => {
   }
 
   try {
-    await opportunisticCleanupExpiredAttribution(
-      env.ATTRIBUTION_DB,
-      payload.value.request_id
-    );
-    const result = await issueLeadToken(env.ATTRIBUTION_DB, payload.value);
+    let sessionId: string | null = null;
+    if (payload.value.attribution !== null) {
+      await opportunisticCleanupExpiredAttribution(
+        env.ATTRIBUTION_DB,
+        payload.value.request_id
+      );
+      const session = await upsertAttributionSession(
+        env.ATTRIBUTION_DB,
+        payload.value.attribution
+      );
+      sessionId = session.session_id;
+    }
+
+    const result = await issueLeadToken(env.ATTRIBUTION_DB, {
+      request_id: payload.value.request_id,
+      session_id: sessionId,
+      channel: "line",
+    });
+
     return jsonResponse({
+      status: "prepared",
       lead_token: result.lead_token,
-      request_id: result.request_id,
-      channel: result.channel,
-      server_created_at: result.server_created_at,
     });
   } catch (error) {
     if (error instanceof LeadTokenIdempotencyConflictError) {

@@ -57,8 +57,11 @@ export interface ValidationFailure {
 
 export type ValidationResult<T> = ValidationSuccess<T> | ValidationFailure;
 
-const UUID_PATTERN =
+const UUID_V4_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+export const isUuidV4 = (value: unknown): value is string =>
+  typeof value === "string" && UUID_V4_PATTERN.test(value);
 
 export const isLeadChannel = (value: unknown): value is LeadChannel =>
   typeof value === "string" && LEAD_CHANNELS.includes(value as LeadChannel);
@@ -78,7 +81,7 @@ export const validateLeadTokenRequest = (
 
   if (
     typeof payload.request_id !== "string" ||
-    !UUID_PATTERN.test(payload.request_id)
+    !isUuidV4(payload.request_id)
   ) {
     return { ok: false, code: "INVALID_REQUEST_ID" };
   }
@@ -124,12 +127,25 @@ export class SessionNotFoundError extends Error {
   }
 }
 
+export class LeadTokenIdempotencyConflictError extends Error {
+  constructor() {
+    super("IDEMPOTENCY_CONFLICT");
+    this.name = "LeadTokenIdempotencyConflictError";
+  }
+}
+
 export class LeadTokenIssuanceError extends Error {
   constructor() {
     super("LEAD_TOKEN_ISSUANCE_FAILED");
     this.name = "LeadTokenIssuanceError";
   }
 }
+
+export const isLeadTokenIdempotencyMatch = (
+  existing: Pick<LeadTokenRow, "session_id" | "channel">,
+  request: Pick<LeadTokenRequest, "session_id" | "channel">
+): boolean =>
+  existing.channel === request.channel && existing.session_id === request.session_id;
 
 export const issueLeadToken = async (
   database: D1Database,
@@ -143,7 +159,12 @@ export const issueLeadToken = async (
     )
     .bind(request.request_id)
     .first<LeadTokenRow>();
-  if (existing) return existing;
+  if (existing) {
+    if (!isLeadTokenIdempotencyMatch(existing, request)) {
+      throw new LeadTokenIdempotencyConflictError();
+    }
+    return existing;
+  }
 
   if (request.session_id !== null) {
     const session = await database
@@ -187,7 +208,12 @@ export const issueLeadToken = async (
         )
         .bind(request.request_id)
         .first<LeadTokenRow>();
-      if (retried) return retried;
+      if (retried) {
+        if (!isLeadTokenIdempotencyMatch(retried, request)) {
+          throw new LeadTokenIdempotencyConflictError();
+        }
+        return retried;
+      }
     }
   }
 
