@@ -10,7 +10,10 @@
     "test:c1b1:unit": "node --experimental-strip-types --test scripts/c1b1-unit.test.ts",
     "test:c1b1:http": "node scripts/c1b1-http-integration.mjs",
     "test:c1b1:r1": "node scripts/c1b1-r1-regression.mjs",
-    "test:c1b1:config": "node scripts/c1b1-config-safety.mjs"
+    "test:c1b1:config": "node scripts/c1b1-config-safety.mjs",
+    "test:line1a:unit": "node --experimental-strip-types --test scripts/line1a-unit.test.ts",
+    "test:line1a:http": "node scripts/line1a-http-integration.mjs",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@next/third-parties": "^16.2.9",

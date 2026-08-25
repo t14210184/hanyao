@@ -3,6 +3,7 @@
 export interface Env {
   ATTRIBUTION_DB: D1Database;
   ATTRIBUTION_RATE_LIMITER?: RateLimitBinding;
+  LINE_CHANNEL_SECRET?: string;
 }
 
 export interface RateLimitBinding {

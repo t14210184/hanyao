@@ -1,5 +1,5 @@
 import type { D1Database } from "@cloudflare/workers-types";
-import type { AttributionSessionRow } from "./attribution";
+import type { AttributionSessionRow } from "./attribution.ts";
 
 export const LEAD_TOKEN_PREFIX = "HY-";
 export const LEAD_TOKEN_LENGTH = 10;
@@ -8,6 +8,27 @@ export const LEAD_TOKEN_MAX_ATTEMPTS = 3;
 
 export const LEAD_CHANNELS = ["line", "phone", "form"] as const;
 export type LeadChannel = (typeof LEAD_CHANNELS)[number];
+
+const escapeRegExp = (value: string): string =>
+  value.replace(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&");
+
+export const extractLeadTokens = (text: string): string[] => {
+  const pattern = new RegExp(
+    "(?:^|[^A-Za-z0-9_-])(" +
+      escapeRegExp(LEAD_TOKEN_PREFIX) +
+      "[" +
+      LEAD_TOKEN_ALPHABET +
+      "]{" +
+      LEAD_TOKEN_LENGTH +
+      "})(?![A-Za-z0-9_-])",
+    "g"
+  );
+  const tokens = new Set<string>();
+  for (const match of text.matchAll(pattern)) {
+    if (match[1]) tokens.add(match[1]);
+  }
+  return [...tokens];
+};
 
 export interface LeadTokenRequest {
   request_id: string;

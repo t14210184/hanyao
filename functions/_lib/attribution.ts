@@ -78,6 +78,50 @@ export interface AttributionSessionRow {
   expires_at: string;
 }
 
+export interface GoogleAdsAttributionSelection {
+  attribution_touch: "last" | "first";
+  gclid: string | null;
+  gbraid: string | null;
+  wbraid: string | null;
+}
+
+const googleClickIdentifiers = (
+  session: AttributionSessionRow,
+  touch: "first" | "last"
+): GoogleAdsAttributionSelection => {
+  if (touch === "first") {
+    return {
+      attribution_touch: touch,
+      gclid: session.first_gclid,
+      gbraid: session.first_gbraid,
+      wbraid: session.first_wbraid,
+    };
+  }
+  return {
+    attribution_touch: touch,
+    gclid: session.last_gclid,
+    gbraid: session.last_gbraid,
+    wbraid: session.last_wbraid,
+  };
+};
+
+const hasGoogleClickIdentifier = (
+  selection: GoogleAdsAttributionSelection
+): boolean =>
+  Boolean(selection.gclid || selection.gbraid || selection.wbraid);
+
+export const selectGoogleAdsAttribution = (
+  session: AttributionSessionRow
+): GoogleAdsAttributionSelection | null => {
+  const lastTouch = googleClickIdentifiers(session, "last");
+  if (hasGoogleClickIdentifier(lastTouch)) return lastTouch;
+
+  const firstTouch = googleClickIdentifiers(session, "first");
+  if (hasGoogleClickIdentifier(firstTouch)) return firstTouch;
+
+  return null;
+};
+
 export interface ValidationSuccess<T> {
   ok: true;
   value: T;
