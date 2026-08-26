@@ -2,5 +2,17 @@
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "hanyao-pages",
   "compatibility_date": "2026-08-24",
-  "pages_build_output_dir": "./out"
+  "pages_build_output_dir": "./out",
+  "env": {
+    "preview": {
+      "d1_databases": [
+        {
+          "binding": "ATTRIBUTION_DB",
+          "database_name": "hanyao-attribution-preview",
+          "database_id": "78ada4dd-4bcd-4b2d-8a37-aae6207f457a",
+          "migrations_dir": "./migrations"
+        }
+      ]
+    }
+  }
 }
