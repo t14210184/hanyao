@@ -355,7 +355,7 @@ export const processLineWebhookEvent = async (
     statements.push(
       database
         .prepare(
-          "INSERT OR IGNORE INTO conversion_outbox (conversion_id, lead_token, conversion_type, event_timestamp, gclid, gbraid, wbraid, attribution_touch, transaction_id, destination_key, status, retry_count, next_retry_at, last_error_code, created_at, sent_at) SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16 WHERE changes() = 1"
+          "INSERT OR IGNORE INTO conversion_outbox (conversion_id, lead_token, conversion_type, event_timestamp, gclid, gbraid, wbraid, attribution_touch, transaction_id, destination_key, status, retry_count, next_retry_at, last_error_code, created_at, sent_at, updated_at) SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17 WHERE changes() = 1"
         )
         .bind(
           crypto.randomUUID(),
@@ -373,7 +373,8 @@ export const processLineWebhookEvent = async (
           null,
           null,
           receivedAt,
-          null
+          null,
+          receivedAt
         ),
       database
         .prepare(

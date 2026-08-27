@@ -121,6 +121,10 @@ const makeMigrationRoots = () => {
     join(cwd, "migrations/0003_line_webhook_foundation.sql"),
     join(v3, "migrations/0003_line_webhook_foundation.sql")
   );
+  copyFileSync(
+    join(cwd, "migrations/0004_google_uploader_state.sql"),
+    join(v3, "migrations/0004_google_uploader_state.sql")
+  );
   return {
     v1: writeConfig(v1, "./migrations"),
     v2: writeConfig(v2, "./migrations"),
@@ -729,7 +733,7 @@ try {
   console.log(
     JSON.stringify({
       status: "PASS",
-      migration: "0001 -> existing data -> 0002 -> existing data -> 0003 PASS",
+      migration: "0001 -> existing data -> 0002 -> existing data -> 0003 -> 0004 PASS",
       tests: "W1-W22 PASS",
       http: "POST /api/line/webhook local Pages + local D1 PASS",
       d1_counts: finalCounts,
