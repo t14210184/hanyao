@@ -122,6 +122,28 @@ const writeSubmitted = async (
   await repository.save(row);
 };
 
+const writeValidatedOnly = async (
+  repository: OutboxRepository,
+  row: ConversionOutboxRow,
+  nowIso: string
+): Promise<void> => {
+  row.status = "validated_only";
+  row.next_retry_at = null;
+  row.last_error_code = null;
+  row.last_error_reason = null;
+  row.submitted_at = null;
+  row.google_request_id = null;
+  row.next_diagnostic_at = null;
+  row.terminal_result = "VALIDATE_ONLY_ACCEPTED";
+  row.diagnostic_status = null;
+  row.diagnostic_record_count = null;
+  row.diagnostic_error_reason = null;
+  row.diagnostic_attempt_count = 0;
+  row.sent_at = null;
+  row.updated_at = nowIso;
+  await repository.save(row);
+};
+
 const writeDiagnosticRetry = async (
   repository: OutboxRepository,
   row: ConversionOutboxRow,
@@ -241,7 +263,11 @@ const processUpload = async (
 
   try {
     const response = await ingestDataManagerEvent(accessToken, request, fetchImpl);
-    await writeSubmitted(repository, row, response.requestId, nowIso, random);
+    if (config.validateOnly) {
+      await writeValidatedOnly(repository, row, nowIso);
+    } else {
+      await writeSubmitted(repository, row, response.requestId, nowIso, random);
+    }
   } catch (error) {
     await writeFailure(
       repository,

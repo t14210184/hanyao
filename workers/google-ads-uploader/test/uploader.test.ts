@@ -178,7 +178,10 @@ class MemoryRepository implements OutboxRepository {
   }
 }
 
-const testEnv = (serviceAccountJson?: string): UploaderEnv =>
+const testEnv = (
+  serviceAccountJson?: string,
+  overrides: Record<string, string | undefined> = {}
+): UploaderEnv =>
   ({
     ATTRIBUTION_DB: undefined,
     GOOGLE_DATA_MANAGER_SERVICE_ACCOUNT_JSON: serviceAccountJson,
@@ -186,6 +189,7 @@ const testEnv = (serviceAccountJson?: string): UploaderEnv =>
     GOOGLE_ADS_CONVERSION_ACTION_ID: "7674301565",
     GOOGLE_DATA_MANAGER_VALIDATE_ONLY: "true",
     UPLOADER_ENVIRONMENT: "preview",
+    ...overrides,
   }) as unknown as UploaderEnv;
 
 const response = (body: unknown, status = 200): Response =>
@@ -356,7 +360,34 @@ test("N/O/P/Q: validateOnly is fail-closed", () => {
   assert.equal(resolveValidateOnly("false", "production", "HUMAN_GATE_CONFIRMED"), false);
 });
 
-test("R/AF: accepted request ID moves to submitted and prevents re-ingest", async () => {
+test("A/B/G: executed production request moves to submitted and schedules diagnostics after 30 minutes", async () => {
+  const fake = fakeServiceAccount();
+  const mock = tokenThen(fake, (url, init) => {
+    assert.equal(url, GOOGLE_DATA_MANAGER_EVENTS_URL);
+    const request = JSON.parse(String(init?.body));
+    assert.equal(request.validateOnly, false);
+    return response({ requestId: "request-executed-1", fieldWarnings: [] });
+  });
+  const repository = new MemoryRepository([baseRow()]);
+  await runScheduledCycle(testEnv(fake.json, {
+    GOOGLE_DATA_MANAGER_VALIDATE_ONLY: "false",
+    UPLOADER_ENVIRONMENT: "production",
+    PRODUCTION_HUMAN_GATE: "HUMAN_GATE_CONFIRMED",
+  }), {
+    repository,
+    fetchImpl: mock.fetchImpl,
+    now: new Date(NOW),
+    random: () => 0.5,
+  });
+  const row = repository.get();
+  assert.equal(row.status, "submitted");
+  assert.equal(row.google_request_id, "request-executed-1");
+  assert.equal(row.submitted_at, NOW);
+  assert.ok(row.next_diagnostic_at);
+  assert.ok(Date.parse(row.next_diagnostic_at) >= Date.parse(NOW) + 30 * 60 * 1000);
+});
+
+test("C/D/E/F: validateOnly success is terminal, clears request identity, and is never diagnostic-eligible", async () => {
   const fake = fakeServiceAccount();
   const mock = tokenThen(fake, (url, init) => {
     assert.equal(url, GOOGLE_DATA_MANAGER_EVENTS_URL);
@@ -368,12 +399,59 @@ test("R/AF: accepted request ID moves to submitted and prevents re-ingest", asyn
   });
   const repository = new MemoryRepository([baseRow()]);
   await runOne(repository, fake, mock.fetchImpl);
-  assert.equal(repository.get().status, "submitted");
-  assert.equal(repository.get().google_request_id, "request-accepted-1");
-  assert.equal(repository.get().submitted_at, NOW);
+  assert.equal(repository.get().status, "validated_only");
+  assert.equal(repository.get().terminal_result, "VALIDATE_ONLY_ACCEPTED");
+  assert.equal(repository.get().google_request_id, null);
+  assert.equal(repository.get().submitted_at, null);
+  assert.equal(repository.get().next_diagnostic_at, null);
+  assert.equal(repository.get().diagnostic_status, null);
+  assert.equal(repository.get().diagnostic_attempt_count, 0);
   assert.equal(mock.calls.filter((call) => call.url === GOOGLE_DATA_MANAGER_EVENTS_URL).length, 1);
   await runOne(repository, fake, mock.fetchImpl);
   assert.equal(mock.calls.filter((call) => call.url === GOOGLE_DATA_MANAGER_EVENTS_URL).length, 1);
+  assert.equal(mock.calls.some((call) => call.url.startsWith(`${GOOGLE_DATA_MANAGER_REQUEST_STATUS_URL}?`)), false);
+  assert.equal(repository.claims.diagnostics, 0);
+});
+
+test("E: diagnostics selector requires submitted state even when a row has a request ID", async () => {
+  const repository = new MemoryRepository([
+    baseRow({
+      status: "validated_only",
+      google_request_id: "request-that-must-not-run",
+      next_diagnostic_at: "2026-08-28T00:00:00.000Z",
+      terminal_result: "VALIDATE_ONLY_ACCEPTED",
+    }),
+  ]);
+  const fake = fakeServiceAccount();
+  const mock = tokenThen(fake, () => {
+    throw new Error("diagnostics must not be reached");
+  });
+  await runOne(repository, fake, mock.fetchImpl);
+  assert.equal(repository.claims.diagnostics, 0);
+  assert.equal(mock.calls.length, 0);
+});
+
+test("G: production validation-only configuration fails closed before claiming rows", async () => {
+  const fake = fakeServiceAccount();
+  const repository = new MemoryRepository([baseRow()]);
+  const mock = sequencedFetch(() => {
+    throw new Error("provider must not be reached");
+  });
+  await assert.rejects(
+    runScheduledCycle(testEnv(fake.json, {
+      GOOGLE_DATA_MANAGER_VALIDATE_ONLY: "true",
+      UPLOADER_ENVIRONMENT: "production",
+      PRODUCTION_HUMAN_GATE: "HUMAN_GATE_CONFIRMED",
+    }), {
+      repository,
+      fetchImpl: mock.fetchImpl,
+      now: new Date(NOW),
+    }),
+    /PRODUCTION_VALIDATE_ONLY_MISCONFIGURED/
+  );
+  assert.equal(repository.claims.uploads, 0);
+  assert.equal(repository.claims.diagnostics, 0);
+  assert.equal(mock.calls.length, 0);
 });
 
 test("S/T/V: 429, 5xx and ambiguous network errors schedule bounded retry with the same transaction ID", async () => {
@@ -554,7 +632,7 @@ test("AE: conditional claims prevent two concurrent scheduled invocations from u
 });
 
 test("AG: only terminal states are eligible for any future retention cleanup", () => {
-  const terminal = new Set<OutboxStatus>(["success", "failed", "deduplicated"]);
+  const terminal = new Set<OutboxStatus>(["success", "failed", "deduplicated", "validated_only"]);
   for (const status of ["pending", "processing", "submitted"] as const) {
     assert.equal(terminal.has(status), false);
   }

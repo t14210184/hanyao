@@ -37,6 +37,14 @@ export const getUploaderConfig = (env: UploaderEnv): UploaderConfig => {
   const environment = isKnownEnvironment(env.UPLOADER_ENVIRONMENT)
     ? env.UPLOADER_ENVIRONMENT
     : "local";
+  const validateOnly = resolveValidateOnly(
+    env.GOOGLE_DATA_MANAGER_VALIDATE_ONLY,
+    environment,
+    env.PRODUCTION_HUMAN_GATE
+  );
+  if (environment === "production" && validateOnly) {
+    throw new Error("PRODUCTION_VALIDATE_ONLY_MISCONFIGURED");
+  }
   return {
     googleAdsAccountId: safeAccountId(
       env.GOOGLE_ADS_ACCOUNT_ID,
@@ -46,10 +54,6 @@ export const getUploaderConfig = (env: UploaderEnv): UploaderConfig => {
       env.GOOGLE_ADS_CONVERSION_ACTION_ID,
       DEFAULT_GOOGLE_ADS_CONVERSION_ACTION_ID
     ),
-    validateOnly: resolveValidateOnly(
-      env.GOOGLE_DATA_MANAGER_VALIDATE_ONLY,
-      environment,
-      env.PRODUCTION_HUMAN_GATE
-    ),
+    validateOnly,
   };
 };

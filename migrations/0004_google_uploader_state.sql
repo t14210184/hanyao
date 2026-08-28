@@ -18,6 +18,7 @@ CREATE TABLE conversion_outbox_v4 (
     status IN (
       'pending',
       'processing',
+      'validated_only',
       'submitted',
       'success',
       'failed',

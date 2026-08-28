@@ -72,6 +72,8 @@ assert.deepEqual(freshSchema[1].results.map((row) => row.name), [
   "idx_conversion_outbox_lead_token", "idx_conversion_outbox_next_retry_at",
   "idx_conversion_outbox_status", "idx_conversion_outbox_status_next_retry",
 ]);
+const freshTableSql = execute(fresh, "SELECT sql FROM sqlite_master WHERE type='table' AND name='conversion_outbox';");
+assert.match(freshTableSql[0].results[0].sql, /'validated_only'/);
 
 const upgrade = makeRoot(3);
 apply(upgrade);
@@ -90,6 +92,14 @@ assert.deepEqual(upgraded[0].results, [{
   diagnostic_attempt_count: 0,
 }]);
 assert.deepEqual(upgraded[1].results, []);
+
+execute(upgrade, "UPDATE conversion_outbox SET status='validated_only', terminal_result='VALIDATE_ONLY_ACCEPTED', next_diagnostic_at=NULL WHERE conversion_id='conversion-upgrade';");
+const validatedOnly = execute(upgrade, "SELECT status, terminal_result, next_diagnostic_at FROM conversion_outbox WHERE conversion_id='conversion-upgrade';");
+assert.deepEqual(validatedOnly[0].results, [{
+  status: "validated_only",
+  terminal_result: "VALIDATE_ONLY_ACCEPTED",
+  next_diagnostic_at: null,
+}]);
 
 console.log(JSON.stringify({
   result: "LINE4A_MIGRATION_PASS",

@@ -30,6 +30,7 @@ export const RETRY_DELAYS_MS = [
 export type OutboxStatus =
   | "pending"
   | "processing"
+  | "validated_only"
   | "submitted"
   | "success"
   | "failed"
