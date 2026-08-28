@@ -3,6 +3,13 @@
   "name": "hanyao-pages",
   "compatibility_date": "2026-08-24",
   "pages_build_output_dir": "./out",
+  "d1_databases": [
+    {
+      "binding": "ATTRIBUTION_DB",
+      "database_name": "hanyao-attribution-production",
+      "database_id": "52453bad-90a3-4495-911b-c3d5b6cefb1f"
+    }
+  ],
   "env": {
     "preview": {
       "d1_databases": [
