@@ -457,6 +457,7 @@ export interface ScheduledCycleSummary {
   uploadCandidates: number;
   diagnosticCandidates: number;
   claimedRows: number;
+  terminalRowsCleaned: number;
 }
 
 export const runScheduledCycle = async (
@@ -508,14 +509,27 @@ export const runScheduledCycle = async (
     );
   }
 
+  let terminalRowsCleaned = 0;
+  if (
+    config.terminalRetentionCutoffIso &&
+    Date.parse(config.terminalRetentionCutoffIso) <= now.getTime()
+  ) {
+    terminalRowsCleaned = await repository.cleanupTerminalRows(
+      config.terminalRetentionCutoffIso,
+      MAX_ROWS_PER_SCHEDULE
+    );
+  }
+
   options.logger?.info?.("google-ads-uploader cycle complete", {
     upload_candidates: uploadCandidates.length,
     diagnostic_candidates: diagnosticCandidates.length,
     claimed_rows: claimedRows,
+    terminal_rows_cleaned: terminalRowsCleaned,
   });
   return {
     uploadCandidates: uploadCandidates.length,
     diagnosticCandidates: diagnosticCandidates.length,
     claimedRows,
+    terminalRowsCleaned,
   };
 };

@@ -108,6 +108,24 @@ export class D1OutboxRepository implements OutboxRepository {
       .first<ConversionOutboxRow>();
   }
 
+  async cleanupTerminalRows(cutoffIso: string, limit: number): Promise<number> {
+    const boundedLimit = Math.max(1, Math.min(Math.floor(limit), 100));
+    const result = await this.database
+      .prepare(
+        `DELETE FROM conversion_outbox
+         WHERE conversion_id IN (
+           SELECT conversion_id FROM conversion_outbox
+           WHERE status IN ('success', 'failed', 'deduplicated', 'validated_only', 'sent')
+             AND updated_at <= ?1
+           ORDER BY updated_at, conversion_id
+           LIMIT ?2
+         )`
+      )
+      .bind(cutoffIso, boundedLimit)
+      .run();
+    return changesFrom(result);
+  }
+
   async save(row: ConversionOutboxRow): Promise<void> {
     await this.database
       .prepare(

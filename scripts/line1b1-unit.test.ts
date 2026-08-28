@@ -8,6 +8,7 @@ import {
   type LeadTokenRow,
 } from "../functions/_lib/lead-token.ts";
 import { validateLinePreparePayload } from "../functions/_lib/line-prepare.ts";
+import { readJsonBody } from "../functions/_lib/http.ts";
 
 const uuid = "11111111-1111-4111-8111-111111111111";
 
@@ -84,6 +85,36 @@ test("LINE prepare validation is strict and rejects PII or invalid attribution",
     validateLinePreparePayload({ request_id: "not-v4", attribution: null }),
     { ok: false, code: "INVALID_REQUEST_ID" }
   );
+});
+
+test("LINE prepare body reader requires application/json while allowing charset", async () => {
+  const missing = await readJsonBody(
+    new Request("https://www.xusen.pro/api/line/prepare", {
+      method: "POST",
+      body: "{}",
+    })
+  );
+  assert.equal(missing.ok, false);
+  if (!missing.ok) assert.equal(missing.response.status, 415);
+
+  const wrong = await readJsonBody(
+    new Request("https://www.xusen.pro/api/line/prepare", {
+      method: "POST",
+      headers: { "Content-Type": "text/plain" },
+      body: "{}",
+    })
+  );
+  assert.equal(wrong.ok, false);
+  if (!wrong.ok) assert.equal(wrong.response.status, 415);
+
+  const valid = await readJsonBody(
+    new Request("https://www.xusen.pro/api/line/prepare", {
+      method: "POST",
+      headers: { "Content-Type": "application/json; charset=utf-8" },
+      body: "{}",
+    })
+  );
+  assert.deepEqual(valid, { ok: true, value: {} });
 });
 
 const fakeDatabase = (sessionIds: string[]): D1Database => {

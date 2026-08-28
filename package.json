@@ -24,6 +24,7 @@
     "test:line4a:local": "node scripts/line4a-scheduled-local.mjs",
     "test:line4a:static": "node scripts/line4a-static.test.mjs",
     "test:line4a": "npm run test:line4a:unit && npm run test:line4a:migration && npm run test:line4a:local && npm run test:line4a:static",
+    "test:line4c:retention": "node --experimental-strip-types scripts/line4c-retention-local.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

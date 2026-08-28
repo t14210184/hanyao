@@ -53,6 +53,17 @@ export const readJsonBody = async (
   request: PageContext["request"],
   maxBytes = MAX_REQUEST_BODY_BYTES
 ): Promise<JsonBodyResult> => {
+  const contentType = request.headers.get("Content-Type");
+  if (
+    !contentType ||
+    contentType.split(";", 1)[0].trim().toLowerCase() !== "application/json"
+  ) {
+    return {
+      ok: false,
+      response: errorResponse("UNSUPPORTED_MEDIA_TYPE", 415),
+    };
+  }
+
   const contentLengthHeader = request.headers.get("Content-Length");
   const contentLength = contentLengthHeader
     ? Number(contentLengthHeader)

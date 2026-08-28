@@ -7,6 +7,7 @@ import {
   parseServiceAccountJson,
 } from "../src/auth.ts";
 import { resolveValidateOnly } from "../src/config.ts";
+import { getUploaderConfig } from "../src/config.ts";
 import { ProviderRequestError } from "../src/errors.ts";
 import { buildDataManagerRequest } from "../src/payload.ts";
 import { runScheduledCycle } from "../src/scheduler.ts";
@@ -58,6 +59,7 @@ const config: UploaderConfig = {
   googleAdsAccountId: "4801404246",
   googleAdsConversionActionId: "7674301565",
   validateOnly: true,
+  terminalRetentionCutoffIso: null,
 };
 
 const baseRow = (
@@ -165,6 +167,25 @@ class MemoryRepository implements OutboxRepository {
     row.updated_at = nowIso;
     this.claims.diagnostics += 1;
     return copyRow(row);
+  }
+
+  async cleanupTerminalRows(cutoffIso: string, limit: number): Promise<number> {
+    const terminal = new Set<OutboxStatus>([
+      "success",
+      "failed",
+      "deduplicated",
+      "validated_only",
+      "sent",
+    ]);
+    const candidates = [...this.rows.values()]
+      .filter((row) => terminal.has(row.status) && row.updated_at <= cutoffIso)
+      .sort((left, right) =>
+        left.updated_at.localeCompare(right.updated_at) ||
+        left.conversion_id.localeCompare(right.conversion_id)
+      )
+      .slice(0, limit);
+    for (const row of candidates) this.rows.delete(row.conversion_id);
+    return candidates.length;
   }
 
   async save(row: ConversionOutboxRow): Promise<void> {
@@ -358,6 +379,54 @@ test("N/O/P/Q: validateOnly is fail-closed", () => {
   assert.equal(resolveValidateOnly("false", "preview", "HUMAN_GATE_CONFIRMED"), true);
   assert.equal(resolveValidateOnly("false", "production", "NOT_CONFIRMED"), true);
   assert.equal(resolveValidateOnly("false", "production", "HUMAN_GATE_CONFIRMED"), false);
+});
+
+test("R: missing destination configuration fails before repository claim or provider call", async () => {
+  const fake = fakeServiceAccount();
+  for (const missingKey of [
+    "GOOGLE_ADS_ACCOUNT_ID",
+    "GOOGLE_ADS_CONVERSION_ACTION_ID",
+  ]) {
+    const repository = new MemoryRepository([baseRow()]);
+    const mock = sequencedFetch(() => {
+      throw new Error("provider must not be reached");
+    });
+    await assert.rejects(
+      runScheduledCycle(
+        testEnv(fake.json, { [missingKey]: undefined }),
+        { repository, fetchImpl: mock.fetchImpl, now: new Date(NOW) }
+      ),
+      /GOOGLE_DESTINATION_CONFIGURATION_MISSING/
+    );
+    assert.equal(repository.claims.uploads, 0);
+    assert.equal(repository.claims.diagnostics, 0);
+    assert.equal(mock.calls.length, 0);
+  }
+});
+
+test("C/R: explicit retention cutoff removes only bounded terminal rows", async () => {
+  const repository = new MemoryRepository([
+    baseRow({ conversion_id: "terminal-old", status: "success", updated_at: "2026-08-27T00:00:00.000Z" }),
+    baseRow({ conversion_id: "terminal-new", status: "failed", updated_at: NOW }),
+    baseRow({ conversion_id: "pending-row", status: "pending", updated_at: "2026-08-27T00:00:00.000Z" }),
+    submittedRow({ conversion_id: "submitted-row", updated_at: "2026-08-27T00:00:00.000Z" }),
+  ]);
+  const fake = fakeServiceAccount();
+  const mock = sequencedFetch(() => {
+    throw new Error("provider must not be reached");
+  });
+  const result = await runScheduledCycle(
+    testEnv(fake.json, {
+      GOOGLE_OUTBOX_TERMINAL_RETENTION_CUTOFF_ISO: "2026-08-27T12:00:00.000Z",
+    }),
+    { repository, fetchImpl: mock.fetchImpl, now: new Date(NOW) }
+  );
+  assert.equal(result.terminalRowsCleaned, 1);
+  assert.equal(repository.rows.has("terminal-old"), false);
+  assert.equal(repository.rows.has("terminal-new"), true);
+  assert.equal(repository.rows.has("pending-row"), true);
+  assert.equal(repository.rows.has("submitted-row"), true);
+  assert.equal(mock.calls.length, 1);
 });
 
 test("A/B/G: executed production request moves to submitted and schedules diagnostics after 30 minutes", async () => {

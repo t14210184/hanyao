@@ -436,15 +436,63 @@ export const cleanupExpiredAttribution = async (
   return result.meta?.changes ?? 0;
 };
 
+/**
+ * Remove only old lead tokens whose attribution session is already gone and
+ * which have no conversion-outbox lifecycle to protect. The explicit status,
+ * age, relationship, and batch predicates keep this safe for later cleanup.
+ */
+export const cleanupExpiredLeadTokens = async (
+  database: D1Database,
+  cutoff = new Date(),
+  batchSize = ATTRIBUTION_CLEANUP_BATCH_SIZE
+): Promise<number> => {
+  const boundedBatchSize = Math.max(1, Math.min(batchSize, 100));
+  const result = await database
+    .prepare(
+      `DELETE FROM lead_tokens
+       WHERE lead_token IN (
+         SELECT candidate.lead_token FROM lead_tokens AS candidate
+         WHERE candidate.server_created_at <= ?1
+           AND candidate.status IN ('issued', 'received')
+           AND (
+             candidate.session_id IS NULL
+             OR NOT EXISTS (
+               SELECT 1 FROM attribution_sessions AS session
+               WHERE session.session_id = candidate.session_id
+             )
+           )
+           AND NOT EXISTS (
+             SELECT 1 FROM conversion_outbox AS outbox
+             WHERE outbox.lead_token = candidate.lead_token
+           )
+         ORDER BY candidate.server_created_at, candidate.lead_token
+         LIMIT ?2
+       )`
+    )
+    .bind(cutoff.toISOString(), boundedBatchSize)
+    .run();
+  return result.meta?.changes ?? 0;
+};
+
 export const opportunisticCleanupExpiredAttribution = async (
   database: D1Database,
   sampleKey: string,
   serverNow = new Date()
 ): Promise<number> => {
   if (!shouldRunOpportunisticCleanup(sampleKey)) return 0;
+  let deleted = 0;
   try {
-    return await cleanupExpiredAttribution(database, serverNow);
+    deleted += await cleanupExpiredAttribution(database, serverNow);
   } catch {
-    return 0;
+    // Keep the endpoint fail-open when a cleanup read/write is unavailable.
   }
+  try {
+    const leadTokenCutoff = new Date(
+      serverNow.getTime() - ATTRIBUTION_RETENTION_DAYS * 24 * 60 * 60 * 1000
+    );
+    deleted += await cleanupExpiredLeadTokens(database, leadTokenCutoff);
+  } catch {
+    // The outbox table may not exist in an older local fixture; do not block.
+  }
+  return deleted;
 };

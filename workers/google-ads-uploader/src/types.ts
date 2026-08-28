@@ -80,6 +80,7 @@ export interface UploaderEnv {
   GOOGLE_ADS_ACCOUNT_ID?: string;
   GOOGLE_ADS_CONVERSION_ACTION_ID?: string;
   GOOGLE_DATA_MANAGER_VALIDATE_ONLY?: string;
+  GOOGLE_OUTBOX_TERMINAL_RETENTION_CUTOFF_ISO?: string;
   UPLOADER_ENVIRONMENT?: string;
   PRODUCTION_HUMAN_GATE?: string;
 }
@@ -88,6 +89,7 @@ export interface UploaderConfig {
   googleAdsAccountId: string;
   googleAdsConversionActionId: string;
   validateOnly: boolean;
+  terminalRetentionCutoffIso: string | null;
 }
 
 export interface OutboxRepository {
@@ -104,6 +106,7 @@ export interface OutboxRepository {
     conversionId: string,
     nowIso: string
   ): Promise<ConversionOutboxRow | null>;
+  cleanupTerminalRows(cutoffIso: string, limit: number): Promise<number>;
   save(row: ConversionOutboxRow): Promise<void>;
 }
 

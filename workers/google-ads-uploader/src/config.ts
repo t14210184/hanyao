@@ -22,15 +22,31 @@ export const resolveValidateOnly = (
   return !(environment === "production" && humanGate === "HUMAN_GATE_CONFIRMED");
 };
 
-const safeAccountId = (value: string | undefined, fallback: string): string => {
-  const candidate = value?.trim() || fallback;
-  if (value?.trim() && candidate !== fallback) {
-    throw new Error("GOOGLE_DESTINATION_CONFIGURATION_MISMATCH");
+const safeAccountId = (value: string | undefined, expected: string): string => {
+  const candidate = value?.trim();
+  if (!candidate) {
+    throw new Error("GOOGLE_DESTINATION_CONFIGURATION_MISSING");
   }
   if (!/^\d{6,20}$/.test(candidate)) {
     throw new Error("INVALID_GOOGLE_ACCOUNT_CONFIGURATION");
   }
+  if (candidate !== expected) {
+    throw new Error("GOOGLE_DESTINATION_CONFIGURATION_MISMATCH");
+  }
   return candidate;
+};
+
+const resolveTerminalRetentionCutoff = (
+  value: string | undefined
+): string | null => {
+  if (value === undefined) return null;
+  const candidate = value.trim();
+  if (!candidate) throw new Error("OUTBOX_RETENTION_CUTOFF_INVALID");
+  const timestamp = Date.parse(candidate);
+  if (!Number.isFinite(timestamp)) {
+    throw new Error("OUTBOX_RETENTION_CUTOFF_INVALID");
+  }
+  return new Date(timestamp).toISOString();
 };
 
 export const getUploaderConfig = (env: UploaderEnv): UploaderConfig => {
@@ -55,5 +71,8 @@ export const getUploaderConfig = (env: UploaderEnv): UploaderConfig => {
       DEFAULT_GOOGLE_ADS_CONVERSION_ACTION_ID
     ),
     validateOnly,
+    terminalRetentionCutoffIso: resolveTerminalRetentionCutoff(
+      env.GOOGLE_OUTBOX_TERMINAL_RETENTION_CUTOFF_ISO
+    ),
   };
 };
