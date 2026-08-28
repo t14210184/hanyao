@@ -42,6 +42,7 @@ writeFileSync(
 writeFileSync(
   workerPath,
   `import { cleanupExpiredLeadTokens } from "./functions/_lib/attribution.ts";
+import { computeTerminalRetentionCutoff } from "./workers/google-ads-uploader/src/config.ts";
 import { D1OutboxRepository } from "./workers/google-ads-uploader/src/repository.ts";
 
 const response = (body, status = 200) => new Response(JSON.stringify(body), {
@@ -52,8 +53,16 @@ const response = (body, status = 200) => new Response(JSON.stringify(body), {
 export default {
   async fetch(request, env) {
     const path = new URL(request.url).pathname;
+    const fixedNow = "2026-08-28T04:00:00.000Z";
+    const retentionDays = 90;
+    const cutoff = computeTerminalRetentionCutoff(new Date(fixedNow), retentionDays);
+    if (path === "/cutoff") {
+      return response({ fixedNow, retentionDays, cutoff });
+    }
     if (path === "/seed") {
-      const old = "2026-08-20T00:00:00.000Z";
+      const old = new Date(Date.parse(cutoff) - 1_000).toISOString();
+      const exact = cutoff;
+      const newer = new Date(Date.parse(cutoff) + 1).toISOString();
       const recent = "2026-08-28T12:00:00.000Z";
       const future = "2026-09-01T00:00:00.000Z";
       const statements = [
@@ -63,12 +72,20 @@ export default {
         env.ATTRIBUTION_DB.prepare("INSERT INTO lead_tokens (lead_token, request_id, session_id, channel, status, server_created_at) VALUES (?, ?, ?, ?, ?, ?)").bind("HY-ACTIVE001", "old-active", "active-session", "line", "received", old),
         env.ATTRIBUTION_DB.prepare("INSERT INTO lead_tokens (lead_token, request_id, session_id, channel, status, server_created_at) VALUES (?, ?, ?, ?, ?, ?)").bind("HY-PENDING01", "old-pending", null, "line", "issued", old),
         env.ATTRIBUTION_DB.prepare("INSERT INTO lead_tokens (lead_token, request_id, session_id, channel, status, server_created_at) VALUES (?, ?, ?, ?, ?, ?)").bind("HY-TERMINAL01", "old-terminal", null, "line", "received", old),
+        env.ATTRIBUTION_DB.prepare("INSERT INTO lead_tokens (lead_token, request_id, session_id, channel, status, server_created_at) VALUES (?, ?, ?, ?, ?, ?)").bind("HY-TERMINAL02", "exact-terminal", null, "line", "received", old),
+        env.ATTRIBUTION_DB.prepare("INSERT INTO lead_tokens (lead_token, request_id, session_id, channel, status, server_created_at) VALUES (?, ?, ?, ?, ?, ?)").bind("HY-TERMINAL03", "new-terminal", null, "line", "received", old),
+        env.ATTRIBUTION_DB.prepare("INSERT INTO lead_tokens (lead_token, request_id, session_id, channel, status, server_created_at) VALUES (?, ?, ?, ?, ?, ?)").bind("HY-TERMINAL04", "overflow-terminal", null, "line", "received", old),
+        env.ATTRIBUTION_DB.prepare("INSERT INTO lead_tokens (lead_token, request_id, session_id, channel, status, server_created_at) VALUES (?, ?, ?, ?, ?, ?)").bind("HY-SUBMITTED01", "submitted-terminal", null, "line", "received", old),
         env.ATTRIBUTION_DB.prepare("INSERT INTO lead_tokens (lead_token, request_id, session_id, channel, status, server_created_at) VALUES (?, ?, ?, ?, ?, ?)").bind("HY-RECENT001", "recent-null", null, "line", "issued", recent),
         env.ATTRIBUTION_DB.prepare("INSERT INTO lead_tokens (lead_token, request_id, session_id, channel, status, server_created_at) VALUES (?, ?, ?, ?, ?, ?)").bind("HY-UNKNOWN01", "old-unknown", null, "line", "future_status", old),
         env.ATTRIBUTION_DB.prepare("INSERT INTO line_events (line_event_id, webhook_event_id, message_id, lead_token, event_type, match_status, line_event_timestamp, received_at, created_at, line_user_key) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)").bind("line-event-old", "webhook-old", "message-old", "HY-OLDNULL01", "message", "MATCHED_UNATTRIBUTED", old, old, old),
         env.ATTRIBUTION_DB.prepare("INSERT INTO conversion_outbox (conversion_id, lead_token, conversion_type, event_timestamp, transaction_id, destination_key, status, retry_count, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?)").bind("pending-conversion", "HY-PENDING01", "verified_line_contact", old, "tx-pending", "HY_VERIFIED_LINE_CONTACT", "pending", old, old),
         env.ATTRIBUTION_DB.prepare("INSERT INTO conversion_outbox (conversion_id, lead_token, conversion_type, event_timestamp, transaction_id, destination_key, status, retry_count, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?)").bind("terminal-old", "HY-TERMINAL01", "verified_line_contact", old, "tx-old", "HY_VERIFIED_LINE_CONTACT", "success", old, old),
-        env.ATTRIBUTION_DB.prepare("INSERT INTO conversion_outbox (conversion_id, lead_token, conversion_type, event_timestamp, transaction_id, destination_key, status, retry_count, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?)").bind("terminal-new", "HY-ACTIVE001", "verified_line_contact", recent, "tx-new", "HY_VERIFIED_LINE_CONTACT", "failed", recent, recent),
+        env.ATTRIBUTION_DB.prepare("INSERT INTO conversion_outbox (conversion_id, lead_token, conversion_type, event_timestamp, transaction_id, destination_key, status, retry_count, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?)").bind("terminal-exact", "HY-TERMINAL02", "verified_line_contact", exact, "tx-exact", "HY_VERIFIED_LINE_CONTACT", "failed", exact, exact),
+        env.ATTRIBUTION_DB.prepare("INSERT INTO conversion_outbox (conversion_id, lead_token, conversion_type, event_timestamp, transaction_id, destination_key, status, retry_count, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?)").bind("terminal-new", "HY-TERMINAL03", "verified_line_contact", newer, "tx-new", "HY_VERIFIED_LINE_CONTACT", "failed", newer, newer),
+        env.ATTRIBUTION_DB.prepare("INSERT INTO conversion_outbox (conversion_id, lead_token, conversion_type, event_timestamp, transaction_id, destination_key, status, retry_count, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?)").bind("terminal-overflow", "HY-TERMINAL04", "verified_line_contact", exact, "tx-overflow", "HY_VERIFIED_LINE_CONTACT", "deduplicated", exact, exact),
+        env.ATTRIBUTION_DB.prepare("INSERT INTO conversion_outbox (conversion_id, lead_token, conversion_type, event_timestamp, transaction_id, destination_key, status, retry_count, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?)").bind("processing-conversion", "HY-ACTIVE001", "verified_line_contact", old, "tx-processing", "HY_VERIFIED_LINE_CONTACT", "processing", old, old),
+        env.ATTRIBUTION_DB.prepare("INSERT INTO conversion_outbox (conversion_id, lead_token, conversion_type, event_timestamp, transaction_id, destination_key, status, retry_count, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?)").bind("submitted-conversion", "HY-SUBMITTED01", "verified_line_contact", old, "tx-submitted", "HY_VERIFIED_LINE_CONTACT", "submitted", old, old),
       ];
       for (const [index, statement] of statements.entries()) {
         try {
@@ -88,9 +105,10 @@ export default {
       return response({ deleted });
     }
     if (path === "/cleanup-outbox") {
+      const rollingCutoff = computeTerminalRetentionCutoff(new Date(fixedNow), retentionDays);
       const deleted = await new D1OutboxRepository(env.ATTRIBUTION_DB)
-        .cleanupTerminalRows("2026-08-27T12:00:00.000Z", 1);
-      return response({ deleted });
+        .cleanupTerminalRows(rollingCutoff, 2);
+      return response({ deleted, cutoff: rollingCutoff, limit: 2 });
     }
     if (path === "/readback") {
       const leads = await env.ATTRIBUTION_DB.prepare("SELECT lead_token, session_id, status FROM lead_tokens ORDER BY lead_token").all();
@@ -184,28 +202,43 @@ try {
     await new Promise((resolve) => setTimeout(resolve, 250));
   }
 
+  assert.deepEqual(await getJson("/cutoff"), {
+    fixedNow: "2026-08-28T04:00:00.000Z",
+    retentionDays: 90,
+    cutoff: "2026-05-30T04:00:00.000Z",
+  });
   assert.deepEqual(await getJson("/seed"), { seeded: true });
   // D1 changes include the ON DELETE SET NULL update on line_events.
   assert.deepEqual(await getJson("/cleanup-leads"), { deleted: 3 });
-  assert.deepEqual(await getJson("/cleanup-outbox"), { deleted: 1 });
-  assert.deepEqual(await getJson("/cleanup-leads"), { deleted: 1 });
+  assert.deepEqual(await getJson("/cleanup-outbox"), {
+    deleted: 2,
+    cutoff: "2026-05-30T04:00:00.000Z",
+    limit: 2,
+  });
+  assert.deepEqual(await getJson("/cleanup-leads"), { deleted: 2 });
   const readback = await getJson("/readback");
   assert.deepEqual(readback.leads, [
     { lead_token: "HY-ACTIVE001", session_id: "active-session", status: "received" },
     { lead_token: "HY-PENDING01", session_id: null, status: "issued" },
     { lead_token: "HY-RECENT001", session_id: null, status: "issued" },
+    { lead_token: "HY-SUBMITTED01", session_id: null, status: "received" },
+    { lead_token: "HY-TERMINAL03", session_id: null, status: "received" },
+    { lead_token: "HY-TERMINAL04", session_id: null, status: "received" },
     { lead_token: "HY-UNKNOWN01", session_id: null, status: "future_status" },
   ]);
   assert.deepEqual(readback.outbox, [
     { conversion_id: "pending-conversion", status: "pending" },
+    { conversion_id: "processing-conversion", status: "processing" },
+    { conversion_id: "submitted-conversion", status: "submitted" },
     { conversion_id: "terminal-new", status: "failed" },
+    { conversion_id: "terminal-overflow", status: "deduplicated" },
   ]);
   assert.deepEqual(readback.events, [{ lead_token: null }]);
   console.log(JSON.stringify({
     status: "PASS",
     localD1: true,
     leadTokenCleanup: "bounded + expired + no-session/no-outbox guards",
-    outboxCleanup: "bounded + explicit cutoff + terminal-status guard",
+    outboxCleanup: "bounded + rolling 90-day cutoff + terminal-status guard",
     foreignKeyReadback: "line_events.lead_token set NULL",
     remoteCalls: "NONE",
   }));

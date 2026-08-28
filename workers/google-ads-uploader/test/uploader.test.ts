@@ -6,8 +6,13 @@ import {
   exchangeServiceAccountToken,
   parseServiceAccountJson,
 } from "../src/auth.ts";
-import { resolveValidateOnly } from "../src/config.ts";
-import { getUploaderConfig } from "../src/config.ts";
+import {
+  computeTerminalRetentionCutoff,
+  DEFAULT_TERMINAL_RETENTION_DAYS,
+  getUploaderConfig,
+  MAX_TERMINAL_RETENTION_DAYS,
+  resolveValidateOnly,
+} from "../src/config.ts";
 import { ProviderRequestError } from "../src/errors.ts";
 import { buildDataManagerRequest } from "../src/payload.ts";
 import { runScheduledCycle } from "../src/scheduler.ts";
@@ -59,7 +64,7 @@ const config: UploaderConfig = {
   googleAdsAccountId: "4801404246",
   googleAdsConversionActionId: "7674301565",
   validateOnly: true,
-  terminalRetentionCutoffIso: null,
+  terminalRetentionDays: DEFAULT_TERMINAL_RETENTION_DAYS,
 };
 
 const baseRow = (
@@ -99,6 +104,7 @@ const copyRow = (row: ConversionOutboxRow): ConversionOutboxRow => ({ ...row });
 class MemoryRepository implements OutboxRepository {
   readonly rows = new Map<string, ConversionOutboxRow>();
   readonly claims = { uploads: 0, diagnostics: 0 };
+  readonly cleanupCalls: Array<{ cutoffIso: string; limit: number }> = [];
 
   constructor(rows: ConversionOutboxRow[]) {
     for (const row of rows) this.rows.set(row.conversion_id, copyRow(row));
@@ -170,6 +176,7 @@ class MemoryRepository implements OutboxRepository {
   }
 
   async cleanupTerminalRows(cutoffIso: string, limit: number): Promise<number> {
+    this.cleanupCalls.push({ cutoffIso, limit });
     const terminal = new Set<OutboxStatus>([
       "success",
       "failed",
@@ -183,7 +190,7 @@ class MemoryRepository implements OutboxRepository {
         left.updated_at.localeCompare(right.updated_at) ||
         left.conversion_id.localeCompare(right.conversion_id)
       )
-      .slice(0, limit);
+      .slice(0, Math.max(1, Math.min(Math.floor(limit), 100)));
     for (const row of candidates) this.rows.delete(row.conversion_id);
     return candidates.length;
   }
@@ -209,6 +216,7 @@ const testEnv = (
     GOOGLE_ADS_ACCOUNT_ID: "4801404246",
     GOOGLE_ADS_CONVERSION_ACTION_ID: "7674301565",
     GOOGLE_DATA_MANAGER_VALIDATE_ONLY: "true",
+    GOOGLE_OUTBOX_TERMINAL_RETENTION_DAYS: "90",
     UPLOADER_ENVIRONMENT: "preview",
     ...overrides,
   }) as unknown as UploaderEnv;
@@ -404,29 +412,76 @@ test("R: missing destination configuration fails before repository claim or prov
   }
 });
 
-test("C/R: explicit retention cutoff removes only bounded terminal rows", async () => {
+test("C/R: rolling 90-day cutoff is exact, inclusive, protected, and bounded", async () => {
+  const now = new Date(NOW);
+  const cutoff = computeTerminalRetentionCutoff(now, DEFAULT_TERMINAL_RETENTION_DAYS);
+  const older = new Date(Date.parse(cutoff) - 1_000).toISOString();
+  const newer = new Date(Date.parse(cutoff) + 1).toISOString();
+  assert.equal(cutoff, "2026-05-30T04:00:00.000Z");
+  assert.equal(getUploaderConfig(testEnv()).terminalRetentionDays, 90);
+
   const repository = new MemoryRepository([
-    baseRow({ conversion_id: "terminal-old", status: "success", updated_at: "2026-08-27T00:00:00.000Z" }),
-    baseRow({ conversion_id: "terminal-new", status: "failed", updated_at: NOW }),
-    baseRow({ conversion_id: "pending-row", status: "pending", updated_at: "2026-08-27T00:00:00.000Z" }),
-    submittedRow({ conversion_id: "submitted-row", updated_at: "2026-08-27T00:00:00.000Z" }),
+    baseRow({ conversion_id: "terminal-01", status: "success", updated_at: older }),
+    baseRow({ conversion_id: "terminal-02", status: "failed", updated_at: older }),
+    baseRow({ conversion_id: "terminal-03", status: "deduplicated", updated_at: older }),
+    baseRow({ conversion_id: "terminal-04", status: "validated_only", updated_at: older }),
+    baseRow({ conversion_id: "terminal-05", status: "sent", updated_at: cutoff }),
+    baseRow({ conversion_id: "terminal-06", status: "success", updated_at: cutoff }),
+    baseRow({ conversion_id: "terminal-new", status: "failed", updated_at: newer }),
+    baseRow({
+      conversion_id: "pending-old",
+      status: "pending",
+      retry_count: 1,
+      next_retry_at: "2026-08-29T00:00:00.000Z",
+      updated_at: older,
+    }),
+    baseRow({ conversion_id: "processing-old", status: "processing", retry_count: 1, updated_at: older }),
+    baseRow({
+      conversion_id: "submitted-old",
+      status: "submitted",
+      google_request_id: null,
+      next_diagnostic_at: null,
+      submitted_at: older,
+      retry_count: 1,
+      updated_at: older,
+    }),
   ]);
   const fake = fakeServiceAccount();
-  const mock = sequencedFetch(() => {
-    throw new Error("provider must not be reached");
-  });
+  const mock = sequencedFetch(() => { throw new Error("provider must not be reached"); });
   const result = await runScheduledCycle(
-    testEnv(fake.json, {
-      GOOGLE_OUTBOX_TERMINAL_RETENTION_CUTOFF_ISO: "2026-08-27T12:00:00.000Z",
-    }),
-    { repository, fetchImpl: mock.fetchImpl, now: new Date(NOW) }
+    testEnv(fake.json),
+    { repository, fetchImpl: mock.fetchImpl, now }
   );
-  assert.equal(result.terminalRowsCleaned, 1);
-  assert.equal(repository.rows.has("terminal-old"), false);
+  assert.equal(result.terminalRowsCleaned, 5);
+  assert.deepEqual(repository.cleanupCalls, [{ cutoffIso: cutoff, limit: 5 }]);
+  for (const id of ["terminal-01", "terminal-02", "terminal-03", "terminal-04", "terminal-05"]) {
+    assert.equal(repository.rows.has(id), false, id);
+  }
+  assert.equal(repository.rows.has("terminal-06"), true);
   assert.equal(repository.rows.has("terminal-new"), true);
-  assert.equal(repository.rows.has("pending-row"), true);
-  assert.equal(repository.rows.has("submitted-row"), true);
-  assert.equal(mock.calls.length, 1);
+  assert.equal(repository.rows.has("pending-old"), true);
+  assert.equal(repository.rows.has("processing-old"), true);
+  assert.equal(repository.rows.has("submitted-old"), true);
+  assert.equal(mock.calls.length, 0);
+});
+
+test("R: rolling retention config rejects invalid values and disables missing production cleanup", () => {
+  const productionBase = {
+    UPLOADER_ENVIRONMENT: "production",
+    GOOGLE_DATA_MANAGER_VALIDATE_ONLY: "false",
+    PRODUCTION_HUMAN_GATE: "HUMAN_GATE_CONFIRMED",
+    GOOGLE_OUTBOX_TERMINAL_RETENTION_DAYS: undefined,
+  };
+  assert.equal(
+    getUploaderConfig(testEnv(undefined, productionBase)).terminalRetentionDays,
+    null
+  );
+  for (const value of ["", "abc", "90.0", "-1", "0", String(MAX_TERMINAL_RETENTION_DAYS + 1), "999999999999999999999"]) {
+    assert.throws(
+      () => getUploaderConfig(testEnv(undefined, { GOOGLE_OUTBOX_TERMINAL_RETENTION_DAYS: value })),
+      /OUTBOX_RETENTION_DAYS_INVALID/
+    );
+  }
 });
 
 test("A/B/G: executed production request moves to submitted and schedules diagnostics after 30 minutes", async () => {
@@ -701,7 +756,13 @@ test("AE: conditional claims prevent two concurrent scheduled invocations from u
 });
 
 test("AG: only terminal states are eligible for any future retention cleanup", () => {
-  const terminal = new Set<OutboxStatus>(["success", "failed", "deduplicated", "validated_only"]);
+  const terminal = new Set<OutboxStatus>([
+    "success",
+    "failed",
+    "deduplicated",
+    "validated_only",
+    "sent",
+  ]);
   for (const status of ["pending", "processing", "submitted"] as const) {
     assert.equal(terminal.has(status), false);
   }

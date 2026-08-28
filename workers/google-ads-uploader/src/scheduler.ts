@@ -1,4 +1,4 @@
-import { getUploaderConfig } from "./config.ts";
+import { computeTerminalRetentionCutoff, getUploaderConfig } from "./config.ts";
 import { exchangeServiceAccountToken } from "./auth.ts";
 import { ProviderRequestError, sanitizeProviderReason } from "./errors.ts";
 import { buildDataManagerRequest } from "./payload.ts";
@@ -510,12 +510,13 @@ export const runScheduledCycle = async (
   }
 
   let terminalRowsCleaned = 0;
-  if (
-    config.terminalRetentionCutoffIso &&
-    Date.parse(config.terminalRetentionCutoffIso) <= now.getTime()
-  ) {
+  if (config.terminalRetentionDays !== null) {
+    const cutoffIso = computeTerminalRetentionCutoff(
+      now,
+      config.terminalRetentionDays
+    );
     terminalRowsCleaned = await repository.cleanupTerminalRows(
-      config.terminalRetentionCutoffIso,
+      cutoffIso,
       MAX_ROWS_PER_SCHEDULE
     );
   }

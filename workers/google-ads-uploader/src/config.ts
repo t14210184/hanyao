@@ -5,6 +5,10 @@ import {
   type UploaderEnv,
 } from "./types.ts";
 
+export const DEFAULT_TERMINAL_RETENTION_DAYS = 90;
+export const MAX_TERMINAL_RETENTION_DAYS = 365;
+const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000;
+
 const isKnownEnvironment = (value: string | undefined): boolean =>
   value === "local" || value === "preview" || value === "production";
 
@@ -36,18 +40,30 @@ const safeAccountId = (value: string | undefined, expected: string): string => {
   return candidate;
 };
 
-const resolveTerminalRetentionCutoff = (
+const resolveTerminalRetentionDays = (
   value: string | undefined
-): string | null => {
+): number | null => {
   if (value === undefined) return null;
   const candidate = value.trim();
-  if (!candidate) throw new Error("OUTBOX_RETENTION_CUTOFF_INVALID");
-  const timestamp = Date.parse(candidate);
-  if (!Number.isFinite(timestamp)) {
-    throw new Error("OUTBOX_RETENTION_CUTOFF_INVALID");
+  if (!/^\d+$/.test(candidate)) {
+    throw new Error("OUTBOX_RETENTION_DAYS_INVALID");
   }
-  return new Date(timestamp).toISOString();
+  const days = Number(candidate);
+  if (
+    !Number.isSafeInteger(days) ||
+    days <= 0 ||
+    days > MAX_TERMINAL_RETENTION_DAYS
+  ) {
+    throw new Error("OUTBOX_RETENTION_DAYS_INVALID");
+  }
+  return days;
 };
+
+export const computeTerminalRetentionCutoff = (
+  now: Date,
+  retentionDays: number
+): string =>
+  new Date(now.getTime() - retentionDays * MILLISECONDS_PER_DAY).toISOString();
 
 export const getUploaderConfig = (env: UploaderEnv): UploaderConfig => {
   const environment = isKnownEnvironment(env.UPLOADER_ENVIRONMENT)
@@ -71,8 +87,8 @@ export const getUploaderConfig = (env: UploaderEnv): UploaderConfig => {
       DEFAULT_GOOGLE_ADS_CONVERSION_ACTION_ID
     ),
     validateOnly,
-    terminalRetentionCutoffIso: resolveTerminalRetentionCutoff(
-      env.GOOGLE_OUTBOX_TERMINAL_RETENTION_CUTOFF_ISO
+    terminalRetentionDays: resolveTerminalRetentionDays(
+      env.GOOGLE_OUTBOX_TERMINAL_RETENTION_DAYS
     ),
   };
 };
