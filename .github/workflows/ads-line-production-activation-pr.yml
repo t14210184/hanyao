@@ -1,0 +1,64 @@
+# Synced with current main; this workflow remains validation-only until provider gates pass.
+name: Ads LINE Production activation gate
+
+on:
+  push:
+    branches:
+      - feat/ads-line-production-activation
+    paths:
+      - "workers/google-ads-uploader/wrangler.jsonc"
+      - "scripts/line4b-production-config.test.mjs"
+      - "scripts/line4c-production-activation-config.test.mjs"
+      - ".github/workflows/ads-line-production-activation-pr.yml"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "workers/google-ads-uploader/wrangler.jsonc"
+      - "scripts/line4b-production-config.test.mjs"
+      - "scripts/line4c-production-activation-config.test.mjs"
+      - ".github/workflows/ads-line-production-activation-pr.yml"
+
+concurrency:
+  group: ads-line-production-activation-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  activation-config:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Verify common Production invariants
+        run: node scripts/line4b-production-config.test.mjs
+      - name: Verify Production cron activation contract
+        run: node scripts/line4c-production-activation-config.test.mjs
+      - name: TypeScript typecheck
+        run: npm run typecheck
+      - name: Exact armed Production deploy dry run
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs = require('node:fs');
+          fs.writeFileSync('/tmp/hanyao-ci-secrets.json', JSON.stringify({
+            GOOGLE_DATA_MANAGER_SERVICE_ACCOUNT_JSON: 'ci-dry-run-placeholder',
+            PRODUCTION_HUMAN_GATE: 'ci-dry-run-placeholder'
+          }), { mode: 0o600 });
+          NODE
+          trap 'rm -f /tmp/hanyao-ci-secrets.json' EXIT
+          npx wrangler deploy --dry-run --env production \
+            --config workers/google-ads-uploader/wrangler.jsonc \
+            --secrets-file /tmp/hanyao-ci-secrets.json \
+            --outdir .wrangler-dryrun/production-armed

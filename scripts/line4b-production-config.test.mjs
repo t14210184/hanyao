@@ -27,7 +27,11 @@ assert.equal(production.vars.GOOGLE_ADS_CONVERSION_ACTION_ID, "7674301565");
 assert.equal(production.vars.GOOGLE_OUTBOX_TERMINAL_RETENTION_DAYS, "90");
 assert.equal("PRODUCTION_HUMAN_GATE" in production.vars, false);
 
-assert.deepEqual(production.triggers?.crons, []);
+const crons = production.triggers?.crons;
+const disarmed = Array.isArray(crons) && crons.length === 0;
+const armed = Array.isArray(crons) && crons.length === 1 && crons[0] === "*/5 * * * *";
+assert.ok(disarmed || armed, "Production cron must be either disarmed [] or the exact five-minute schedule");
+
 assert.deepEqual(
   [...production.secrets.required].sort(),
   ["GOOGLE_DATA_MANAGER_SERVICE_ACCOUNT_JSON", "PRODUCTION_HUMAN_GATE"].sort()
@@ -50,7 +54,7 @@ assert.equal(workerConfigText.includes("CLOUDFLARE_API_TOKEN"), false);
 console.log(
   JSON.stringify({
     result: "LINE4B_PRODUCTION_CONFIG_PASS",
-    productionCronArmed: false,
+    productionCronState: armed ? "ARMED" : "DISARMED",
     productionD1Pinned: true,
     requiredSecretsDeclared: true,
     humanGateCommitted: false,
