@@ -1,0 +1,45 @@
+name: Ads LINE hardening
+
+on:
+  push:
+    branches:
+      - feat/ads-line-production-hardening
+    paths:
+      - "workers/google-ads-uploader/**"
+      - "scripts/line4a-*"
+      - "migrations/0004_google_uploader_state.sql"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/ads-line-hardening.yml"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "workers/google-ads-uploader/**"
+      - "scripts/line4a-*"
+      - "migrations/0004_google_uploader_state.sql"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/ads-line-hardening.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Run LINE4A uploader regression suite
+        run: npm run test:line4a
+      - name: TypeScript typecheck
+        run: npm run typecheck
