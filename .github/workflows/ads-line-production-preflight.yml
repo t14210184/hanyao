@@ -59,10 +59,12 @@ jobs:
           --config workers/google-ads-uploader/wrangler.jsonc
           --outdir .wrangler-dryrun/production
 
-  cloudflare-prestate:
+  provider-prestate:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     needs: verify
+    outputs:
+      provider_ready: ${{ steps.credentials.outputs.provider_ready }}
     env:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN || secrets.CF_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || secrets.CF_ACCOUNT_ID || vars.CLOUDFLARE_ACCOUNT_ID || vars.CF_ACCOUNT_ID }}
@@ -88,20 +90,21 @@ jobs:
           if [[ -n "${CLOUDFLARE_API_TOKEN:-}" ]]; then token_state=PRESENT; fi
           if [[ -n "${CLOUDFLARE_ACCOUNT_ID:-}" ]]; then account_state=PRESENT; fi
           if [[ -n "${GOOGLE_DATA_MANAGER_SERVICE_ACCOUNT_JSON:-}" ]]; then google_state=PRESENT; fi
-          if [[ "$token_state" == PRESENT && "$account_state" == PRESENT ]]; then
-            echo "state=PRESENT" >> "$GITHUB_OUTPUT"
-          else
-            echo "state=MISSING" >> "$GITHUB_OUTPUT"
+          provider_ready=false
+          if [[ "$token_state" == PRESENT && "$account_state" == PRESENT && "$google_state" == PRESENT ]]; then
+            provider_ready=true
           fi
+          echo "provider_ready=$provider_ready" >> "$GITHUB_OUTPUT"
           {
             echo "CLOUDFLARE_CI_TOKEN=$token_state"
             echo "CLOUDFLARE_ACCOUNT_ID=$account_state"
             echo "GOOGLE_DATA_MANAGER_GITHUB_CREDENTIAL=$google_state"
+            echo "PRODUCTION_CANDIDATE_PROVIDER_READY=$provider_ready"
           } >> "$GITHUB_STEP_SUMMARY"
       - name: Read-only Google Data Manager auth prestate
         run: node --experimental-strip-types scripts/line4b-google-auth-preflight.ts
       - name: Read-only Cloudflare D1 prestate
-        if: steps.credentials.outputs.state == 'PRESENT'
+        if: steps.credentials.outputs.provider_ready == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -118,7 +121,7 @@ jobs:
           if (!match) process.exitCode = 2;
           NODE
       - name: Read-only Production Worker secret names
-        if: steps.credentials.outputs.state == 'PRESENT'
+        if: steps.credentials.outputs.provider_ready == 'true'
         shell: bash
         run: |
           set -u
@@ -142,3 +145,87 @@ jobs:
           fs.appendFileSync(summary, `GOOGLE_DATA_MANAGER_SERVICE_ACCOUNT_JSON=${serviceAccount ? 'PRESENT' : 'MISSING'}\n`);
           fs.appendFileSync(summary, `PRODUCTION_HUMAN_GATE=${humanGate ? 'PRESENT' : 'MISSING'}\n`);
           NODE
+
+  deploy-candidate:
+    if: github.event_name == 'push' && needs.provider-prestate.outputs.provider_ready == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs:
+      - verify
+      - provider-prestate
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN || secrets.CF_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || secrets.CF_ACCOUNT_ID || vars.CLOUDFLARE_ACCOUNT_ID || vars.CF_ACCOUNT_ID }}
+      GOOGLE_DATA_MANAGER_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_DATA_MANAGER_SERVICE_ACCOUNT_JSON }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Build ephemeral Production secrets file
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs = require('node:fs');
+          const credential = process.env.GOOGLE_DATA_MANAGER_SERVICE_ACCOUNT_JSON;
+          if (!credential) throw new Error('GOOGLE_DATA_MANAGER_SERVICE_ACCOUNT_JSON_MISSING');
+          fs.writeFileSync('/tmp/hanyao-production-secrets.json', JSON.stringify({
+            GOOGLE_DATA_MANAGER_SERVICE_ACCOUNT_JSON: credential,
+            PRODUCTION_HUMAN_GATE: 'HUMAN_GATE_CONFIRMED'
+          }), { mode: 0o600 });
+          NODE
+      - name: Deploy disarmed Production candidate with secrets
+        shell: bash
+        run: |
+          set -euo pipefail
+          trap 'rm -f /tmp/hanyao-production-secrets.json' EXIT
+          npx wrangler deploy --env production \
+            --config workers/google-ads-uploader/wrangler.jsonc \
+            --secrets-file /tmp/hanyao-production-secrets.json
+      - name: Verify deployed secret names
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx wrangler secret list --env production \
+            --config workers/google-ads-uploader/wrangler.jsonc \
+            --format json > /tmp/secrets.json
+          node <<'NODE'
+          const fs = require('node:fs');
+          const parsed = JSON.parse(fs.readFileSync('/tmp/secrets.json', 'utf8'));
+          const names = new Set((Array.isArray(parsed) ? parsed : []).map((entry) => entry && entry.name).filter(Boolean));
+          for (const required of ['GOOGLE_DATA_MANAGER_SERVICE_ACCOUNT_JSON', 'PRODUCTION_HUMAN_GATE']) {
+            if (!names.has(required)) throw new Error(`PRODUCTION_SECRET_MISSING:${required}`);
+          }
+          console.log('PRODUCTION_CANDIDATE_SECRETS=PASS');
+          NODE
+      - name: Verify Production D1 schema read-only
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx wrangler d1 execute ATTRIBUTION_DB --remote --env production \
+            --config workers/google-ads-uploader/wrangler.jsonc \
+            --command "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('conversion_outbox','line_events') ORDER BY name;" \
+            --json > /tmp/d1-schema.json
+          node <<'NODE'
+          const fs = require('node:fs');
+          const payload = JSON.parse(fs.readFileSync('/tmp/d1-schema.json', 'utf8'));
+          const text = JSON.stringify(payload);
+          if (!text.includes('conversion_outbox') || !text.includes('line_events')) {
+            throw new Error('PRODUCTION_D1_SCHEMA_INCOMPLETE');
+          }
+          console.log('PRODUCTION_D1_SCHEMA=PASS');
+          NODE
+      - name: Record candidate safety state
+        shell: bash
+        run: |
+          {
+            echo "PRODUCTION_CANDIDATE_DEPLOYED=PASS"
+            echo "PRODUCTION_CRON_ARMED=FALSE"
+            echo "PRODUCTION_REAL_UPLOAD_SCHEDULED=FALSE"
+          } >> "$GITHUB_STEP_SUMMARY"
