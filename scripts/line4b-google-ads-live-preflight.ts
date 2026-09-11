@@ -104,7 +104,9 @@ try {
   const category = asString(action.category) ?? "UNKNOWN";
   const origin = asString(action.origin) ?? "UNKNOWN";
   const countingType = asString(action.countingType);
-  const primaryForGoal = action.primaryForGoal;
+  // Proto3 JSON may omit scalar fields whose value is the default false.
+  // For a selected bool, only explicit true means Primary/biddable here.
+  const primaryForGoal = action.primaryForGoal === true;
 
   const hardFailures: string[] = [];
   const advisories: string[] = [];
@@ -114,8 +116,8 @@ try {
   if (countingType !== "MANY_PER_CLICK") {
     hardFailures.push(`COUNTING_TYPE_${countingType ?? "UNKNOWN"}`);
   }
-  if (primaryForGoal !== false) {
-    hardFailures.push(`PRIMARY_FOR_GOAL_${String(primaryForGoal)}`);
+  if (primaryForGoal) {
+    hardFailures.push("PRIMARY_FOR_GOAL_TRUE");
   }
   if (category !== "QUALIFIED_LEAD" && category !== "CONVERTED_LEAD") {
     advisories.push(`CATEGORY_${category}`);
@@ -175,10 +177,9 @@ try {
     hardFailures.push(`CUSTOM_GOAL_BIDDING_OVERRIDE_${activeCustomGoalCampaignCount}`);
   }
 
-  const customerGoalBiddable =
-    matchingCustomerGoal && typeof matchingCustomerGoal.biddable === "boolean"
-      ? matchingCustomerGoal.biddable
-      : null;
+  const customerGoalBiddable = matchingCustomerGoal
+    ? matchingCustomerGoal.biddable === true
+    : null;
 
   console.log(
     JSON.stringify({
