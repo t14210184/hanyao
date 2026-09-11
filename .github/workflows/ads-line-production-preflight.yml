@@ -94,6 +94,8 @@ jobs:
             echo "CLOUDFLARE_ACCOUNT_ID=$account_state"
             echo "GOOGLE_DATA_MANAGER_GITHUB_CREDENTIAL=$google_state"
           } >> "$GITHUB_STEP_SUMMARY"
+      - name: Read-only Google Data Manager auth prestate
+        run: node --experimental-strip-types scripts/line4b-google-auth-preflight.ts
       - name: Read-only Cloudflare D1 prestate
         if: steps.credentials.outputs.state == 'PRESENT'
         shell: bash
