@@ -18,6 +18,7 @@ export const MAX_UPLOAD_ATTEMPTS = 8;
 export const DIAGNOSTIC_TIMEBOX_MS = 24 * 60 * 60 * 1000;
 export const FIRST_DIAGNOSTIC_DELAY_MS = 30 * 60 * 1000;
 export const DIAGNOSTIC_DELAY_CAP_MS = 60 * 60 * 1000;
+export const STALE_PROCESSING_THRESHOLD_MS = 30 * 60 * 1000;
 
 export const RETRY_DELAYS_MS = [
   5 * 60 * 1000,
@@ -93,6 +94,11 @@ export interface UploaderConfig {
 }
 
 export interface OutboxRepository {
+  recoverStaleClaims(
+    staleBeforeIso: string,
+    nowIso: string,
+    limit: number
+  ): Promise<number>;
   listDueUploads(nowIso: string, limit: number): Promise<ConversionOutboxRow[]>;
   claimUpload(
     conversionId: string,
