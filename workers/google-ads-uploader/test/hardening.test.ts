@@ -159,6 +159,32 @@ const testEnv = (serviceAccountJson: string): UploaderEnv =>
     UPLOADER_ENVIRONMENT: "preview",
   }) as unknown as UploaderEnv;
 
+const tooRecentFetch = (serviceAccountJson: string) => {
+  void serviceAccountJson;
+  const calls: string[] = [];
+  const fetchImpl = (async (input: RequestInfo | URL) => {
+    const url = input.toString();
+    calls.push(url);
+    if (url === GOOGLE_OAUTH_TOKEN_URL) {
+      return response({ access_token: FAKE_ACCESS_TOKEN, expires_in: 600 });
+    }
+    if (url.startsWith(GOOGLE_DATA_MANAGER_REQUEST_STATUS_URL)) {
+      return response({
+        requestStatusPerDestination: [
+          {
+            requestStatus: "FAILED",
+            errorInfo: {
+              errorCounts: [{ reason: TOO_RECENT_CLICK_REASON, recordCount: "1" }],
+            },
+          },
+        ],
+      });
+    }
+    throw new Error(`unexpected URL ${url}`);
+  }) as FetchLike;
+  return { calls, fetchImpl };
+};
+
 test("ingest preserves sanitized fieldWarnings next to requestId", async () => {
   const fetchImpl = (async (input: RequestInfo | URL) => {
     assert.equal(input.toString(), GOOGLE_DATA_MANAGER_EVENTS_URL);
@@ -245,31 +271,11 @@ test("SUCCESS with warningInfo stays success and remains observable", async () =
 test("too-recent click is requeued without changing transaction identity", async () => {
   const serviceAccountJson = fakeServiceAccountJson();
   const repository = new DiagnosticMemoryRepository(baseRow());
-  const calls: string[] = [];
-  const fetchImpl = (async (input: RequestInfo | URL) => {
-    const url = input.toString();
-    calls.push(url);
-    if (url === GOOGLE_OAUTH_TOKEN_URL) {
-      return response({ access_token: FAKE_ACCESS_TOKEN, expires_in: 600 });
-    }
-    if (url.startsWith(GOOGLE_DATA_MANAGER_REQUEST_STATUS_URL)) {
-      return response({
-        requestStatusPerDestination: [
-          {
-            requestStatus: "FAILED",
-            errorInfo: {
-              errorCounts: [{ reason: TOO_RECENT_CLICK_REASON, recordCount: "1" }],
-            },
-          },
-        ],
-      });
-    }
-    throw new Error(`unexpected URL ${url}`);
-  }) as FetchLike;
+  const mock = tooRecentFetch(serviceAccountJson);
 
   await runScheduledCycle(testEnv(serviceAccountJson), {
     repository,
-    fetchImpl,
+    fetchImpl: mock.fetchImpl,
     now: new Date(NOW),
     random: () => 0.5,
   });
@@ -287,11 +293,37 @@ test("too-recent click is requeued without changing transaction identity", async
     nextTooRecentRetryAt(EVENT_TIME, NOW)
   );
   assert.equal(repository.row.next_retry_at, "2026-08-28T08:00:00.000Z");
-  assert.equal(calls.filter((url) => url === GOOGLE_OAUTH_TOKEN_URL).length, 1);
+  assert.equal(mock.calls.filter((url) => url === GOOGLE_OAUTH_TOKEN_URL).length, 1);
   assert.equal(
-    calls.filter((url) => url.startsWith(GOOGLE_DATA_MANAGER_REQUEST_STATUS_URL)).length,
+    mock.calls.filter((url) => url.startsWith(GOOGLE_DATA_MANAGER_REQUEST_STATUS_URL)).length,
     1
   );
+});
+
+test("too-recent click at upload retry ceiling becomes explicit terminal failure instead of a zombie pending row", async () => {
+  const serviceAccountJson = fakeServiceAccountJson();
+  const repository = new DiagnosticMemoryRepository(baseRow({ retry_count: 8 }));
+  const mock = tooRecentFetch(serviceAccountJson);
+
+  await runScheduledCycle(testEnv(serviceAccountJson), {
+    repository,
+    fetchImpl: mock.fetchImpl,
+    now: new Date(NOW),
+    random: () => 0.5,
+  });
+
+  assert.equal(repository.row.status, "failed");
+  assert.equal(repository.row.transaction_id, "hardening-transaction-1");
+  assert.equal(repository.row.next_retry_at, null);
+  assert.equal(
+    repository.row.terminal_result,
+    "TOO_RECENT_CLICK_RETRY_BUDGET_EXHAUSTED"
+  );
+  assert.equal(
+    repository.row.last_error_code,
+    "TOO_RECENT_CLICK_RETRY_BUDGET_EXHAUSTED"
+  );
+  assert.equal(repository.row.last_error_reason, TOO_RECENT_CLICK_REASON);
 });
 
 test("scheduler invokes bounded stale-claim recovery before normal selection", async () => {
