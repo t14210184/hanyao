@@ -1,3 +1,4 @@
+# Synced with current main; this workflow remains validation-only until provider gates pass.
 name: Ads LINE Production activation gate
 
 on:
