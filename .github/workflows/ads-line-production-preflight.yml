@@ -149,7 +149,7 @@ jobs:
   deploy-candidate:
     if: github.event_name == 'push' && needs.provider-prestate.outputs.provider_ready == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     needs:
       - verify
       - provider-prestate
@@ -167,6 +167,60 @@ jobs:
           cache: npm
       - name: Install locked dependencies
         run: npm ci
+      - name: Read Production D1 schema contract
+        id: d1_schema
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx wrangler d1 execute ATTRIBUTION_DB --remote --env production \
+            --config workers/google-ads-uploader/wrangler.jsonc \
+            --command "PRAGMA table_info(conversion_outbox);" \
+            --json > /tmp/d1-schema-before.json
+          node <<'NODE'
+          const fs = require('node:fs');
+          const payload = JSON.parse(fs.readFileSync('/tmp/d1-schema-before.json', 'utf8'));
+          const text = JSON.stringify(payload);
+          const required = [
+            'conversion_id','lead_token','conversion_type','event_timestamp',
+            'transaction_id','destination_key','status','retry_count','next_retry_at',
+            'submitted_at','google_request_id','next_diagnostic_at','terminal_result',
+            'last_error_reason','diagnostic_status','diagnostic_record_count',
+            'diagnostic_error_reason','diagnostic_attempt_count','updated_at'
+          ];
+          const complete = required.every((name) => text.includes(`\"${name}\"`));
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `complete=${complete}\n`);
+          console.log(`PRODUCTION_D1_SCHEMA_PRESTATE=${complete ? 'COMPLETE' : 'MIGRATION_REQUIRED'}`);
+          NODE
+      - name: Apply pending Production D1 migrations
+        if: steps.d1_schema.outputs.complete != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx wrangler d1 migrations apply ATTRIBUTION_DB --remote --env production \
+            --config workers/google-ads-uploader/wrangler.jsonc --yes
+      - name: Verify Production D1 schema contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx wrangler d1 execute ATTRIBUTION_DB --remote --env production \
+            --config workers/google-ads-uploader/wrangler.jsonc \
+            --command "PRAGMA table_info(conversion_outbox); SELECT name FROM sqlite_master WHERE type='table' AND name='line_events';" \
+            --json > /tmp/d1-schema-after.json
+          node <<'NODE'
+          const fs = require('node:fs');
+          const payload = JSON.parse(fs.readFileSync('/tmp/d1-schema-after.json', 'utf8'));
+          const text = JSON.stringify(payload);
+          const required = [
+            'conversion_id','lead_token','conversion_type','event_timestamp',
+            'transaction_id','destination_key','status','retry_count','next_retry_at',
+            'submitted_at','google_request_id','next_diagnostic_at','terminal_result',
+            'last_error_reason','diagnostic_status','diagnostic_record_count',
+            'diagnostic_error_reason','diagnostic_attempt_count','updated_at','line_events'
+          ];
+          const missing = required.filter((name) => !text.includes(`\"${name}\"`));
+          if (missing.length) throw new Error(`PRODUCTION_D1_SCHEMA_INCOMPLETE:${missing.join(',')}`);
+          console.log('PRODUCTION_D1_SCHEMA=PASS');
+          NODE
       - name: Build ephemeral Production secrets file
         shell: bash
         run: |
@@ -204,28 +258,12 @@ jobs:
           }
           console.log('PRODUCTION_CANDIDATE_SECRETS=PASS');
           NODE
-      - name: Verify Production D1 schema read-only
-        shell: bash
-        run: |
-          set -euo pipefail
-          npx wrangler d1 execute ATTRIBUTION_DB --remote --env production \
-            --config workers/google-ads-uploader/wrangler.jsonc \
-            --command "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('conversion_outbox','line_events') ORDER BY name;" \
-            --json > /tmp/d1-schema.json
-          node <<'NODE'
-          const fs = require('node:fs');
-          const payload = JSON.parse(fs.readFileSync('/tmp/d1-schema.json', 'utf8'));
-          const text = JSON.stringify(payload);
-          if (!text.includes('conversion_outbox') || !text.includes('line_events')) {
-            throw new Error('PRODUCTION_D1_SCHEMA_INCOMPLETE');
-          }
-          console.log('PRODUCTION_D1_SCHEMA=PASS');
-          NODE
       - name: Record candidate safety state
         shell: bash
         run: |
           {
             echo "PRODUCTION_CANDIDATE_DEPLOYED=PASS"
+            echo "PRODUCTION_D1_SCHEMA=PASS"
             echo "PRODUCTION_CRON_ARMED=FALSE"
             echo "PRODUCTION_REAL_UPLOAD_SCHEDULED=FALSE"
           } >> "$GITHUB_STEP_SUMMARY"
