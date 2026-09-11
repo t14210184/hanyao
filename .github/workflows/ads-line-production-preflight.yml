@@ -60,8 +60,9 @@ jobs:
     timeout-minutes: 10
     needs: verify
     env:
-      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN || secrets.CF_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || secrets.CF_ACCOUNT_ID || vars.CLOUDFLARE_ACCOUNT_ID || vars.CF_ACCOUNT_ID }}
+      GOOGLE_DATA_MANAGER_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_DATA_MANAGER_SERVICE_ACCOUNT_JSON }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -72,18 +73,27 @@ jobs:
           cache: npm
       - name: Install locked dependencies
         run: npm ci
-      - name: Classify Cloudflare CI credentials
+      - name: Classify existing CI credentials
         id: credentials
         shell: bash
         run: |
           set -euo pipefail
-          if [[ -n "${CLOUDFLARE_API_TOKEN:-}" && -n "${CLOUDFLARE_ACCOUNT_ID:-}" ]]; then
+          token_state=MISSING
+          account_state=MISSING
+          google_state=MISSING
+          if [[ -n "${CLOUDFLARE_API_TOKEN:-}" ]]; then token_state=PRESENT; fi
+          if [[ -n "${CLOUDFLARE_ACCOUNT_ID:-}" ]]; then account_state=PRESENT; fi
+          if [[ -n "${GOOGLE_DATA_MANAGER_SERVICE_ACCOUNT_JSON:-}" ]]; then google_state=PRESENT; fi
+          if [[ "$token_state" == PRESENT && "$account_state" == PRESENT ]]; then
             echo "state=PRESENT" >> "$GITHUB_OUTPUT"
-            echo "CLOUDFLARE_CI_CREDENTIALS=PRESENT" >> "$GITHUB_STEP_SUMMARY"
           else
             echo "state=MISSING" >> "$GITHUB_OUTPUT"
-            echo "CLOUDFLARE_CI_CREDENTIALS=MISSING" >> "$GITHUB_STEP_SUMMARY"
           fi
+          {
+            echo "CLOUDFLARE_CI_TOKEN=$token_state"
+            echo "CLOUDFLARE_ACCOUNT_ID=$account_state"
+            echo "GOOGLE_DATA_MANAGER_GITHUB_CREDENTIAL=$google_state"
+          } >> "$GITHUB_STEP_SUMMARY"
       - name: Read-only Cloudflare D1 prestate
         if: steps.credentials.outputs.state == 'PRESENT'
         shell: bash
