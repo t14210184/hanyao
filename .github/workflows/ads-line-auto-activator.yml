@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - feat/ads-line-auto-activator
+      - fix/ads-line-watcher-idle-cost
     paths:
       - ".github/workflows/ads-line-auto-activator.yml"
       - "scripts/line4b-*"
@@ -28,7 +29,44 @@ permissions:
   actions: write
 
 jobs:
+  material:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    outputs:
+      ready: ${{ steps.classify.outputs.ready }}
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN || secrets.CF_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || secrets.CF_ACCOUNT_ID || vars.CLOUDFLARE_ACCOUNT_ID || vars.CF_ACCOUNT_ID }}
+      GOOGLE_DATA_MANAGER_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_DATA_MANAGER_SERVICE_ACCOUNT_JSON }}
+    steps:
+      - name: Classify provider material before any checkout or dependency install
+        id: classify
+        shell: bash
+        run: |
+          set -euo pipefail
+          cf_token=MISSING
+          cf_account=MISSING
+          google=MISSING
+          [[ -n "${CLOUDFLARE_API_TOKEN:-}" ]] && cf_token=PRESENT
+          [[ -n "${CLOUDFLARE_ACCOUNT_ID:-}" ]] && cf_account=PRESENT
+          [[ -n "${GOOGLE_DATA_MANAGER_SERVICE_ACCOUNT_JSON:-}" ]] && google=PRESENT
+          ready=false
+          [[ "$cf_token" == PRESENT && "$cf_account" == PRESENT && "$google" == PRESENT ]] && ready=true
+          echo "ready=$ready" >> "$GITHUB_OUTPUT"
+          {
+            echo "## Provider material"
+            echo "- Cloudflare API token: $cf_token"
+            echo "- Cloudflare account ID: $cf_account"
+            echo "- Google service account: $google"
+            echo "- Provider ready: $ready"
+            if [[ "$ready" != true ]]; then
+              echo "- Production auto activation: WAITING_FOR_PROVIDER_MATERIAL"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
   selftest:
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch' || needs.material.outputs.ready == 'true'
+    needs: material
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -49,8 +87,10 @@ jobs:
         run: npm run typecheck
 
   controller:
-    if: github.ref == 'refs/heads/main'
-    needs: selftest
+    if: github.ref == 'refs/heads/main' && needs.material.outputs.ready == 'true'
+    needs:
+      - material
+      - selftest
     runs-on: ubuntu-latest
     timeout-minutes: 35
     env:
@@ -78,47 +118,16 @@ jobs:
       - name: Install locked dependencies
         run: npm ci
 
-      - name: Classify provider material
-        id: material
-        shell: bash
-        run: |
-          set -euo pipefail
-          cf_token=MISSING
-          cf_account=MISSING
-          google=MISSING
-          [[ -n "${CLOUDFLARE_API_TOKEN:-}" ]] && cf_token=PRESENT
-          [[ -n "${CLOUDFLARE_ACCOUNT_ID:-}" ]] && cf_account=PRESENT
-          [[ -n "${GOOGLE_DATA_MANAGER_SERVICE_ACCOUNT_JSON:-}" ]] && google=PRESENT
-          ready=false
-          [[ "$cf_token" == PRESENT && "$cf_account" == PRESENT && "$google" == PRESENT ]] && ready=true
-          echo "ready=$ready" >> "$GITHUB_OUTPUT"
-          {
-            echo "## Provider material"
-            echo "- Cloudflare API token: $cf_token"
-            echo "- Cloudflare account ID: $cf_account"
-            echo "- Google service account: $google"
-            echo "- Provider ready: $ready"
-          } >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Stop safely when provider material is absent
-        if: steps.material.outputs.ready != 'true'
-        run: |
-          echo "PRODUCTION_AUTO_ACTIVATION=WAITING_FOR_PROVIDER_MATERIAL" >> "$GITHUB_STEP_SUMMARY"
-
       - name: Verify Google Data Manager OAuth
-        if: steps.material.outputs.ready == 'true'
         run: node --experimental-strip-types scripts/line4b-google-auth-preflight.ts
 
       - name: Validate Data Manager destination without creating a conversion
-        if: steps.material.outputs.ready == 'true'
         run: node --experimental-strip-types scripts/line4b-data-manager-destination-preflight.ts
 
       - name: Verify Google Ads live conversion gate
-        if: steps.material.outputs.ready == 'true'
         run: node --experimental-strip-types scripts/line4b-google-ads-live-preflight.ts
 
       - name: Verify exact Cloudflare Production D1
-        if: steps.material.outputs.ready == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -136,7 +145,6 @@ jobs:
           NODE
 
       - name: Determine source activation state
-        if: steps.material.outputs.ready == 'true'
         id: source_state
         shell: bash
         run: |
@@ -153,7 +161,6 @@ jobs:
           NODE
 
       - name: Verify or migrate Production D1 schema
-        if: steps.material.outputs.ready == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -185,7 +192,6 @@ jobs:
           NODE
 
       - name: Build ephemeral Production secrets file
-        if: steps.material.outputs.ready == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -200,7 +206,7 @@ jobs:
           NODE
 
       - name: Deploy and verify disarmed candidate before first activation
-        if: steps.material.outputs.ready == 'true' && steps.source_state.outputs.armed != 'true'
+        if: steps.source_state.outputs.armed != 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -231,7 +237,7 @@ jobs:
           NODE
 
       - name: Validate exact Activation PR and branch
-        if: steps.material.outputs.ready == 'true' && steps.source_state.outputs.armed != 'true'
+        if: steps.source_state.outputs.armed != 'true'
         id: activation_pr
         shell: bash
         run: |
@@ -261,7 +267,7 @@ jobs:
           echo "ACTIVATION_PR_SCOPE=PASS"
 
       - name: Re-run Activation PR acceptance on exact head
-        if: steps.material.outputs.ready == 'true' && steps.source_state.outputs.armed != 'true'
+        if: steps.source_state.outputs.armed != 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -275,7 +281,7 @@ jobs:
             --outdir .wrangler-dryrun/auto-activation
 
       - name: Merge exact Activation PR
-        if: steps.material.outputs.ready == 'true' && steps.source_state.outputs.armed != 'true'
+        if: steps.source_state.outputs.armed != 'true'
         id: merge_activation
         shell: bash
         run: |
@@ -297,7 +303,6 @@ jobs:
           node scripts/line4c-production-activation-config.test.mjs
 
       - name: Read current remote Cron state
-        if: steps.material.outputs.ready == 'true'
         id: remote_cron
         shell: bash
         run: |
@@ -322,7 +327,7 @@ jobs:
           NODE
 
       - name: Converge Production Worker to armed main configuration
-        if: steps.material.outputs.ready == 'true' && steps.remote_cron.outputs.armed != 'true'
+        if: steps.remote_cron.outputs.armed != 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -334,7 +339,6 @@ jobs:
             --secrets-file /tmp/hanyao-production-secrets.json
 
       - name: Verify exact armed Cron from Cloudflare
-        if: steps.material.outputs.ready == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -353,7 +357,6 @@ jobs:
           NODE
 
       - name: Read privacy-safe Production E2E state
-        if: steps.material.outputs.ready == 'true'
         id: e2e_d1
         shell: bash
         run: |
@@ -383,7 +386,6 @@ jobs:
           NODE
 
       - name: Read Google Ads reporting visibility
-        if: steps.material.outputs.ready == 'true'
         id: ads_reporting
         shell: bash
         run: |
@@ -393,7 +395,7 @@ jobs:
           echo "visible=$visible" >> "$GITHUB_OUTPUT"
 
       - name: Declare final Production E2E PASS once
-        if: steps.material.outputs.ready == 'true' && steps.e2e_d1.outputs.matched_ads != '0' && steps.e2e_d1.outputs.success_equivalent != '0' && steps.ads_reporting.outputs.visible == 'true'
+        if: steps.e2e_d1.outputs.matched_ads != '0' && steps.e2e_d1.outputs.success_equivalent != '0' && steps.ads_reporting.outputs.visible == 'true'
         id: final_pass
         shell: bash
         run: |
