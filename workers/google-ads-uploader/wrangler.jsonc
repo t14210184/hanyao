@@ -21,5 +21,33 @@
       "preview_database_id": "google-ads-uploader-local",
       "migrations_dir": "../../migrations"
     }
-  ]
+  ],
+  "env": {
+    "production": {
+      "triggers": {
+        "crons": []
+      },
+      "vars": {
+        "GOOGLE_ADS_ACCOUNT_ID": "4801404246",
+        "GOOGLE_ADS_CONVERSION_ACTION_ID": "7674301565",
+        "GOOGLE_DATA_MANAGER_VALIDATE_ONLY": "false",
+        "GOOGLE_OUTBOX_TERMINAL_RETENTION_DAYS": "90",
+        "UPLOADER_ENVIRONMENT": "production"
+      },
+      "secrets": {
+        "required": [
+          "GOOGLE_DATA_MANAGER_SERVICE_ACCOUNT_JSON",
+          "PRODUCTION_HUMAN_GATE"
+        ]
+      },
+      "d1_databases": [
+        {
+          "binding": "ATTRIBUTION_DB",
+          "database_name": "hanyao-attribution-production",
+          "database_id": "52453bad-90a3-4495-911b-c3d5b6cefb1f",
+          "migrations_dir": "../../migrations"
+        }
+      ]
+    }
+  }
 }

@@ -19,7 +19,7 @@
     "test:line1b2a:local": "node --experimental-strip-types scripts/line1b2a-local-integration.ts",
     "test:line1b2b:unit": "node --experimental-strip-types --test scripts/line1b2b-unit.test.ts",
     "test:line1b2b:browser": "node scripts/line1b2b-browser-smoke.mjs",
-    "test:line4a:unit": "node --experimental-strip-types --test workers/google-ads-uploader/test/uploader.test.ts workers/google-ads-uploader/test/hardening.test.ts",
+    "test:line4a:unit": "node --experimental-strip-types --test workers/google-ads-uploader/test/uploader.test.ts workers/google-ads-uploader/test/hardening.test.ts workers/google-ads-uploader/test/auth-scopes.test.ts",
     "test:line4a:migration": "node scripts/line4a-migration.test.mjs",
     "test:line4a:local": "node scripts/line4a-scheduled-local.mjs",
     "test:line4a:static": "node scripts/line4a-static.test.mjs",

@@ -1,0 +1,36 @@
+name: Ads LINE Production HTTP smoke
+
+on:
+  push:
+    branches:
+      - feat/ads-line-production-release
+    paths:
+      - "scripts/line4b-production-http-negative-smoke.mjs"
+      - ".github/workflows/ads-line-production-http-smoke.yml"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "scripts/line4b-production-http-negative-smoke.mjs"
+      - ".github/workflows/ads-line-production-http-smoke.yml"
+
+concurrency:
+  group: ads-line-production-http-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  negative-security-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Verify Production LINE routes reject before D1 mutation
+        run: node scripts/line4b-production-http-negative-smoke.mjs
