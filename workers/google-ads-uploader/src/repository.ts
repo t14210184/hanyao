@@ -22,6 +22,38 @@ export class D1OutboxRepository implements OutboxRepository {
     this.database = database;
   }
 
+  async recoverStaleClaims(
+    staleBeforeIso: string,
+    nowIso: string,
+    limit: number
+  ): Promise<number> {
+    const boundedLimit = Math.max(1, Math.min(Math.floor(limit), 100));
+    const result = await this.database
+      .prepare(
+        `UPDATE conversion_outbox
+            SET status = CASE
+                  WHEN google_request_id IS NULL THEN 'pending'
+                  ELSE 'submitted'
+                END,
+                last_error_code = 'STALE_PROCESSING_RECOVERED',
+                last_error_reason = CASE
+                  WHEN google_request_id IS NULL THEN 'STALE_UPLOAD_CLAIM_RECOVERED'
+                  ELSE 'STALE_DIAGNOSTIC_CLAIM_RECOVERED'
+                END,
+                updated_at = ?2
+          WHERE conversion_id IN (
+            SELECT conversion_id FROM conversion_outbox
+             WHERE status = 'processing'
+               AND updated_at <= ?1
+             ORDER BY updated_at, conversion_id
+             LIMIT ?3
+          )`
+      )
+      .bind(staleBeforeIso, nowIso, boundedLimit)
+      .run();
+    return changesFrom(result);
+  }
+
   async listDueUploads(
     nowIso: string,
     limit: number

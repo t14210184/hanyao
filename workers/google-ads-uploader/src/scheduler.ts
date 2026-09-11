@@ -1,6 +1,6 @@
 import { computeTerminalRetentionCutoff, getUploaderConfig } from "./config.ts";
 import { exchangeServiceAccountToken } from "./auth.ts";
-import { ProviderRequestError, sanitizeProviderReason } from "./errors.ts";
+import { ProviderRequestError } from "./errors.ts";
 import { buildDataManagerRequest } from "./payload.ts";
 import { D1OutboxRepository } from "./repository.ts";
 import {
@@ -9,6 +9,7 @@ import {
   FIRST_DIAGNOSTIC_DELAY_MS,
   MAX_UPLOAD_ATTEMPTS,
   RETRY_DELAYS_MS,
+  STALE_PROCESSING_THRESHOLD_MS,
   type ConversionOutboxRow,
   type FetchLike,
   type OutboxRepository,
@@ -23,6 +24,10 @@ import {
 export const MAX_ROWS_PER_SCHEDULE = 5;
 export const DUPLICATE_TRANSACTION_REASON =
   "PROCESSING_ERROR_REASON_DUPLICATE_TRANSACTION_ID";
+export const TOO_RECENT_CLICK_REASON =
+  "PROCESSING_ERROR_REASON_TOO_RECENT_CLICK";
+export const TOO_RECENT_CLICK_MIN_AGE_MS = 6 * 60 * 60 * 1000;
+const TOO_RECENT_RETRY_FLOOR_MS = 60 * 1000;
 
 const boundedRandom = (random: () => number): number => {
   const value = random();
@@ -57,10 +62,46 @@ export const nextDiagnosticAt = (
   ).toISOString();
 };
 
+export const nextTooRecentRetryAt = (
+  eventTimestampIso: string,
+  nowIso: string
+): string => {
+  const nowMs = Date.parse(nowIso);
+  const eventMs = Date.parse(eventTimestampIso);
+  const fallback = nowMs + TOO_RECENT_CLICK_MIN_AGE_MS;
+  const maturityFloor = Number.isFinite(eventMs)
+    ? eventMs + TOO_RECENT_CLICK_MIN_AGE_MS
+    : fallback;
+  return new Date(Math.max(maturityFloor, nowMs + TOO_RECENT_RETRY_FLOOR_MS)).toISOString();
+};
+
 const asProviderError = (error: unknown, fallbackCode: string): ProviderRequestError =>
   error instanceof ProviderRequestError
     ? error
     : new ProviderRequestError(fallbackCode, true);
+
+const logIngestWarnings = (
+  logger: UploaderLogger | undefined,
+  warnings: Array<{ field: string | null; reason: string | null }>
+): void => {
+  if (warnings.length === 0) return;
+  logger?.warn?.("google-ads-uploader Data Manager field warning", {
+    warning_count: warnings.length,
+    first_warning_field: warnings[0]?.field ?? null,
+    first_warning_reason: warnings[0]?.reason ?? null,
+  });
+};
+
+const logDiagnosticWarnings = (
+  logger: UploaderLogger | undefined,
+  warnings: string[]
+): void => {
+  if (warnings.length === 0) return;
+  logger?.warn?.("google-ads-uploader Data Manager diagnostic warning", {
+    warning_count: warnings.length,
+    first_warning_reason: warnings[0] ?? null,
+  });
+};
 
 const writeFailure = async (
   repository: OutboxRepository,
@@ -166,6 +207,28 @@ const writeDiagnosticRetry = async (
   await repository.save(row);
 };
 
+const writeTooRecentRetry = async (
+  repository: OutboxRepository,
+  row: ConversionOutboxRow,
+  nowIso: string
+): Promise<void> => {
+  row.status = "pending";
+  row.next_retry_at = nextTooRecentRetryAt(row.event_timestamp, nowIso);
+  row.last_error_code = "TOO_RECENT_CLICK_RETRY_SCHEDULED";
+  row.last_error_reason = TOO_RECENT_CLICK_REASON;
+  row.google_request_id = null;
+  row.submitted_at = null;
+  row.next_diagnostic_at = null;
+  row.terminal_result = null;
+  row.diagnostic_status = null;
+  row.diagnostic_record_count = null;
+  row.diagnostic_error_reason = null;
+  row.diagnostic_attempt_count = 0;
+  row.sent_at = null;
+  row.updated_at = nowIso;
+  await repository.save(row);
+};
+
 const writeDiagnosticTerminal = async (
   repository: OutboxRepository,
   row: ConversionOutboxRow,
@@ -226,6 +289,7 @@ const processUpload = async (
   config: ReturnType<typeof getUploaderConfig>,
   acquireToken: () => Promise<string>,
   fetchImpl: FetchLike,
+  logger: UploaderLogger | undefined,
   nowIso: string,
   random: () => number
 ): Promise<void> => {
@@ -263,6 +327,7 @@ const processUpload = async (
 
   try {
     const response = await ingestDataManagerEvent(accessToken, request, fetchImpl);
+    logIngestWarnings(logger, response.fieldWarnings);
     if (config.validateOnly) {
       await writeValidatedOnly(repository, row, nowIso);
     } else {
@@ -284,6 +349,7 @@ const processDiagnostic = async (
   row: ConversionOutboxRow,
   acquireToken: () => Promise<string>,
   fetchImpl: FetchLike,
+  logger: UploaderLogger | undefined,
   nowIso: string,
   random: () => number
 ): Promise<void> => {
@@ -342,6 +408,7 @@ const processDiagnostic = async (
       row.google_request_id,
       fetchImpl
     );
+    logDiagnosticWarnings(logger, response.warningReasons);
     const reason = response.reasons[0] || null;
     if (response.status === "SUCCESS") {
       await writeDiagnosticTerminal(
@@ -370,6 +437,31 @@ const processDiagnostic = async (
       row.last_error_reason = null;
       row.updated_at = nowIso;
       await repository.save(row);
+      return;
+    }
+    if (response.status === "FAILED" && response.reasons.includes(TOO_RECENT_CLICK_REASON)) {
+      if (row.retry_count >= MAX_UPLOAD_ATTEMPTS) {
+        await writeDiagnosticTerminal(
+          repository,
+          row,
+          "failed",
+          "TOO_RECENT_CLICK_RETRY_BUDGET_EXHAUSTED",
+          "FAILED",
+          TOO_RECENT_CLICK_REASON,
+          response.recordCount,
+          nowIso
+        );
+        logger?.warn?.("google-ads-uploader click too recent; retry budget exhausted", {
+          conversion_id: row.conversion_id,
+          retry_count: row.retry_count,
+        });
+        return;
+      }
+      await writeTooRecentRetry(repository, row, nowIso);
+      logger?.warn?.("google-ads-uploader click too recent; conversion requeued", {
+        conversion_id: row.conversion_id,
+        next_retry_at: row.next_retry_at,
+      });
       return;
     }
     if (response.status === "FAILED" && response.reasons.includes(DUPLICATE_TRANSACTION_REASON)) {
@@ -454,6 +546,7 @@ export interface ScheduledCycleOptions {
 }
 
 export interface ScheduledCycleSummary {
+  staleClaimsRecovered: number;
   uploadCandidates: number;
   diagnosticCandidates: number;
   claimedRows: number;
@@ -469,8 +562,21 @@ export const runScheduledCycle = async (
   const fetchImpl = options.fetchImpl || fetch;
   const random = options.random || Math.random;
   const repository = options.repository || new D1OutboxRepository(env.ATTRIBUTION_DB);
+  // Configuration validation stays before any repository mutation so production
+  // fail-closed guards cannot accidentally recover/claim rows on bad config.
   const config = getUploaderConfig(env);
   const acquireToken = acquireTokenFactory(env, fetchImpl, now);
+
+  const staleBeforeIso = new Date(
+    now.getTime() - STALE_PROCESSING_THRESHOLD_MS
+  ).toISOString();
+  const staleClaimsRecovered = repository.recoverStaleClaims
+    ? await repository.recoverStaleClaims(
+        staleBeforeIso,
+        nowIso,
+        MAX_ROWS_PER_SCHEDULE
+      )
+    : 0;
 
   const uploadCandidates = await repository.listDueUploads(nowIso, MAX_ROWS_PER_SCHEDULE);
   let claimedRows = 0;
@@ -487,6 +593,7 @@ export const runScheduledCycle = async (
       config,
       acquireToken,
       fetchImpl,
+      options.logger,
       nowIso,
       random
     );
@@ -504,6 +611,7 @@ export const runScheduledCycle = async (
       row,
       acquireToken,
       fetchImpl,
+      options.logger,
       nowIso,
       random
     );
@@ -522,12 +630,14 @@ export const runScheduledCycle = async (
   }
 
   options.logger?.info?.("google-ads-uploader cycle complete", {
+    stale_claims_recovered: staleClaimsRecovered,
     upload_candidates: uploadCandidates.length,
     diagnostic_candidates: diagnosticCandidates.length,
     claimed_rows: claimedRows,
     terminal_rows_cleaned: terminalRowsCleaned,
   });
   return {
+    staleClaimsRecovered,
     uploadCandidates: uploadCandidates.length,
     diagnosticCandidates: diagnosticCandidates.length,
     claimedRows,
