@@ -94,7 +94,7 @@ export interface UploaderConfig {
 }
 
 export interface OutboxRepository {
-  recoverStaleClaims(
+  recoverStaleClaims?(
     staleBeforeIso: string,
     nowIso: string,
     limit: number
