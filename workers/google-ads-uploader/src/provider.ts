@@ -28,8 +28,29 @@ const parseJsonRecord = (body: string): Record<string, unknown> | null => {
   }
 };
 
+export interface DataManagerFieldWarning {
+  field: string | null;
+  reason: string | null;
+}
+
+const parseFieldWarnings = (
+  record: Record<string, unknown> | null
+): DataManagerFieldWarning[] => {
+  const warnings = Array.isArray(record?.fieldWarnings) ? record.fieldWarnings : [];
+  return warnings
+    .map((entry) => {
+      const warning = asRecord(entry);
+      if (!warning) return null;
+      const field = asNonEmptyString(warning.field);
+      const reason = sanitizeProviderReason(warning.reason);
+      return field || reason ? { field, reason } : null;
+    })
+    .filter((warning): warning is DataManagerFieldWarning => Boolean(warning));
+};
+
 export interface IngestResponse {
   requestId: string;
+  fieldWarnings: DataManagerFieldWarning[];
 }
 
 export const ingestDataManagerEvent = async (
@@ -66,12 +87,13 @@ export const ingestDataManagerEvent = async (
   if (!requestId) {
     throw new ProviderRequestError("INGEST_REQUEST_ID_MISSING", false, response.status);
   }
-  return { requestId };
+  return { requestId, fieldWarnings: parseFieldWarnings(record) };
 };
 
 export interface DiagnosticResponse {
   status: "SUCCESS" | "PROCESSING" | "FAILED" | "PARTIAL_SUCCESS" | "UNKNOWN";
   reasons: string[];
+  warningReasons: string[];
   recordCount: number | null;
   duplicateTransactionId: string | null;
 }
@@ -89,11 +111,13 @@ const safeRecordCount = (value: unknown): number | null => {
 const getStatusRecord = (destination: Record<string, unknown>): unknown =>
   destination.eventsIngestionStatus ?? destination.status;
 
-const getReasons = (destination: Record<string, unknown>): string[] => {
-  const errorInfo = asRecord(destination.errorInfo);
-  const counts = Array.isArray(errorInfo?.errorCounts)
-    ? errorInfo.errorCounts
-    : [];
+const getCountReasons = (
+  destination: Record<string, unknown>,
+  infoKey: "errorInfo" | "warningInfo",
+  countsKey: "errorCounts" | "warningCounts"
+): string[] => {
+  const info = asRecord(destination[infoKey]);
+  const counts = Array.isArray(info?.[countsKey]) ? info[countsKey] : [];
   return counts
     .map((entry) => {
       const count = asRecord(entry);
@@ -101,6 +125,12 @@ const getReasons = (destination: Record<string, unknown>): string[] => {
     })
     .filter((reason): reason is string => Boolean(reason));
 };
+
+const getReasons = (destination: Record<string, unknown>): string[] =>
+  getCountReasons(destination, "errorInfo", "errorCounts");
+
+const getWarningReasons = (destination: Record<string, unknown>): string[] =>
+  getCountReasons(destination, "warningInfo", "warningCounts");
 
 const getRecordCount = (destination: Record<string, unknown>): number | null => {
   const status = asRecord(getStatusRecord(destination));
@@ -156,16 +186,18 @@ export const retrieveDataManagerStatus = async (
     throw new ProviderRequestError("DIAGNOSTIC_RESPONSE_MALFORMED", false);
   }
   const statusValue = sanitizeProviderReason(destination.requestStatus);
+  const normalizedStatusValue = statusValue === "FAILURE" ? "FAILED" : statusValue;
   const status =
-    statusValue === "SUCCESS" ||
-    statusValue === "PROCESSING" ||
-    statusValue === "FAILED" ||
-    statusValue === "PARTIAL_SUCCESS"
-      ? statusValue
+    normalizedStatusValue === "SUCCESS" ||
+    normalizedStatusValue === "PROCESSING" ||
+    normalizedStatusValue === "FAILED" ||
+    normalizedStatusValue === "PARTIAL_SUCCESS"
+      ? normalizedStatusValue
       : "UNKNOWN";
   return {
     status,
     reasons: getReasons(destination),
+    warningReasons: getWarningReasons(destination),
     recordCount: getRecordCount(destination),
     duplicateTransactionId: getDuplicateTransactionId(destination),
   };
