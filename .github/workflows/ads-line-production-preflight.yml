@@ -53,11 +53,22 @@ jobs:
         run: node scripts/line4b-production-config.test.mjs
       - name: TypeScript typecheck
         run: npm run typecheck
-      - name: Wrangler Production dry run
-        run: >-
-          npx wrangler deploy --dry-run --env production
-          --config workers/google-ads-uploader/wrangler.jsonc
-          --outdir .wrangler-dryrun/production
+      - name: Wrangler exact Production deploy dry run
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs = require('node:fs');
+          fs.writeFileSync('/tmp/hanyao-ci-secrets.json', JSON.stringify({
+            GOOGLE_DATA_MANAGER_SERVICE_ACCOUNT_JSON: 'ci-dry-run-placeholder',
+            PRODUCTION_HUMAN_GATE: 'ci-dry-run-placeholder'
+          }), { mode: 0o600 });
+          NODE
+          trap 'rm -f /tmp/hanyao-ci-secrets.json' EXIT
+          npx wrangler deploy --dry-run --env production \
+            --config workers/google-ads-uploader/wrangler.jsonc \
+            --secrets-file /tmp/hanyao-ci-secrets.json \
+            --outdir .wrangler-dryrun/production
 
   provider-prestate:
     runs-on: ubuntu-latest
