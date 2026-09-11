@@ -30,8 +30,23 @@ export interface AccessTokenResult {
   expiresIn: number | null;
 }
 
+const DEFAULT_SERVICE_ACCOUNT_SCOPES = [
+  GOOGLE_DATA_MANAGER_SCOPE,
+  GOOGLE_CLOUD_PLATFORM_SCOPE,
+] as const;
+
 const asNonEmptyString = (value: unknown): string | null =>
   typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
+
+const normalizeScopes = (scopes: readonly string[]): string[] => {
+  const normalized = scopes
+    .map((scope) => scope.trim())
+    .filter((scope) => scope.length > 0);
+  if (normalized.length === 0 || normalized.some((scope) => /\s/.test(scope))) {
+    throw new Error("INVALID_OAUTH_SCOPES");
+  }
+  return [...new Set(normalized)];
+};
 
 export const parseServiceAccountJson = (
   serialized: string
@@ -93,12 +108,14 @@ const pemToDer = (pem: string): ArrayBuffer => {
 
 export const createServiceAccountAssertion = async (
   account: ServiceAccountMaterial,
-  now = new Date()
+  now = new Date(),
+  scopes: readonly string[] = DEFAULT_SERVICE_ACCOUNT_SCOPES
 ): Promise<{ assertion: string; claims: ServiceAccountJwtClaims }> => {
+  const normalizedScopes = normalizeScopes(scopes);
   const iat = Math.floor(now.getTime() / 1000);
   const claims: ServiceAccountJwtClaims = {
     iss: account.clientEmail,
-    scope: `${GOOGLE_DATA_MANAGER_SCOPE} ${GOOGLE_CLOUD_PLATFORM_SCOPE}`,
+    scope: normalizedScopes.join(" "),
     aud: account.tokenUri,
     iat,
     exp: iat + 3600,
@@ -125,8 +142,9 @@ export const createServiceAccountAssertion = async (
   };
 };
 
-export const exchangeServiceAccountToken = async (
+export const exchangeServiceAccountTokenForScopes = async (
   serializedServiceAccount: string,
+  scopes: readonly string[],
   fetchImpl: FetchLike = fetch,
   now = new Date()
 ): Promise<AccessTokenResult> => {
@@ -140,7 +158,7 @@ export const exchangeServiceAccountToken = async (
 
   let assertion: string;
   try {
-    ({ assertion } = await createServiceAccountAssertion(account, now));
+    ({ assertion } = await createServiceAccountAssertion(account, now, scopes));
   } catch {
     throw new ProviderRequestError("AUTH_ASSERTION_BUILD_FAILED", false);
   }
@@ -186,3 +204,15 @@ export const exchangeServiceAccountToken = async (
     throw new ProviderRequestError("AUTH_TOKEN_RESPONSE_MALFORMED", false);
   }
 };
+
+export const exchangeServiceAccountToken = async (
+  serializedServiceAccount: string,
+  fetchImpl: FetchLike = fetch,
+  now = new Date()
+): Promise<AccessTokenResult> =>
+  exchangeServiceAccountTokenForScopes(
+    serializedServiceAccount,
+    DEFAULT_SERVICE_ACCOUNT_SCOPES,
+    fetchImpl,
+    now
+  );
