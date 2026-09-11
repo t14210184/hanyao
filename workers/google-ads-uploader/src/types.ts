@@ -10,6 +10,7 @@ export const GOOGLE_DATA_MANAGER_SCOPE =
   "https://www.googleapis.com/auth/datamanager";
 export const GOOGLE_CLOUD_PLATFORM_SCOPE =
   "https://www.googleapis.com/auth/cloud-platform";
+export const GOOGLE_ADS_SCOPE = "https://www.googleapis.com/auth/adwords";
 
 export const DEFAULT_GOOGLE_ADS_ACCOUNT_ID = "4801404246";
 export const DEFAULT_GOOGLE_ADS_CONVERSION_ACTION_ID = "7674301565";
