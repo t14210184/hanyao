@@ -440,6 +440,23 @@ const processDiagnostic = async (
       return;
     }
     if (response.status === "FAILED" && response.reasons.includes(TOO_RECENT_CLICK_REASON)) {
+      if (row.retry_count >= MAX_UPLOAD_ATTEMPTS) {
+        await writeDiagnosticTerminal(
+          repository,
+          row,
+          "failed",
+          "TOO_RECENT_CLICK_RETRY_BUDGET_EXHAUSTED",
+          "FAILED",
+          TOO_RECENT_CLICK_REASON,
+          response.recordCount,
+          nowIso
+        );
+        logger?.warn?.("google-ads-uploader click too recent; retry budget exhausted", {
+          conversion_id: row.conversion_id,
+          retry_count: row.retry_count,
+        });
+        return;
+      }
       await writeTooRecentRetry(repository, row, nowIso);
       logger?.warn?.("google-ads-uploader click too recent; conversion requeued", {
         conversion_id: row.conversion_id,
