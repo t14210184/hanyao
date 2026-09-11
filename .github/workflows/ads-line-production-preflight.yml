@@ -26,6 +26,10 @@ on:
       - "package-lock.json"
       - ".github/workflows/ads-line-production-preflight.yml"
 
+concurrency:
+  group: ads-line-production-preflight-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
