@@ -114,6 +114,8 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
       - name: Read-only Google Data Manager auth prestate
         run: node --experimental-strip-types scripts/line4b-google-auth-preflight.ts
+      - name: Validate-only Google Data Manager destination prestate
+        run: node --experimental-strip-types scripts/line4b-data-manager-destination-preflight.ts
       - name: Read-only Cloudflare D1 prestate
         if: steps.credentials.outputs.provider_ready == 'true'
         shell: bash
