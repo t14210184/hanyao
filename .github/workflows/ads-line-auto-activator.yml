@@ -1,0 +1,419 @@
+name: Ads LINE Production auto activator
+
+on:
+  push:
+    branches:
+      - main
+      - feat/ads-line-auto-activator
+    paths:
+      - ".github/workflows/ads-line-auto-activator.yml"
+      - "scripts/line4b-*"
+      - "scripts/line4d-*"
+      - "workers/google-ads-uploader/**"
+      - "migrations/**"
+      - "package.json"
+      - "package-lock.json"
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: ads-line-production-auto-activator
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  actions: write
+
+jobs:
+  selftest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Run uploader regression suite
+        run: npm run test:line4a
+      - name: Verify common Production invariants
+        run: node scripts/line4b-production-config.test.mjs
+      - name: TypeScript typecheck
+        run: npm run typecheck
+
+  controller:
+    if: github.ref == 'refs/heads/main'
+    needs: selftest
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      GH_TOKEN: ${{ github.token }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN || secrets.CF_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || secrets.CF_ACCOUNT_ID || vars.CLOUDFLARE_ACCOUNT_ID || vars.CF_ACCOUNT_ID }}
+      GOOGLE_DATA_MANAGER_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_DATA_MANAGER_SERVICE_ACCOUNT_JSON }}
+      GOOGLE_ADS_LOGIN_CUSTOMER_ID: ${{ secrets.GOOGLE_ADS_LOGIN_CUSTOMER_ID || vars.GOOGLE_ADS_LOGIN_CUSTOMER_ID }}
+      ACTIVATION_PR_NUMBER: "3"
+      ACTIVATION_BRANCH: "feat/ads-line-production-activation"
+      PRODUCTION_WORKER_NAME: "google-ads-uploader-production"
+      EXPECTED_PRODUCTION_D1_NAME: "hanyao-attribution-production"
+      EXPECTED_PRODUCTION_D1_ID: "52453bad-90a3-4495-911b-c3d5b6cefb1f"
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Classify provider material
+        id: material
+        shell: bash
+        run: |
+          set -euo pipefail
+          cf_token=MISSING
+          cf_account=MISSING
+          google=MISSING
+          [[ -n "${CLOUDFLARE_API_TOKEN:-}" ]] && cf_token=PRESENT
+          [[ -n "${CLOUDFLARE_ACCOUNT_ID:-}" ]] && cf_account=PRESENT
+          [[ -n "${GOOGLE_DATA_MANAGER_SERVICE_ACCOUNT_JSON:-}" ]] && google=PRESENT
+          ready=false
+          [[ "$cf_token" == PRESENT && "$cf_account" == PRESENT && "$google" == PRESENT ]] && ready=true
+          echo "ready=$ready" >> "$GITHUB_OUTPUT"
+          {
+            echo "## Provider material"
+            echo "- Cloudflare API token: $cf_token"
+            echo "- Cloudflare account ID: $cf_account"
+            echo "- Google service account: $google"
+            echo "- Provider ready: $ready"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Stop safely when provider material is absent
+        if: steps.material.outputs.ready != 'true'
+        run: |
+          echo "PRODUCTION_AUTO_ACTIVATION=WAITING_FOR_PROVIDER_MATERIAL" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Verify Google Data Manager OAuth
+        if: steps.material.outputs.ready == 'true'
+        run: node --experimental-strip-types scripts/line4b-google-auth-preflight.ts
+
+      - name: Validate Data Manager destination without creating a conversion
+        if: steps.material.outputs.ready == 'true'
+        run: node --experimental-strip-types scripts/line4b-data-manager-destination-preflight.ts
+
+      - name: Verify Google Ads live conversion gate
+        if: steps.material.outputs.ready == 'true'
+        run: node --experimental-strip-types scripts/line4b-google-ads-live-preflight.ts
+
+      - name: Verify exact Cloudflare Production D1
+        if: steps.material.outputs.ready == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx wrangler d1 list --json > /tmp/d1-list.json
+          node <<'NODE'
+          const fs = require('node:fs');
+          const rows = JSON.parse(fs.readFileSync('/tmp/d1-list.json', 'utf8'));
+          const name = process.env.EXPECTED_PRODUCTION_D1_NAME;
+          const id = process.env.EXPECTED_PRODUCTION_D1_ID;
+          const match = Array.isArray(rows) && rows.some((row) =>
+            row && row.name === name && (row.uuid === id || row.id === id)
+          );
+          if (!match) throw new Error('PRODUCTION_D1_IDENTITY_MISMATCH');
+          console.log('PRODUCTION_D1_IDENTITY=PASS');
+          NODE
+
+      - name: Determine source activation state
+        if: steps.material.outputs.ready == 'true'
+        id: source_state
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs = require('node:fs');
+          const config = JSON.parse(fs.readFileSync('workers/google-ads-uploader/wrangler.jsonc', 'utf8'));
+          const crons = config.env?.production?.triggers?.crons;
+          const armed = Array.isArray(crons) && crons.length === 1 && crons[0] === '*/5 * * * *';
+          const disarmed = Array.isArray(crons) && crons.length === 0;
+          if (!armed && !disarmed) throw new Error('INVALID_PRODUCTION_CRON_SOURCE_STATE');
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `armed=${armed}\n`);
+          console.log(`PRODUCTION_SOURCE_CRON=${armed ? 'ARMED' : 'DISARMED'}`);
+          NODE
+
+      - name: Verify or migrate Production D1 schema
+        if: steps.material.outputs.ready == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx wrangler d1 execute ATTRIBUTION_DB --remote --env production \
+            --config workers/google-ads-uploader/wrangler.jsonc \
+            --command "PRAGMA table_info(conversion_outbox);" --json > /tmp/d1-schema-before.json
+          complete=$(node <<'NODE'
+          const fs = require('node:fs');
+          const text = JSON.stringify(JSON.parse(fs.readFileSync('/tmp/d1-schema-before.json','utf8')));
+          const required = ['conversion_id','transaction_id','status','retry_count','next_retry_at','submitted_at','google_request_id','next_diagnostic_at','terminal_result','last_error_reason','diagnostic_status','diagnostic_record_count','diagnostic_error_reason','diagnostic_attempt_count','updated_at'];
+          process.stdout.write(required.every((name) => text.includes(`\"${name}\"`)) ? 'true' : 'false');
+          NODE
+          )
+          if [[ "$complete" != "true" ]]; then
+            npx wrangler d1 migrations apply ATTRIBUTION_DB --remote --env production \
+              --config workers/google-ads-uploader/wrangler.jsonc --yes
+          fi
+          npx wrangler d1 execute ATTRIBUTION_DB --remote --env production \
+            --config workers/google-ads-uploader/wrangler.jsonc \
+            --command "PRAGMA table_info(conversion_outbox); SELECT name FROM sqlite_master WHERE type='table' AND name='line_events';" \
+            --json > /tmp/d1-schema-after.json
+          node <<'NODE'
+          const fs = require('node:fs');
+          const text = JSON.stringify(JSON.parse(fs.readFileSync('/tmp/d1-schema-after.json','utf8')));
+          const required = ['conversion_id','lead_token','conversion_type','event_timestamp','transaction_id','destination_key','status','retry_count','next_retry_at','submitted_at','google_request_id','next_diagnostic_at','terminal_result','last_error_reason','diagnostic_status','diagnostic_record_count','diagnostic_error_reason','diagnostic_attempt_count','updated_at','line_events'];
+          const missing = required.filter((name) => !text.includes(`\"${name}\"`));
+          if (missing.length) throw new Error(`PRODUCTION_D1_SCHEMA_INCOMPLETE:${missing.join(',')}`);
+          console.log('PRODUCTION_D1_SCHEMA=PASS');
+          NODE
+
+      - name: Build ephemeral Production secrets file
+        if: steps.material.outputs.ready == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs = require('node:fs');
+          const credential = process.env.GOOGLE_DATA_MANAGER_SERVICE_ACCOUNT_JSON;
+          if (!credential) throw new Error('GOOGLE_DATA_MANAGER_SERVICE_ACCOUNT_JSON_MISSING');
+          fs.writeFileSync('/tmp/hanyao-production-secrets.json', JSON.stringify({
+            GOOGLE_DATA_MANAGER_SERVICE_ACCOUNT_JSON: credential,
+            PRODUCTION_HUMAN_GATE: 'HUMAN_GATE_CONFIRMED'
+          }), { mode: 0o600 });
+          NODE
+
+      - name: Deploy and verify disarmed candidate before first activation
+        if: steps.material.outputs.ready == 'true' && steps.source_state.outputs.armed != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx wrangler deploy --env production \
+            --config workers/google-ads-uploader/wrangler.jsonc \
+            --secrets-file /tmp/hanyao-production-secrets.json
+          http_code=$(curl -sS -o /tmp/candidate-schedules.json -w "%{http_code}" \
+            "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/scripts/${PRODUCTION_WORKER_NAME}/schedules" \
+            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}")
+          [[ "$http_code" == "200" ]] || { echo "CLOUDFLARE_SCHEDULE_READ_HTTP=$http_code"; exit 1; }
+          node <<'NODE'
+          const fs = require('node:fs');
+          const body = JSON.parse(fs.readFileSync('/tmp/candidate-schedules.json','utf8'));
+          const schedules = body?.result?.schedules ?? body?.result ?? body?.schedules;
+          if (!Array.isArray(schedules) || schedules.length !== 0) throw new Error('CANDIDATE_CRON_NOT_DISARMED');
+          console.log('PRODUCTION_CANDIDATE_CRON=DISARMED_PASS');
+          NODE
+          npx wrangler secret list --env production \
+            --config workers/google-ads-uploader/wrangler.jsonc --format json > /tmp/candidate-secrets.json
+          node <<'NODE'
+          const fs = require('node:fs');
+          const parsed = JSON.parse(fs.readFileSync('/tmp/candidate-secrets.json','utf8'));
+          const names = new Set((Array.isArray(parsed) ? parsed : []).map((x) => x?.name).filter(Boolean));
+          for (const name of ['GOOGLE_DATA_MANAGER_SERVICE_ACCOUNT_JSON','PRODUCTION_HUMAN_GATE']) {
+            if (!names.has(name)) throw new Error(`PRODUCTION_SECRET_MISSING:${name}`);
+          }
+          console.log('PRODUCTION_CANDIDATE_SECRET_READBACK=PASS');
+          NODE
+
+      - name: Validate exact Activation PR and branch
+        if: steps.material.outputs.ready == 'true' && steps.source_state.outputs.armed != 'true'
+        id: activation_pr
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh api "repos/${GITHUB_REPOSITORY}/pulls/${ACTIVATION_PR_NUMBER}" > /tmp/activation-pr.json
+          git fetch origin "main" "${ACTIVATION_BRANCH}"
+          node <<'NODE'
+          const fs = require('node:fs');
+          const pr = JSON.parse(fs.readFileSync('/tmp/activation-pr.json','utf8'));
+          if (pr.state !== 'open') throw new Error('ACTIVATION_PR_NOT_OPEN');
+          if (pr.base?.ref !== 'main') throw new Error('ACTIVATION_PR_BASE_MISMATCH');
+          if (pr.head?.ref !== process.env.ACTIVATION_BRANCH) throw new Error('ACTIVATION_PR_HEAD_MISMATCH');
+          if (pr.mergeable === false) throw new Error('ACTIVATION_PR_NOT_MERGEABLE');
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `head_sha=${pr.head.sha}\n`);
+          NODE
+          actual=$(git rev-parse "origin/${ACTIVATION_BRANCH}")
+          expected=$(node -p "JSON.parse(require('fs').readFileSync('/tmp/activation-pr.json','utf8')).head.sha")
+          [[ "$actual" == "$expected" ]] || { echo "ACTIVATION_HEAD_READBACK_MISMATCH"; exit 1; }
+          printf '%s\n' \
+            '.github/workflows/ads-line-production-activation-pr.yml' \
+            'scripts/line4b-production-config.test.mjs' \
+            'scripts/line4c-production-activation-config.test.mjs' \
+            'workers/google-ads-uploader/wrangler.jsonc' \
+            | sort > /tmp/expected-files.txt
+          git diff --name-only origin/main..."origin/${ACTIVATION_BRANCH}" | sort > /tmp/actual-files.txt
+          diff -u /tmp/expected-files.txt /tmp/actual-files.txt
+          echo "ACTIVATION_PR_SCOPE=PASS"
+
+      - name: Re-run Activation PR acceptance on exact head
+        if: steps.material.outputs.ready == 'true' && steps.source_state.outputs.armed != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git checkout --detach "${{ steps.activation_pr.outputs.head_sha }}"
+          node scripts/line4b-production-config.test.mjs
+          node scripts/line4c-production-activation-config.test.mjs
+          npm run typecheck
+          npx wrangler deploy --dry-run --env production \
+            --config workers/google-ads-uploader/wrangler.jsonc \
+            --secrets-file /tmp/hanyao-production-secrets.json \
+            --outdir .wrangler-dryrun/auto-activation
+
+      - name: Merge exact Activation PR
+        if: steps.material.outputs.ready == 'true' && steps.source_state.outputs.armed != 'true'
+        id: merge_activation
+        shell: bash
+        run: |
+          set -euo pipefail
+          head_sha="${{ steps.activation_pr.outputs.head_sha }}"
+          gh api --method PUT "repos/${GITHUB_REPOSITORY}/pulls/${ACTIVATION_PR_NUMBER}/merge" \
+            -f merge_method=squash -f sha="$head_sha" > /tmp/merge-result.json
+          node <<'NODE'
+          const fs = require('node:fs');
+          const result = JSON.parse(fs.readFileSync('/tmp/merge-result.json','utf8'));
+          if (result.merged !== true || !result.sha) throw new Error(`ACTIVATION_MERGE_FAILED:${result.message ?? 'UNKNOWN'}`);
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `merge_sha=${result.sha}\n`);
+          console.log('ACTIVATION_PR_MERGE=PASS');
+          NODE
+          git fetch origin main
+          remote_main=$(git rev-parse origin/main)
+          [[ "$remote_main" == "${{ steps.merge_activation.outputs.merge_sha }}" ]] || { echo "MAIN_POST_MERGE_READBACK_MISMATCH"; exit 1; }
+          git checkout --detach origin/main
+          node scripts/line4c-production-activation-config.test.mjs
+
+      - name: Read current remote Cron state
+        if: steps.material.outputs.ready == 'true'
+        id: remote_cron
+        shell: bash
+        run: |
+          set -euo pipefail
+          http_code=$(curl -sS -o /tmp/current-schedules.json -w "%{http_code}" \
+            "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/scripts/${PRODUCTION_WORKER_NAME}/schedules" \
+            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}")
+          if [[ "$http_code" == "404" ]]; then
+            echo "armed=false" >> "$GITHUB_OUTPUT"
+            echo "PRODUCTION_REMOTE_WORKER=MISSING" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          [[ "$http_code" == "200" ]] || { echo "CLOUDFLARE_SCHEDULE_READ_HTTP=$http_code"; exit 1; }
+          node <<'NODE'
+          const fs = require('node:fs');
+          const body = JSON.parse(fs.readFileSync('/tmp/current-schedules.json','utf8'));
+          const schedules = body?.result?.schedules ?? body?.result ?? body?.schedules;
+          if (!Array.isArray(schedules)) throw new Error('CLOUDFLARE_SCHEDULE_RESPONSE_MALFORMED');
+          const armed = schedules.length === 1 && schedules[0]?.cron === '*/5 * * * *';
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `armed=${armed}\n`);
+          console.log(`PRODUCTION_REMOTE_CRON=${armed ? 'ARMED' : 'NOT_ARMED'}`);
+          NODE
+
+      - name: Converge Production Worker to armed main configuration
+        if: steps.material.outputs.ready == 'true' && steps.remote_cron.outputs.armed != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          git checkout --detach origin/main
+          node scripts/line4c-production-activation-config.test.mjs
+          npx wrangler deploy --env production \
+            --config workers/google-ads-uploader/wrangler.jsonc \
+            --secrets-file /tmp/hanyao-production-secrets.json
+
+      - name: Verify exact armed Cron from Cloudflare
+        if: steps.material.outputs.ready == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          http_code=$(curl -sS -o /tmp/armed-schedules.json -w "%{http_code}" \
+            "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/scripts/${PRODUCTION_WORKER_NAME}/schedules" \
+            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}")
+          [[ "$http_code" == "200" ]] || { echo "CLOUDFLARE_SCHEDULE_READ_HTTP=$http_code"; exit 1; }
+          node <<'NODE'
+          const fs = require('node:fs');
+          const body = JSON.parse(fs.readFileSync('/tmp/armed-schedules.json','utf8'));
+          const schedules = body?.result?.schedules ?? body?.result ?? body?.schedules;
+          if (!Array.isArray(schedules) || schedules.length !== 1 || schedules[0]?.cron !== '*/5 * * * *') {
+            throw new Error('PRODUCTION_CRON_READBACK_MISMATCH');
+          }
+          console.log('PRODUCTION_CRON_READBACK=PASS');
+          NODE
+
+      - name: Read privacy-safe Production E2E state
+        if: steps.material.outputs.ready == 'true'
+        id: e2e_d1
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx wrangler d1 execute ATTRIBUTION_DB --remote --env production \
+            --config workers/google-ads-uploader/wrangler.jsonc \
+            --command "SELECT (SELECT COUNT(*) FROM line_events WHERE match_status='MATCHED_ADS') AS matched_ads, (SELECT COUNT(*) FROM conversion_outbox) AS outbox_total, (SELECT COUNT(*) FROM conversion_outbox WHERE status IN ('success','deduplicated','sent')) AS success_equivalent, (SELECT COUNT(*) FROM conversion_outbox WHERE status='pending') AS pending, (SELECT COUNT(*) FROM conversion_outbox WHERE status='submitted') AS submitted, (SELECT COUNT(*) FROM conversion_outbox WHERE status='failed') AS failed, (SELECT MAX(created_at) FROM line_events WHERE match_status='MATCHED_ADS') AS latest_matched_ads_at, (SELECT MAX(sent_at) FROM conversion_outbox WHERE status IN ('success','deduplicated','sent')) AS latest_success_at;" \
+            --json > /tmp/e2e-d1.json
+          node <<'NODE'
+          const fs = require('node:fs');
+          const payload = JSON.parse(fs.readFileSync('/tmp/e2e-d1.json','utf8'));
+          let row = null;
+          const visit = (value) => {
+            if (!value || row) return;
+            if (Array.isArray(value)) return value.forEach(visit);
+            if (typeof value !== 'object') return;
+            if ('matched_ads' in value && 'success_equivalent' in value) { row = value; return; }
+            Object.values(value).forEach(visit);
+          };
+          visit(payload);
+          if (!row) throw new Error('E2E_D1_SUMMARY_MALFORMED');
+          const matched = Number(row.matched_ads ?? 0);
+          const success = Number(row.success_equivalent ?? 0);
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `matched_ads=${matched}\n`);
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `success_equivalent=${success}\n`);
+          fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, `\n## Production E2E D1\n- MATCHED_ADS: ${matched}\n- Outbox total: ${Number(row.outbox_total ?? 0)}\n- Success-equivalent: ${success}\n- Pending: ${Number(row.pending ?? 0)}\n- Submitted: ${Number(row.submitted ?? 0)}\n- Failed: ${Number(row.failed ?? 0)}\n- Latest MATCHED_ADS: ${row.latest_matched_ads_at ?? 'none'}\n- Latest success: ${row.latest_success_at ?? 'none'}\n`);
+          NODE
+
+      - name: Read Google Ads reporting visibility
+        if: steps.material.outputs.ready == 'true'
+        id: ads_reporting
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --experimental-strip-types scripts/line4d-google-ads-reporting-monitor.ts | tee /tmp/ads-reporting.json
+          visible=$(node -p "JSON.parse(require('fs').readFileSync('/tmp/ads-reporting.json','utf8')).reportingVisible ? 'true' : 'false'")
+          echo "visible=$visible" >> "$GITHUB_OUTPUT"
+
+      - name: Declare final Production E2E PASS once
+        if: steps.material.outputs.ready == 'true' && steps.e2e_d1.outputs.matched_ads != '0' && steps.e2e_d1.outputs.success_equivalent != '0' && steps.ads_reporting.outputs.visible == 'true'
+        id: final_pass
+        shell: bash
+        run: |
+          set -euo pipefail
+          existing=$(gh api "repos/${GITHUB_REPOSITORY}/issues/${ACTIVATION_PR_NUMBER}/comments" --paginate --jq '[.[].body | contains("ADS_LINE_PRODUCTION_E2E_PASS")] | any')
+          if [[ "$existing" != "true" ]]; then
+            gh pr comment "$ACTIVATION_PR_NUMBER" --repo "$GITHUB_REPOSITORY" --body "ADS_LINE_PRODUCTION_E2E_PASS\n\nAutomated readback confirmed: Production Cron is armed at five minutes, Production D1 contains at least one MATCHED_ADS event, the conversion outbox contains at least one success-equivalent upload, and Google Ads reports all_conversions > 0 for conversion action 7674301565. No click IDs, LINE user identifiers, lead tokens, credentials, or private payloads are recorded in this audit marker."
+          fi
+          echo "ADS_LINE_PRODUCTION_E2E_PASS=TRUE" >> "$GITHUB_STEP_SUMMARY"
+          echo "passed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Disable watcher after final PASS
+        if: steps.final_pass.outputs.passed == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh api --method PUT "repos/${GITHUB_REPOSITORY}/actions/workflows/ads-line-auto-activator.yml/disable"
+          echo "AUTO_ACTIVATOR_DISABLED_AFTER_FINAL_PASS=TRUE" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Cleanup ephemeral secret material
+        if: always()
+        shell: bash
+        run: rm -f /tmp/hanyao-production-secrets.json /tmp/hanyao-ci-secrets.json
