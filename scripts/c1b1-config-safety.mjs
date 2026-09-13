@@ -2,8 +2,10 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 const PLACEHOLDER = "C1B1_LOCAL_ONLY_NO_PRODUCTION_ID";
-const EXPECTED_D1_ID = "78ada4dd-4bcd-4b2d-8a37-aae6207f457a";
-const EXPECTED_D1_NAME = "hanyao-attribution-preview";
+const EXPECTED_PREVIEW_D1_ID = "78ada4dd-4bcd-4b2d-8a37-aae6207f457a";
+const EXPECTED_PREVIEW_D1_NAME = "hanyao-attribution-preview";
+const EXPECTED_PRODUCTION_D1_ID = "52453bad-90a3-4495-911b-c3d5b6cefb1f";
+const EXPECTED_PRODUCTION_D1_NAME = "hanyao-attribution-production";
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const SECRET_KEY_PATTERN = /(secret|token|password|api[_-]?key)/i;
@@ -94,8 +96,19 @@ walk(config, "$config");
 if (secretValuePaths.length > 0) {
   fail(`secret-like config value is not allowed: ${secretValuePaths.join(", ")}`);
 }
-if (Object.prototype.hasOwnProperty.call(config, "d1_databases")) {
-  fail("top-level d1_databases is forbidden; use env.preview.d1_databases");
+const productionDatabases = config?.d1_databases;
+if (!Array.isArray(productionDatabases) || productionDatabases.length !== 1) {
+  fail("top-level d1_databases must contain exactly one Production D1 binding");
+}
+const [productionDatabase] = productionDatabases;
+if (productionDatabase.binding !== "ATTRIBUTION_DB") {
+  fail("Production binding must be ATTRIBUTION_DB");
+}
+if (productionDatabase.database_id !== EXPECTED_PRODUCTION_D1_ID) {
+  fail(`Production database_id must be ${EXPECTED_PRODUCTION_D1_ID}`);
+}
+if (productionDatabase.database_name !== EXPECTED_PRODUCTION_D1_NAME) {
+  fail(`Production database_name must be ${EXPECTED_PRODUCTION_D1_NAME}`);
 }
 
 const previewDatabases = config?.env?.preview?.d1_databases;
@@ -107,11 +120,11 @@ const [previewDatabase] = previewDatabases;
 if (previewDatabase.binding !== "ATTRIBUTION_DB") {
   fail("Preview binding must be ATTRIBUTION_DB");
 }
-if (previewDatabase.database_id !== EXPECTED_D1_ID) {
-  fail(`Preview database_id must be ${EXPECTED_D1_ID}`);
+if (previewDatabase.database_id !== EXPECTED_PREVIEW_D1_ID) {
+  fail(`Preview database_id must be ${EXPECTED_PREVIEW_D1_ID}`);
 }
-if (previewDatabase.database_name !== EXPECTED_D1_NAME) {
-  fail(`Preview database_name must be ${EXPECTED_D1_NAME}`);
+if (previewDatabase.database_name !== EXPECTED_PREVIEW_D1_NAME) {
+  fail(`Preview database_name must be ${EXPECTED_PREVIEW_D1_NAME}`);
 }
 if (previewDatabase.migrations_dir !== "./migrations") {
   fail("Preview migrations_dir must be ./migrations");
@@ -124,14 +137,17 @@ for (const [environment, environmentConfig] of Object.entries(config?.env ?? {})
   }
 }
 
-const allowedDatabaseIdPath = "$config.env.preview.d1_databases.0.database_id";
+const allowedDatabaseIds = new Map([
+  ["$config.d1_databases.0.database_id", EXPECTED_PRODUCTION_D1_ID],
+  ["$config.env.preview.d1_databases.0.database_id", EXPECTED_PREVIEW_D1_ID],
+]);
 for (const { path, value } of databaseIdPaths) {
-  if (path !== allowedDatabaseIdPath || value !== EXPECTED_D1_ID) {
+  if (allowedDatabaseIds.get(path) !== value) {
     fail(`unknown or misplaced D1 UUID: ${path}`);
   }
 }
-if (databaseIdPaths.length !== 1) {
-  fail("exactly one known D1 UUID must be present in env.preview.d1_databases");
+if (databaseIdPaths.length !== allowedDatabaseIds.size) {
+  fail("exactly the known Production and Preview D1 UUIDs must be present");
 }
 
 console.log(`CONFIG_SAFETY_PASS: ${configPath}`);

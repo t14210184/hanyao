@@ -24,9 +24,9 @@ export const onRequest: PageHandler = async ({ request, env }) => {
   if (request.method !== "POST") return methodNotAllowed();
 
   const channelSecret = env.LINE_CHANNEL_SECRET?.trim();
-  if (!channelSecret) {
-    return errorResponse("WEBHOOK_NOT_CONFIGURED", 503);
-  }
+  const identitySecret = env.LINE_USER_KEY_HMAC_SECRET?.trim();
+  if (!channelSecret) return errorResponse("WEBHOOK_NOT_CONFIGURED", 503);
+  if (!identitySecret) return errorResponse("WEBHOOK_IDENTITY_NOT_CONFIGURED", 503);
 
   const body = await readRawRequestBody(
     request,
@@ -49,7 +49,7 @@ export const onRequest: PageHandler = async ({ request, env }) => {
   try {
     const outcomes: Array<"accepted" | "duplicate" | "ignored"> = [];
     for (const event of payload.value.events) {
-      outcomes.push(await processLineWebhookEvent(env.ATTRIBUTION_DB, event));
+      outcomes.push(await processLineWebhookEvent(env.ATTRIBUTION_DB, event, identitySecret));
     }
     return jsonResponse({ status: summarizeOutcomes(outcomes) });
   } catch {

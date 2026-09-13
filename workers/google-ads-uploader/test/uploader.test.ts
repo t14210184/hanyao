@@ -96,6 +96,15 @@ const baseRow = (
   diagnostic_error_reason: null,
   diagnostic_attempt_count: 0,
   updated_at: NOW,
+  business_conversion_id: "business-conversion-1",
+  snapshot_version: 1,
+  eligibility_rule_version: "v1",
+  google_ads_account_id: "4801404246",
+  google_ads_conversion_action_id: "7674301565",
+  event_source: "MESSAGE",
+  lease_generation: 0,
+  lease_owner: null,
+  lease_expires_at: null,
   ...overrides,
 });
 

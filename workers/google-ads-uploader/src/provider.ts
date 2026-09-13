@@ -49,7 +49,7 @@ const parseFieldWarnings = (
 };
 
 export interface IngestResponse {
-  requestId: string;
+  requestId: string | null;
   fieldWarnings: DataManagerFieldWarning[];
 }
 
@@ -84,7 +84,7 @@ export const ingestDataManagerEvent = async (
 
   const record = parseJsonRecord(body);
   const requestId = asNonEmptyString(record?.requestId);
-  if (!requestId) {
+  if (!requestId && !request.validateOnly) {
     throw new ProviderRequestError("INGEST_REQUEST_ID_MISSING", false, response.status);
   }
   return { requestId, fieldWarnings: parseFieldWarnings(record) };

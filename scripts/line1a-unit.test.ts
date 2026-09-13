@@ -143,8 +143,9 @@ test("signed payload parsing exposes only bounded event metadata to the processo
   assert.equal(result.ok, true);
   if (!result.ok) return;
   assert.equal(result.value.events[0].messageText, "HY-AAAAAAAAAA");
-  assert.equal("source" in result.value.events[0], false);
-  assert.equal("userId" in result.value.events[0], false);
+  assert.equal(result.value.events[0].sourceType, "user");
+  assert.equal(result.value.events[0].sourceUserId, "raw-user-must-not-persist");
+  assert.equal(result.value.events[0].isRedelivery, false);
 });
 
 test("raw body reader rejects actual bytes above the 128 KiB limit", async () => {

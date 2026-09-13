@@ -17,6 +17,7 @@
 /.next/
 /out/
 /.wrangler/
+**/.wrangler/
 
 # production
 /build
@@ -42,6 +43,7 @@ yarn-error.log*
 
 # typescript
 next-env.d.ts
+*.tsbuildinfo
 .agents
 local-build.ps1
 local-dev.ps1

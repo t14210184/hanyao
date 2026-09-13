@@ -7,6 +7,7 @@ import {
   retrieveDataManagerStatus,
 } from "../src/provider.ts";
 import {
+  nextDiagnosticAt,
   nextTooRecentRetryAt,
   runScheduledCycle,
   TOO_RECENT_CLICK_REASON,
@@ -352,17 +353,17 @@ test("scheduler invokes bounded stale-claim recovery before normal selection", a
 });
 
 test("D1 stale recovery uses one bounded update and distinguishes upload from diagnostic claims", async () => {
-  let capturedSql = "";
-  let capturedArgs: unknown[] = [];
+  const capturedSql: string[] = [];
+  const capturedArgs: unknown[][] = [];
   const database = {
     prepare(sql: string) {
-      capturedSql = sql;
+      const index = capturedSql.push(sql) - 1;
       return {
         bind(...args: unknown[]) {
-          capturedArgs = args;
+          capturedArgs[index] = args;
           return {
             async run() {
-              return { meta: { changes: 2 } };
+              return { meta: { changes: index === 0 ? 2 : 0 } };
             },
           };
         },
@@ -378,11 +379,295 @@ test("D1 stale recovery uses one bounded update and distinguishes upload from di
   );
 
   assert.equal(changed, 2);
-  assert.match(capturedSql, /status = CASE/);
-  assert.match(capturedSql, /google_request_id IS NULL THEN 'pending'/);
-  assert.match(capturedSql, /ELSE 'submitted'/);
-  assert.match(capturedSql, /status = 'processing'/);
-  assert.match(capturedSql, /updated_at <= \?1/);
-  assert.match(capturedSql, /LIMIT \?3/);
-  assert.deepEqual(capturedArgs, ["2026-08-28T03:30:00.000Z", NOW, 5]);
+  assert.equal(capturedSql.length, 3);
+  assert.match(capturedSql[0], /status = CASE/);
+  assert.match(capturedSql[0], /provider_attempts pa/);
+  assert.match(capturedSql[0], /RECONCILIATION_REQUIRED/);
+  assert.match(capturedSql[0], /STALE_UPLOAD_RETRY_BUDGET_EXHAUSTED/);
+  assert.match(capturedSql[0], /lease_owner = NULL/);
+  assert.match(capturedSql[0], /status = 'processing'/);
+  assert.match(capturedSql[0], /LIMIT \?3/);
+  assert.deepEqual(capturedArgs[0], ["2026-08-28T03:30:00.000Z", NOW, 5, 8]);
+  assert.match(capturedSql[1], /UPDATE business_conversions/);
+  assert.match(capturedSql[1], /outcome_state = 'RECONCILIATION_REQUIRED'/);
+  assert.deepEqual(capturedArgs[1], [NOW, 5]);
+  assert.match(capturedSql[2], /UPDATE provider_delivery_leases/);
+  assert.match(capturedSql[2], /lease_state = 'RECONCILIATION_REQUIRED'/);
+  assert.deepEqual(capturedArgs[2], [NOW, 5]);
+});
+
+
+test("diagnostic backoff anchors each delay to the previous check, not the original submission", () => {
+  const t0 = "2026-08-28T00:00:00.000Z";
+  const t1 = nextDiagnosticAt(t0, 0, () => 0);
+  const t2 = nextDiagnosticAt(t1, 1, () => 0);
+  const t3 = nextDiagnosticAt(t2, 2, () => 0);
+  assert.equal(t1, "2026-08-28T00:30:00.000Z");
+  assert.equal(t2, "2026-08-28T01:09:00.000Z");
+  assert.equal(t3, "2026-08-28T01:59:42.000Z");
+});
+
+test("validateOnly ingest accepts a successful response without requestId", async () => {
+  const fetchImpl = (async () => response({ fieldWarnings: [] })) as FetchLike;
+  const result = await ingestDataManagerEvent(
+    "test-token",
+    { validateOnly: true } as DataManagerIngestRequest,
+    fetchImpl
+  );
+  assert.equal(result.requestId, null);
+});
+
+test("stale lease owner cannot overwrite a newer outbox state", async () => {
+  const database = {
+    prepare() {
+      return {
+        bind() {
+          return { async run() { return { meta: { changes: 0 } }; } };
+        },
+      };
+    },
+  };
+  const repository = new D1OutboxRepository(database as never);
+  const row = baseRow({
+    status: "success",
+    updated_at: NOW,
+    business_conversion_id: "business-hardening-1",
+    lease_generation: 7,
+    lease_owner: "expired-owner",
+    lease_expires_at: "2026-08-28T04:30:00.000Z",
+  });
+  await assert.rejects(repository.save(row), /STALE_LEASE_FENCE/);
+});
+
+test("due upload selector requires canonical eligible business conversion", async () => {
+  let capturedSql = "";
+  const database = {
+    prepare(sql: string) {
+      capturedSql = sql;
+      return {
+        bind() {
+          return { async all() { return { results: [] }; } };
+        },
+      };
+    },
+  };
+  const repository = new D1OutboxRepository(database as never);
+  assert.deepEqual(await repository.listDueUploads(NOW, 5), []);
+  assert.match(capturedSql, /business_conversion_id IS NOT NULL/);
+  assert.match(capturedSql, /eligibility_state = 'ELIGIBLE'/);
+  assert.match(capturedSql, /outcome_state = 'PENDING'/);
+});
+
+test("provider receipt save failure is not converted into a second provider failure write", async () => {
+  const serviceAccountJson = fakeServiceAccountJson();
+  const row = baseRow({
+    status: "pending",
+    retry_count: 0,
+    submitted_at: null,
+    google_request_id: null,
+    next_diagnostic_at: null,
+    business_conversion_id: "business-receipt-1",
+    snapshot_version: 1,
+    eligibility_rule_version: "v1",
+    google_ads_account_id: "4801404246",
+    google_ads_conversion_action_id: "7674301565",
+    event_source: "MESSAGE",
+    lease_generation: 0,
+    lease_owner: null,
+    lease_expires_at: null,
+  });
+  let current = { ...row };
+  let saveCalls = 0;
+  let ingestCalls = 0;
+  const acknowledged: string[] = [];
+  const repository: OutboxRepository = {
+    async listDueUploads() { return [{ ...current }]; },
+    async claimUpload(_id, nowIso) {
+      current = {
+        ...current,
+        status: "processing",
+        retry_count: 1,
+        lease_generation: 1,
+        lease_owner: "receipt-owner",
+        lease_expires_at: "2026-08-28T04:30:00.000Z",
+        updated_at: nowIso,
+      };
+      return { ...current };
+    },
+    async beginProviderAttempt() { return "attempt-receipt-1"; },
+    async recordProviderAcknowledged(_row, attemptId, requestId) {
+      acknowledged.push(`${attemptId}:${requestId}`);
+    },
+    async listDueDiagnostics() { return []; },
+    async claimDiagnostic() { return null; },
+    async cleanupTerminalRows() { return 0; },
+    async save(saved) {
+      saveCalls += 1;
+      if (saved.status === "submitted") {
+        throw new Error("SIMULATED_RECEIPT_SAVE_FAILURE");
+      }
+      current = { ...saved };
+    },
+  };
+  const fetchImpl = (async (input: RequestInfo | URL) => {
+    const url = input.toString();
+    if (url === GOOGLE_OAUTH_TOKEN_URL) {
+      return response({ access_token: FAKE_ACCESS_TOKEN, expires_in: 600 });
+    }
+    if (url === GOOGLE_DATA_MANAGER_EVENTS_URL) {
+      ingestCalls += 1;
+      return response({ requestId: "receipt-request-1", fieldWarnings: [] });
+    }
+    throw new Error(`unexpected URL ${url}`);
+  }) as FetchLike;
+  const env = {
+    ...testEnv(serviceAccountJson),
+    GOOGLE_DATA_MANAGER_VALIDATE_ONLY: "false",
+    UPLOADER_ENVIRONMENT: "production",
+    PRODUCTION_HUMAN_GATE: "HUMAN_GATE_CONFIRMED",
+  };
+  await assert.rejects(
+    runScheduledCycle(env, {
+      repository,
+      fetchImpl,
+      now: new Date(NOW),
+      random: () => 0.5,
+    }),
+    /SIMULATED_RECEIPT_SAVE_FAILURE/
+  );
+  assert.equal(ingestCalls, 1);
+  assert.deepEqual(acknowledged, ["attempt-receipt-1:receipt-request-1"]);
+  assert.equal(saveCalls, 1);
+  assert.equal(current.status, "processing");
+  assert.equal(current.google_request_id, null);
+});
+
+test("provider attempt start persists intent event and delivery lease fence", async () => {
+  const prepared: Array<{ sql: string; args: unknown[] }> = [];
+  const database = {
+    prepare(sql: string) {
+      return {
+        bind(...args: unknown[]) {
+          const statement = { sql, args };
+          prepared.push(statement);
+          return statement;
+        },
+      };
+    },
+    async batch(statements: unknown[]) {
+      assert.equal(statements.length, 3);
+      return [
+        { meta: { changes: 1 } },
+        { meta: { changes: 1 } },
+        { meta: { changes: 1 } },
+      ];
+    },
+  };
+  const repository = new D1OutboxRepository(database as never);
+  const row = baseRow({
+    status: "processing",
+    business_conversion_id: "business-attempt-1",
+    lease_generation: 3,
+    lease_owner: "owner-3",
+    lease_expires_at: "2026-08-28T04:30:00.000Z",
+    transaction_id: "attempt-transaction-1",
+  });
+  const attemptId = await repository.beginProviderAttempt(row, NOW);
+  assert.match(attemptId, /^[0-9a-f-]{36}$/);
+  assert.equal(prepared.length, 3);
+  assert.match(prepared[0].sql, /INSERT INTO provider_attempts/);
+  assert.match(prepared[0].sql, /DELIVER_CONVERSION/);
+  assert.equal(prepared[0].args[1], "business-attempt-1");
+  assert.equal(prepared[0].args[2], "attempt-transaction-1");
+  assert.equal(prepared[0].args[3], 3);
+  assert.match(prepared[1].sql, /ATTEMPT_STARTED/);
+  assert.match(prepared[2].sql, /provider_delivery_leases/);
+  assert.equal(prepared[2].args[0], "business-attempt-1");
+  assert.equal(prepared[2].args[3], 3);
+});
+
+test("ambiguous ingest network result becomes reconciliation-required instead of pending retry", async () => {
+  const serviceAccountJson = fakeServiceAccountJson();
+  let current = baseRow({
+    status: "pending",
+    retry_count: 0,
+    submitted_at: null,
+    google_request_id: null,
+    next_diagnostic_at: null,
+    business_conversion_id: "business-unknown-1",
+    snapshot_version: 1,
+    eligibility_rule_version: "v1",
+    google_ads_account_id: "4801404246",
+    google_ads_conversion_action_id: "7674301565",
+    event_source: "MESSAGE",
+    lease_generation: 0,
+    lease_owner: null,
+    lease_expires_at: null,
+  });
+  let beginCalls = 0;
+  let unknownCalls = 0;
+  let saveCalls = 0;
+  let ingestCalls = 0;
+  const repository: OutboxRepository = {
+    async listDueUploads() { return [{ ...current }]; },
+    async claimUpload(_id, nowIso) {
+      current = {
+        ...current,
+        status: "processing",
+        retry_count: 1,
+        lease_generation: 1,
+        lease_owner: "unknown-owner",
+        lease_expires_at: "2026-08-28T04:30:00.000Z",
+        updated_at: nowIso,
+      };
+      return { ...current };
+    },
+    async listDueDiagnostics() { return []; },
+    async claimDiagnostic() { return null; },
+    async beginProviderAttempt() {
+      beginCalls += 1;
+      return "attempt-unknown-1";
+    },
+    async recordProviderUnknown(_row, attemptId, reason) {
+      unknownCalls += 1;
+      assert.equal(attemptId, "attempt-unknown-1");
+      assert.equal(reason, "INGEST_NETWORK_ERROR");
+    },
+    async cleanupTerminalRows() { return 0; },
+    async save(saved) {
+      saveCalls += 1;
+      current = { ...saved, lease_owner: null, lease_expires_at: null };
+    },
+  };
+  const fetchImpl = (async (input: RequestInfo | URL) => {
+    const url = input.toString();
+    if (url === GOOGLE_OAUTH_TOKEN_URL) {
+      return response({ access_token: FAKE_ACCESS_TOKEN, expires_in: 600 });
+    }
+    if (url === GOOGLE_DATA_MANAGER_EVENTS_URL) {
+      ingestCalls += 1;
+      throw new Error("simulated ambiguous network result");
+    }
+    throw new Error(`unexpected URL ${url}`);
+  }) as FetchLike;
+  const env = {
+    ...testEnv(serviceAccountJson),
+    GOOGLE_DATA_MANAGER_VALIDATE_ONLY: "false",
+    UPLOADER_ENVIRONMENT: "production",
+    PRODUCTION_HUMAN_GATE: "HUMAN_GATE_CONFIRMED",
+  };
+  await runScheduledCycle(env, {
+    repository,
+    fetchImpl,
+    now: new Date(NOW),
+    random: () => 0.5,
+  });
+  assert.equal(beginCalls, 1);
+  assert.equal(unknownCalls, 1);
+  assert.equal(ingestCalls, 1);
+  assert.equal(saveCalls, 1);
+  assert.equal(current.status, "failed");
+  assert.equal(current.next_retry_at, null);
+  assert.equal(current.terminal_result, "INGEST_NETWORK_ERROR");
+  assert.equal(current.last_error_code, "INGEST_NETWORK_ERROR");
 });

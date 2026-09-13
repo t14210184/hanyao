@@ -49,16 +49,15 @@ export const nextRetryAt = (
 };
 
 export const nextDiagnosticAt = (
-  submittedAtIso: string,
+  anchorIso: string,
   diagnosticAttemptCount: number,
   random: () => number = Math.random
 ): string => {
   const exponential = FIRST_DIAGNOSTIC_DELAY_MS * Math.pow(1.3, diagnosticAttemptCount);
   const base = Math.min(exponential, DIAGNOSTIC_DELAY_CAP_MS);
-  // Jitter is non-negative so the first diagnostic is never earlier than 30m.
   const jitterFactor = 1 + boundedRandom(random) * 0.2;
   return new Date(
-    Date.parse(submittedAtIso) + Math.min(base * jitterFactor, DIAGNOSTIC_DELAY_CAP_MS)
+    Date.parse(anchorIso) + Math.min(base * jitterFactor, DIAGNOSTIC_DELAY_CAP_MS)
   ).toISOString();
 };
 
@@ -194,7 +193,7 @@ const writeDiagnosticRetry = async (
 ): Promise<void> => {
   row.status = "submitted";
   row.next_diagnostic_at = nextDiagnosticAt(
-    row.submitted_at || nowIso,
+    nowIso,
     row.diagnostic_attempt_count,
     random
   );
@@ -325,23 +324,60 @@ const processUpload = async (
     return;
   }
 
+  let attemptId: string | null = null;
+  if (!config.validateOnly && repository.beginProviderAttempt) {
+    attemptId = await repository.beginProviderAttempt(row, nowIso);
+  }
+
+  let response;
   try {
-    const response = await ingestDataManagerEvent(accessToken, request, fetchImpl);
+    response = await ingestDataManagerEvent(accessToken, request, fetchImpl);
     logIngestWarnings(logger, response.fieldWarnings);
-    if (config.validateOnly) {
-      await writeValidatedOnly(repository, row, nowIso);
-    } else {
-      await writeSubmitted(repository, row, response.requestId, nowIso, random);
-    }
   } catch (error) {
-    await writeFailure(
-      repository,
+    const providerError = asProviderError(error, "INGEST_REQUEST_FAILED");
+    if (!config.validateOnly && providerError.code === "INGEST_NETWORK_ERROR") {
+      if (attemptId && repository.recordProviderUnknown) {
+        await repository.recordProviderUnknown(
+          row,
+          attemptId,
+          providerError.providerReason || providerError.code,
+          nowIso
+        );
+      }
+      await writeFailure(
+        repository,
+        row,
+        new ProviderRequestError(
+          providerError.code,
+          false,
+          providerError.httpStatus,
+          providerError.providerReason
+        ),
+        nowIso,
+        random
+      );
+      return;
+    }
+    await writeFailure(repository, row, providerError, nowIso, random);
+    return;
+  }
+
+  if (config.validateOnly) {
+    await writeValidatedOnly(repository, row, nowIso);
+    return;
+  }
+  if (!response.requestId) {
+    throw new Error("INGEST_REQUEST_ID_MISSING_AFTER_PROVIDER_ACCEPT");
+  }
+  if (attemptId && repository.recordProviderAcknowledged) {
+    await repository.recordProviderAcknowledged(
       row,
-      asProviderError(error, "INGEST_REQUEST_FAILED"),
-      nowIso,
-      random
+      attemptId,
+      response.requestId,
+      nowIso
     );
   }
+  await writeSubmitted(repository, row, response.requestId, nowIso, random);
 };
 
 const processDiagnostic = async (
@@ -426,7 +462,7 @@ const processDiagnostic = async (
     if (response.status === "PROCESSING") {
       row.status = "submitted";
       row.next_diagnostic_at = nextDiagnosticAt(
-        row.submitted_at,
+        nowIso,
         row.diagnostic_attempt_count,
         random
       );
@@ -519,6 +555,13 @@ const processDiagnostic = async (
       nowIso
     );
   } catch (error) {
+    if (
+      error instanceof Error &&
+      (error.message === "STALE_LEASE_FENCE" ||
+        error.message === "OUTBOX_LEASE_CONTEXT_MISSING")
+    ) {
+      throw error;
+    }
     const providerError = asProviderError(error, "DIAGNOSTIC_REQUEST_FAILED");
     if (providerError.retryable && !isPastDiagnosticTimebox(row, nowIso)) {
       await writeDiagnosticRetry(repository, row, providerError, nowIso, random);

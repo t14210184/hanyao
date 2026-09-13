@@ -1,5 +1,9 @@
 import { exchangeServiceAccountTokenForScopes } from "../workers/google-ads-uploader/src/auth.ts";
 import { GOOGLE_ADS_SCOPE } from "../workers/google-ads-uploader/src/types.ts";
+import {
+  evaluateReportingEvidence,
+  type ReportingSnapshot,
+} from "./line4d-reporting-evidence.ts";
 
 const CUSTOMER_ID = "4801404246";
 const CONVERSION_ACTION_ID = "7674301565";
@@ -8,6 +12,7 @@ const API_URL = `https://googleads.googleapis.com/${API_VERSION}/customers/${CUS
 
 const credential = process.env.GOOGLE_DATA_MANAGER_SERVICE_ACCOUNT_JSON?.trim();
 const loginCustomerId = process.env.GOOGLE_ADS_LOGIN_CUSTOMER_ID?.replace(/-/g, "").trim();
+const reportingBaselineJson = process.env.GOOGLE_ADS_REPORTING_BASELINE_JSON?.trim();
 
 if (!credential) {
   console.log("GOOGLE_ADS_REPORTING_MONITOR=SKIPPED_NO_GITHUB_CREDENTIAL");
@@ -42,6 +47,25 @@ const rowsFrom = (payload: unknown): RecordLike[] => {
     }
   }
   return rows;
+};
+
+const baselineFromEnv = (): ReportingSnapshot | null => {
+  if (!reportingBaselineJson) return null;
+  const record = asRecord(JSON.parse(reportingBaselineJson));
+  if (!record) throw new Error("REPORTING_BASELINE_INVALID");
+  const allConversions = asNumber(record.allConversions);
+  const customerId = asString(record.customerId);
+  const conversionActionId = asString(record.conversionActionId);
+  if (allConversions === null || !customerId || !conversionActionId) {
+    throw new Error("REPORTING_BASELINE_INVALID");
+  }
+  return {
+    customerId,
+    conversionActionId,
+    allConversions,
+    lastConversionDate: asString(record.lastConversionDate),
+    lastReceivedRequestDateTime: asString(record.lastReceivedRequestDateTime),
+  };
 };
 
 try {
@@ -81,19 +105,25 @@ try {
   const rows = rowsFrom(JSON.parse(text));
   if (rows.length !== 1) throw new Error("CONVERSION_ACTION_REPORTING_ROW_NOT_FOUND");
   const metrics = asRecord(rows[0].metrics) ?? {};
-  const allConversions = asNumber(metrics.allConversions) ?? 0;
-  const lastConversionDate = asString(metrics.conversionLastConversionDate);
-  const lastReceivedRequestDateTime = asString(metrics.conversionLastReceivedRequestDateTime);
+  const currentSnapshot: ReportingSnapshot = {
+    customerId: CUSTOMER_ID,
+    conversionActionId: CONVERSION_ACTION_ID,
+    allConversions: asNumber(metrics.allConversions) ?? 0,
+    lastConversionDate: asString(metrics.conversionLastConversionDate),
+    lastReceivedRequestDateTime: asString(metrics.conversionLastReceivedRequestDateTime),
+  };
+  const baseline = baselineFromEnv();
+  const evidence = evaluateReportingEvidence(currentSnapshot, baseline);
 
   console.log(
     JSON.stringify({
-      result: "GOOGLE_ADS_REPORTING_MONITOR_PASS",
-      customerId: CUSTOMER_ID,
-      conversionActionId: CONVERSION_ACTION_ID,
-      allConversions,
-      lastConversionDate,
-      lastReceivedRequestDateTime,
-      reportingVisible: allConversions > 0,
+      result: evidence.reportingVisible
+        ? "GOOGLE_ADS_REPORTING_DELTA_CONFIRMED"
+        : "GOOGLE_ADS_REPORTING_UNVERIFIED",
+      ...currentSnapshot,
+      baselineProvided: baseline !== null,
+      ...evidence,
+      baselineSnapshot: baseline === null ? currentSnapshot : undefined,
     })
   );
 } catch (error) {

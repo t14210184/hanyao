@@ -13,14 +13,17 @@ import { tmpdir } from "node:os";
 import { spawn, spawnSync } from "node:child_process";
 
 const cwd = process.cwd();
-const wrangler = join(cwd, "node_modules/.bin/wrangler");
+const wrangler = join(cwd, "node_modules", "wrangler", "bin", "wrangler.js");
 const secret = "line1a-local-dummy-secret";
+const identitySecret = "line1a-local-dummy-identity-secret";
+const expectedDestination = "Ua84119b8b81029fd10868116f1937d13";
+const canonicalEventTimestamp = Date.parse("2026-09-09T12:00:00.000Z");
 const compatibilityDate = "2026-08-24";
 const nowIso = "2026-08-25T12:00:00.000Z";
 const expiresIso = "2026-11-23T12:00:00.000Z";
 
 const run = (args, runCwd = cwd) => {
-  const result = spawnSync(wrangler, args, {
+  const result = spawnSync(process.execPath, [wrangler, ...args], {
     cwd: runCwd,
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"],
@@ -125,6 +128,14 @@ const makeMigrationRoots = () => {
     join(cwd, "migrations/0004_google_uploader_state.sql"),
     join(v3, "migrations/0004_google_uploader_state.sql")
   );
+  for (const name of [
+    "0005_business_conversion_identity_contract.sql",
+    "0006_p1c2_i2_canonical_integrity.sql",
+    "0007_canonical_outbox_delivery.sql",
+    "0008_attribution_abuse_rate_state.sql",
+  ]) {
+    copyFileSync(join(cwd, "migrations", name), join(v3, "migrations", name));
+  }
   return {
     v1: writeConfig(v1, "./migrations"),
     v2: writeConfig(v2, "./migrations"),
@@ -146,7 +157,8 @@ const makeRuntime = (migrationsRoot, persistTo, port, withSecret) => {
   if (withSecret) {
     writeFileSync(
       join(runtimeDir, ".dev.vars"),
-      "LINE_CHANNEL_SECRET=" + JSON.stringify(secret) + "\n"
+      "LINE_CHANNEL_SECRET=" + JSON.stringify(secret) + "\n" +
+        "LINE_USER_KEY_HMAC_SECRET=" + JSON.stringify(identitySecret) + "\n"
     );
   }
   return { runtimeDir, configPath, persistTo, port };
@@ -172,8 +184,8 @@ const startServer = async (runtime) => {
   const baseUrl = "http://127.0.0.1:" + runtime.port;
   const output = [];
   const server = spawn(
-    wrangler,
-    [
+    process.execPath,
+    [wrangler,
       "pages",
       "dev",
       "out",
@@ -235,26 +247,32 @@ const postRaw = async (
 };
 
 const postPayload = async (baseUrl, payload, options = {}) =>
-  postRaw(baseUrl, JSON.stringify(payload), options);
+  postRaw(
+    baseUrl,
+    JSON.stringify({ destination: expectedDestination, ...payload }),
+    options
+  );
 
 const lineTextEvent = (
-  webhookEventId,
-  messageId,
-  text,
-  timestamp = 1787659200000
+  webhookEventId, messageId, text,
+  timestamp = canonicalEventTimestamp,
+  userId = "line-user-" + webhookEventId,
+  sourceType = "user",
+  isRedelivery = false
 ) => ({
-  type: "message",
-  webhookEventId,
-  timestamp,
-  source: { type: "user", userId: "line-user-test-only" },
+  type: "message", webhookEventId, timestamp,
+  source: userId ? { type: sourceType, userId } : { type: sourceType },
+  deliveryContext: { isRedelivery },
   message: { id: messageId, type: "text", text },
 });
 
-const lineFollowEvent = (webhookEventId, timestamp = 1787659200000) => ({
-  type: "follow",
-  webhookEventId,
-  timestamp,
-  source: { type: "user", userId: "line-user-test-only" },
+const lineFollowEvent = (
+  webhookEventId, timestamp = canonicalEventTimestamp,
+  userId = "line-user-" + webhookEventId
+) => ({
+  type: "follow", webhookEventId, timestamp,
+  source: { type: "user", userId },
+  deliveryContext: { isRedelivery: false },
 });
 
 const assertStatus = (result, status, label) => {
@@ -269,7 +287,7 @@ const lineEvents = (configPath, persistTo) =>
   execute(
     configPath,
     persistTo,
-    "SELECT line_event_id, webhook_event_id, message_id, lead_token, event_type, match_status, line_event_timestamp, line_user_key FROM line_events ORDER BY created_at, line_event_id;"
+    "SELECT line_event_id, webhook_event_id, message_id, lead_token, event_type, match_status, line_event_timestamp, line_user_key, identity_state, identity_key_id, line_destination, business_subject_kind, business_subject_key FROM line_events ORDER BY created_at, line_event_id;"
   )[0].results;
 
 const outboxRows = (configPath, persistTo) =>
@@ -279,6 +297,22 @@ const outboxRows = (configPath, persistTo) =>
     "SELECT conversion_id, lead_token, conversion_type, event_timestamp, gclid, gbraid, wbraid, attribution_touch, transaction_id, destination_key, status, retry_count, next_retry_at, last_error_code, sent_at FROM conversion_outbox ORDER BY created_at, conversion_id;"
   )[0].results;
 
+const businessRows = (configPath, persistTo) =>
+  execute(configPath, persistTo,
+    "SELECT business_conversion_id, first_lead_token, subject_kind, subject_key, transaction_id, dedupe_until, eligibility_state, outcome_state FROM business_conversions ORDER BY created_at, business_conversion_id;"
+  )[0].results;
+const tokenClaims = (configPath, persistTo) =>
+  execute(configPath, persistTo,
+    "SELECT lead_token, claimant_kind, claimant_key, business_conversion_id FROM token_claims ORDER BY lead_token;"
+  )[0].results;
+const tokenConflicts = (configPath, persistTo) =>
+  execute(configPath, persistTo,
+    "SELECT lead_token, first_claimant_key, observed_claimant_key, reason_code, review_state FROM token_claim_conflicts ORDER BY observed_at, conflict_id;"
+  )[0].results;
+const dedupeLocks = (configPath, persistTo) =>
+  execute(configPath, persistTo,
+    "SELECT subject_key, active_business_conversion_id, dedupe_until, last_lineage_observed_at, fence_version FROM business_conversion_dedupe_locks ORDER BY subject_key;"
+  )[0].results;
 const counts = (configPath, persistTo) => ({
   lineEvents: lineEvents(configPath, persistTo).length,
   outbox: outboxRows(configPath, persistTo).length,
@@ -303,7 +337,13 @@ const seedSql = [
   "('HY-GGGGGGGGGG', 'line1a-request-g', 'session-last', 'phone', 'issued', '" + nowIso + "'),",
   "('HY-MMMMMMMMMM', 'line1a-request-m', 'session-last', 'line', 'issued', '" + nowIso + "'),",
   "('HY-NNNNNNNNNN', 'line1a-request-n', 'session-last', 'line', 'issued', '" + nowIso + "'),",
-  "('HY-PPPPPPPPPP', 'line1a-request-p', 'session-last', 'line', 'issued', '" + nowIso + "');",
+  "('HY-PPPPPPPPPP', 'line1a-request-p', 'session-last', 'line', 'issued', '" + nowIso + "'),",
+  "('HY-QQQQQQQQQQ', 'line1a-request-q', 'session-last', 'line', 'issued', '" + nowIso + "'),",
+  "('HY-RRRRRRRRRR', 'line1a-request-r', 'session-last', 'line', 'issued', '" + nowIso + "'),",
+  "('HY-SSSSSSSSSS', 'line1a-request-s', 'session-last', 'line', 'issued', '" + nowIso + "'),",
+  "('HY-TTTTTTTTTT', 'line1a-request-t', 'session-last', 'line', 'issued', '" + nowIso + "'),",
+  "('HY-UUUUUUUUUU', 'line1a-request-u', 'session-last', 'line', 'issued', '" + nowIso + "'),",
+  "('HY-VVVVVVVVVV', 'line1a-request-v', 'session-last', 'line', 'issued', '" + nowIso + "');",
 ].join("\n");
 
 let server;
@@ -599,7 +639,9 @@ try {
         lineTextEvent(
           "W19-" + String(index),
           "M19-" + String(index),
-          "再次聯絡 HY-NNNNNNNNNN"
+          "再次聯絡 HY-NNNNNNNNNN",
+          canonicalEventTimestamp,
+          "line-user-W17"
         ),
       ],
     });
@@ -627,7 +669,12 @@ try {
   const w20Readback = lineEvents(configPath, persistTo).find(
     (row) => row.webhook_event_id === "W20"
   );
-  assert.equal(w20Readback.line_user_key, null);
+  assert.match(w20Readback.line_user_key, /^lu_v1_[A-Za-z0-9_-]{43}$/);
+  assert.equal(w20Readback.identity_state, "KNOWN");
+  assert.equal(w20Readback.identity_key_id, "current");
+  assert.equal(w20Readback.line_destination, expectedDestination);
+  assert.equal(w20Readback.business_subject_kind, "LINE_USER_HMAC");
+  assert.equal(w20Readback.business_subject_key, w20Readback.line_user_key);
   const lineEventSchema = execute(
     configPath,
     persistTo,
@@ -635,7 +682,7 @@ try {
   )[0].results[0].sql;
   assert.equal(/message_text|message_excerpt|displayName|userId/i.test(lineEventSchema), false);
   assert.equal(
-    lineEvents(configPath, persistTo).some((row) => row.line_user_key !== null),
+    lineEvents(configPath, persistTo).some((row) => row.line_user_key === "line-user-W20"),
     false
   );
 
@@ -653,6 +700,88 @@ try {
     lineEvents: beforeW22.lineEvents + 1,
     outbox: beforeW22.outbox,
   });
+
+  const beforeW23 = counts(configPath, persistTo);
+  const w23a = await postPayload(running.baseUrl, {
+    events: [lineTextEvent("W23-A", "M23-A", "HY-QQQQQQQQQQ", canonicalEventTimestamp, "line-user-dedupe")],
+  });
+  assertStatus(w23a, 200, "W23-A");
+  const qClaim = tokenClaims(configPath, persistTo).find((row) => row.lead_token === "HY-QQQQQQQQQQ");
+  assert.ok(qClaim?.business_conversion_id);
+  const afterW23a = counts(configPath, persistTo);
+  assert.equal(afterW23a.outbox, beforeW23.outbox + 1);
+  const w23b = await postPayload(running.baseUrl, {
+    events: [lineTextEvent("W23-B", "M23-B", "HY-RRRRRRRRRR", canonicalEventTimestamp, "line-user-dedupe")],
+  });
+  assertStatus(w23b, 200, "W23-B");
+  const rClaim = tokenClaims(configPath, persistTo).find((row) => row.lead_token === "HY-RRRRRRRRRR");
+  assert.equal(rClaim?.business_conversion_id, qClaim.business_conversion_id);
+  assert.equal(counts(configPath, persistTo).outbox, afterW23a.outbox);
+
+  const beforeW24Conflicts = tokenConflicts(configPath, persistTo).length;
+  const w24a = await postPayload(running.baseUrl, {
+    events: [lineTextEvent("W24-A", "M24-A", "HY-SSSSSSSSSS", canonicalEventTimestamp, "line-user-owner")],
+  });
+  assertStatus(w24a, 200, "W24-A");
+  const beforeW24b = counts(configPath, persistTo);
+  const w24b = await postPayload(running.baseUrl, {
+    events: [lineTextEvent("W24-B", "M24-B", "HY-SSSSSSSSSS", canonicalEventTimestamp, "line-user-conflict")],
+  });
+  assertStatus(w24b, 200, "W24-B");
+  assertBodyStatus(w24b, "ignored", "W24-B");
+  assert.equal(counts(configPath, persistTo).outbox, beforeW24b.outbox);
+  assert.equal(tokenConflicts(configPath, persistTo).length, beforeW24Conflicts + 1);
+
+  const beforeW25 = counts(configPath, persistTo);
+  const w25 = await postPayload(running.baseUrl, {
+    destination: "Uwrong-destination",
+    events: [lineTextEvent("W25", "M25", "HY-TTTTTTTTTT")],
+  });
+  assertStatus(w25, 200, "W25");
+  assert.equal(lineEvents(configPath, persistTo).find((row) => row.webhook_event_id === "W25").match_status, "WRONG_CHANNEL");
+  assert.equal(counts(configPath, persistTo).outbox, beforeW25.outbox);
+
+  const beforeW26 = counts(configPath, persistTo);
+  const w26 = await postPayload(running.baseUrl, {
+    events: [lineTextEvent("W26", "M26", "HY-UUUUUUUUUU", canonicalEventTimestamp, null, "group")],
+  });
+  assertStatus(w26, 200, "W26");
+  const w26Event = lineEvents(configPath, persistTo).find((row) => row.webhook_event_id === "W26");
+  assert.equal(w26Event.identity_state, "ABSENT");
+  assert.equal(w26Event.line_user_key, null);
+  assert.equal(counts(configPath, persistTo).outbox, beforeW26.outbox);
+
+  const w27Payload = {
+    events: [lineTextEvent("W27", "M27", "HY-VVVVVVVVVV", canonicalEventTimestamp, "line-user-redelivery")],
+  };
+  const w27 = await postPayload(running.baseUrl, w27Payload);
+  assertStatus(w27, 200, "W27 first");
+  const beforeW27Redelivery = counts(configPath, persistTo);
+  const w27Key = lineEvents(configPath, persistTo).find(
+    (row) => row.webhook_event_id === "W27"
+  ).line_user_key;
+  const beforeW27Lock = dedupeLocks(configPath, persistTo).find(
+    (row) => row.subject_key === w27Key
+  );
+  assert.ok(beforeW27Lock);
+  const w27Redelivery = await postPayload(running.baseUrl, {
+    events: [lineTextEvent("W27", "M27", "HY-VVVVVVVVVV", canonicalEventTimestamp, "line-user-redelivery", "user", true)],
+  });
+  assertStatus(w27Redelivery, 200, "W27 redelivery");
+  assertBodyStatus(w27Redelivery, "duplicate", "W27 redelivery");
+  assert.deepEqual(counts(configPath, persistTo), beforeW27Redelivery);
+  const afterW27Lock = dedupeLocks(configPath, persistTo).find(
+    (row) => row.subject_key === w27Key
+  );
+  assert.deepEqual(afterW27Lock, beforeW27Lock);
+
+  const persistedIdentityValues = [
+    ...lineEvents(configPath, persistTo).map((row) => row.line_user_key),
+    ...businessRows(configPath, persistTo).map((row) => row.subject_key),
+    ...tokenClaims(configPath, persistTo).map((row) => row.claimant_key),
+  ].filter(Boolean);
+  assert.equal(persistedIdentityValues.some((value) => String(value).startsWith("line-user-")), false);
+  assert.equal(persistedIdentityValues.every((value) => /^lu_v1_[A-Za-z0-9_-]{43}$/.test(String(value))), true);
 
   const queryPlans = [
     execute(
@@ -733,8 +862,8 @@ try {
   console.log(
     JSON.stringify({
       status: "PASS",
-      migration: "0001 -> existing data -> 0002 -> existing data -> 0003 -> 0004 PASS",
-      tests: "W1-W22 PASS",
+      migration: "0001 -> existing data -> 0002 -> existing data -> 0003 -> 0008 PASS",
+      tests: "W1-W27 PASS",
       http: "POST /api/line/webhook local Pages + local D1 PASS",
       d1_counts: finalCounts,
       query_plan_index_audit: "PASS",
