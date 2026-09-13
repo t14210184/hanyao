@@ -106,15 +106,14 @@ conversion_action.counting_type
 
 - action 唯一存在。
 - `status=ENABLED`。
-- `counting_type=MANY_PER_CLICK`，對應 UI 的 Every；BRAID 路徑不得使用 One-per-click。
+- `counting_type=MANY_PER_CLICK`，對應 UI 的 Every；Google Ads 對 BRAID 明確禁止 One-per-click，因此此項為支援 `gbraid/wbraid` 的硬性相容條件。
 - `primary_for_goal=false`，對應 Google Ads UI 的 Secondary，避免驗證期直接污染 Smart Bidding。
 - 若有 Enabled `CustomConversionGoal` 包含該 action，還會查 `conversion_goal_campaign_config`；只要任何未移除 campaign 正在使用該 custom goal，就阻擋，因 custom goal 可繞過 `primary_for_goal=false` 仍使該 action 可出價。
 
-建議但不是 Data Manager transport 的硬失敗：
+此 action 的業務語意是「已驗證的 LINE 聯絡」，尚未包含人工或 CRM lead qualification，因此：
 
-- `category=QUALIFIED_LEAD` 或 `CONVERTED_LEAD`。
-
-若類別不是上述兩者，preflight 會列 advisory；是否在正式 E2E 前修改依實際既有 action 與 Google Ads 帳號資料判定，不在沒有 live-read 的情況下猜測。
+- `category=CONTACT` 為硬性條件。
+- 不得提前標記為 `QUALIFIED_LEAD` / `CONVERTED_LEAD`；若未來建立真正資格判定流程，應另設更深層 conversion action。
 
 `customer_conversion_goal.biddable` 會一併讀回作後續切換 Primary 的依據，但在 `primary_for_goal=false` 時，正常 customer/campaign goals 不會令該 action 進入出價；CustomConversionGoal 例外已由上述獨立 Gate 攔截。
 
