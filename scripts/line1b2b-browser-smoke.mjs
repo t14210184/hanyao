@@ -7,7 +7,7 @@ import puppeteer from "puppeteer-core";
 
 const cwd = process.cwd();
 const trace = (message) => console.error(`[line1b2b-browser] ${message}`);
-const wrangler = join(cwd, "node_modules/.bin/wrangler");
+const wrangler = join(cwd, "node_modules", "wrangler", "bin", "wrangler.js");
 const port = 8795;
 const baseUrl = `http://127.0.0.1:${port}`;
 const persistTo = mkdtempSync(join(tmpdir(), "line1b2b-local-d1-"));
@@ -60,7 +60,7 @@ if (!executablePath) {
 }
 
 const runWrangler = (args) => {
-  const result = spawnSync(wrangler, args, {
+  const result = spawnSync(process.execPath, [wrangler, ...args], {
     cwd: runtimeDir,
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"],
@@ -123,8 +123,8 @@ try {
 
   trace("starting local Pages");
   server = spawn(
-    wrangler,
-    [
+    process.execPath,
+    [wrangler,
       "pages",
       "dev",
       "out",

@@ -6,19 +6,14 @@ import { spawn, spawnSync } from "node:child_process";
 
 const repoRoot = process.cwd();
 const workerDir = join(repoRoot, "workers", "google-ads-uploader");
-const wranglerCandidates = [
-  join(repoRoot, "node_modules/.bin/wrangler"),
-  join(repoRoot, "..", "repo", "node_modules/.bin/wrangler"),
-  join(repoRoot, "..", "..", "node_modules/.bin/wrangler"),
-];
-const wrangler = wranglerCandidates.find((path) => existsSync(path));
-if (!wrangler) throw new Error("WRANGLER_LOCAL_BINARY_NOT_FOUND");
+const wranglerBin = join(repoRoot, "node_modules", "wrangler", "bin", "wrangler.js");
+if (!existsSync(wranglerBin)) throw new Error("WRANGLER_LOCAL_BINARY_NOT_FOUND");
 
 const configPath = join(workerDir, "wrangler.jsonc");
 const persistTo = join(mkdtempSync(join(tmpdir(), "line4a-scheduled-")), "state");
 
 const run = (args) => {
-  const result = spawnSync(wrangler, args, {
+  const result = spawnSync(process.execPath, [wranglerBin, ...args], {
     cwd: workerDir,
     encoding: "utf8",
     env: { ...process.env, NO_D1_WARNING: "true" },
@@ -34,7 +29,7 @@ run([
 ]);
 
 const output = [];
-const server = spawn(wrangler, [
+const server = spawn(process.execPath, [wranglerBin,
   "dev", "--local", "--test-scheduled", "--persist-to", persistTo,
   "--config", configPath, "--ip", "127.0.0.1", "--port", "8794",
 ], {

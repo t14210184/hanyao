@@ -75,6 +75,15 @@ export interface ConversionOutboxRow {
   diagnostic_error_reason: string | null;
   diagnostic_attempt_count: number;
   updated_at: string;
+  business_conversion_id?: string | null;
+  snapshot_version?: number;
+  eligibility_rule_version?: string;
+  google_ads_account_id?: string | null;
+  google_ads_conversion_action_id?: string | null;
+  event_source?: "MESSAGE" | null;
+  lease_generation?: number;
+  lease_owner?: string | null;
+  lease_expires_at?: string | null;
 }
 export interface UploaderEnv {
   ATTRIBUTION_DB: D1Database;
@@ -113,6 +122,9 @@ export interface OutboxRepository {
     conversionId: string,
     nowIso: string
   ): Promise<ConversionOutboxRow | null>;
+  beginProviderAttempt?(row: ConversionOutboxRow, nowIso: string): Promise<string>;
+  recordProviderAcknowledged?(row: ConversionOutboxRow, attemptId: string, requestId: string, nowIso: string): Promise<void>;
+  recordProviderUnknown?(row: ConversionOutboxRow, attemptId: string, reason: string, nowIso: string): Promise<void>;
   cleanupTerminalRows(cutoffIso: string, limit: number): Promise<number>;
   save(row: ConversionOutboxRow): Promise<void>;
 }

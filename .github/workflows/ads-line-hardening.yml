@@ -4,10 +4,23 @@ on:
   push:
     branches:
       - feat/ads-line-production-hardening
+      - fix/ads-line-v1-2-repair
     paths:
+      - "functions/api/line/**"
+      - "functions/_lib/line-webhook.ts"
+      - "functions/_lib/types.ts"
       - "workers/google-ads-uploader/**"
+      - "scripts/line1a-*"
+      - "scripts/line1b1-*"
+      - "scripts/line1b2a-*"
+      - "scripts/line1b2b-*"
+      - "scripts/c1b1-*"
       - "scripts/line4a-*"
-      - "migrations/0004_google_uploader_state.sql"
+      - "scripts/line4c-*"
+      - "scripts/line4d-*"
+      - "scripts/v12-migration-reconstruction.test.mjs"
+      - "scripts/v12-workflow-safety.test.mjs"
+      - "migrations/**"
       - "package.json"
       - "package-lock.json"
       - ".github/workflows/ads-line-hardening.yml"
@@ -15,16 +28,27 @@ on:
     branches:
       - main
     paths:
+      - "functions/api/line/**"
+      - "functions/_lib/line-webhook.ts"
+      - "functions/_lib/types.ts"
       - "workers/google-ads-uploader/**"
+      - "scripts/line1a-*"
+      - "scripts/line1b1-*"
+      - "scripts/line1b2a-*"
+      - "scripts/line1b2b-*"
+      - "scripts/c1b1-*"
       - "scripts/line4a-*"
-      - "migrations/0004_google_uploader_state.sql"
+      - "scripts/line4c-*"
+      - "scripts/line4d-*"
+      - "scripts/v12-migration-reconstruction.test.mjs"
+      - "scripts/v12-workflow-safety.test.mjs"
+      - "migrations/**"
       - "package.json"
       - "package-lock.json"
       - ".github/workflows/ads-line-hardening.yml"
 
 permissions:
   contents: read
-
 jobs:
   verify:
     runs-on: ubuntu-latest
@@ -39,7 +63,27 @@ jobs:
           cache: npm
       - name: Install locked dependencies
         run: npm ci
-      - name: Run LINE4A uploader regression suite
-        run: npm run test:line4a
       - name: TypeScript typecheck
         run: npm run typecheck
+      - name: Run canonical LINE webhook unit regression
+        run: npm run test:line1a:unit
+      - name: Run canonical LINE webhook HTTP regression
+        run: npm run test:line1a:http
+      - name: Run uploader regression suite
+        run: npm run test:line4a
+      - name: Replay reconstructed migrations 0001 through 0008
+        run: node scripts/v12-migration-reconstruction.test.mjs
+      - name: Run retention regression
+        run: npm run test:line4c:retention
+      - name: Verify Ads reporting evidence cannot use historical totals
+        run: node --experimental-strip-types --test scripts/line4d-reporting-evidence.test.ts
+      - name: Verify workflows remain non-mutating
+        run: node scripts/v12-workflow-safety.test.mjs
+      - name: Run attribution/prepare regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run test:c1b1:unit
+          npm run test:c1b1:http
+          npm run test:c1b1:r1
+          npm run test:c1b1:config

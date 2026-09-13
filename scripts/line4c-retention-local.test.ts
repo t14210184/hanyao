@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { spawn, spawnSync } from "node:child_process";
 
 const cwd = process.cwd();
-const wrangler = join(cwd, "node_modules/.bin/wrangler");
+const wrangler = join(cwd, "node_modules", "wrangler", "bin", "wrangler.js");
 const runtimeDir = mkdtempSync(join(tmpdir(), "line4c-retention-runtime-"));
 const persistTo = mkdtempSync(join(tmpdir(), "line4c-retention-d1-"));
 const port = 8796;
@@ -124,7 +124,7 @@ export default {
 );
 
 const run = (args: string[]) => {
-  const result = spawnSync(wrangler, args, {
+  const result = spawnSync(process.execPath, [wrangler, ...args], {
     cwd: runtimeDir,
     encoding: "utf8",
     env: { ...process.env, NO_D1_WARNING: "true" },
@@ -164,8 +164,8 @@ try {
     configPath,
   ]);
   server = spawn(
-    wrangler,
-    [
+    process.execPath,
+    [wrangler,
       "dev",
       "--local",
       "--persist-to",
@@ -249,7 +249,15 @@ try {
 } finally {
   if (server && server.exitCode === null) {
     server.kill("SIGTERM");
+    const stopStartedAt = Date.now();
+    while (server.exitCode === null && Date.now() - stopStartedAt < 5_000) {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+    if (server.exitCode === null) {
+      server.kill("SIGKILL");
+      await new Promise((resolve) => setTimeout(resolve, 250));
+    }
   }
-  rmSync(runtimeDir, { recursive: true, force: true });
-  rmSync(persistTo, { recursive: true, force: true });
+  rmSync(runtimeDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+  rmSync(persistTo, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
 }

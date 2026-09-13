@@ -46,10 +46,27 @@ export const buildDataManagerRequest = (
 ): DataManagerIngestRequest => {
   const adIdentifiers = getStoredClickIdentifiers(row);
   if (!adIdentifiers) throw new Error("ATTRIBUTION_IDENTIFIER_MISSING");
+  const accountId = row.google_ads_account_id?.trim();
+  const conversionActionId = row.google_ads_conversion_action_id?.trim();
+  if (
+    !row.business_conversion_id ||
+    !row.snapshot_version || row.snapshot_version < 1 ||
+    !row.eligibility_rule_version ||
+    row.event_source !== "MESSAGE" ||
+    !accountId || !conversionActionId
+  ) {
+    throw new Error("CANONICAL_OUTBOX_SNAPSHOT_INVALID");
+  }
+  if (
+    accountId !== config.googleAdsAccountId ||
+    conversionActionId !== config.googleAdsConversionActionId
+  ) {
+    throw new Error("CANONICAL_DESTINATION_MISMATCH");
+  }
   const reference = "google-ads-destination";
   const account = {
     accountType: "GOOGLE_ADS" as const,
-    accountId: config.googleAdsAccountId,
+    accountId,
   };
   return {
     destinations: [
@@ -57,7 +74,7 @@ export const buildDataManagerRequest = (
         reference,
         loginAccount: account,
         operatingAccount: account,
-        productDestinationId: config.googleAdsConversionActionId,
+        productDestinationId: conversionActionId,
       },
     ],
     events: [

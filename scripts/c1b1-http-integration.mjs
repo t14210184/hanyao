@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { spawn, spawnSync } from "node:child_process";
 
 const cwd = process.cwd();
-const wrangler = join(cwd, "node_modules/.bin/wrangler");
+const wrangler = join(cwd, "node_modules", "wrangler", "bin", "wrangler.js");
 const persistTo = mkdtempSync(join(tmpdir(), "c1b1-pages-d1-"));
 const runtimeDir = mkdtempSync(join(tmpdir(), "c1b1-pages-runtime-"));
 symlinkSync(join(cwd, "out"), join(runtimeDir, "out"), "dir");
@@ -38,7 +38,7 @@ const baseUrl = `http://127.0.0.1:${port}`;
 const origin = baseUrl;
 
 const runWrangler = (args) => {
-  const result = spawnSync(wrangler, args, {
+  const result = spawnSync(process.execPath, [wrangler, ...args], {
     cwd: runtimeDir,
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"],
@@ -146,8 +146,8 @@ try {
   ]);
 
   server = spawn(
-    wrangler,
-    [
+    process.execPath,
+    [wrangler,
       "pages",
       "dev",
       "out",

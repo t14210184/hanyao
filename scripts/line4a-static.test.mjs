@@ -8,10 +8,10 @@ const walk = (directory) => readdirSync(directory, { withFileTypes: true }).flat
   const path = join(directory, entry.name);
   return entry.isDirectory() ? walk(path) : [path];
 });
-const files = walk(workerDir).filter((path) => !path.includes("/node_modules/"));
+const files = walk(workerDir).filter((path) => !/[\\/]node_modules[\\/]/.test(path));
 const sourceFiles = files.filter((path) => path.endsWith(".ts") || path.endsWith(".jsonc"));
 const source = sourceFiles.map((path) => readFileSync(path, "utf8")).join("\n");
-const testFiles = files.filter((path) => path.includes("/test/") && path.endsWith(".ts"));
+const testFiles = files.filter((path) => /[\\/]test[\\/]/.test(path) && path.endsWith(".ts"));
 const tests = testFiles.map((path) => readFileSync(path, "utf8")).join("\n");
 
 assert.equal(source.includes("wrangler deploy"), false);
@@ -26,6 +26,17 @@ assert.equal(source.includes("GOOGLE_OUTBOX_TERMINAL_RETENTION_DAYS"), true);
 assert.equal(source.includes("GOOGLE_DATA_MANAGER_EVENTS_URL"), true);
 assert.equal(source.includes("scheduled("), true);
 assert.equal(tests.includes("GOOGLE_DATA_MANAGER_EVENTS_URL"), true);
+for (const required of [
+  "business_conversion_id",
+  "lease_generation",
+  "lease_owner",
+  "RECONCILIATION_REQUIRED",
+  "provider_attempts",
+]) {
+  assert.equal(source.includes(required), true, `missing v1.2 contract: ${required}`);
+}
+assert.equal(tests.includes("stale lease owner cannot overwrite a newer outbox state"), true);
+assert.equal(tests.includes("provider receipt save failure is not converted into a second provider failure write"), true);
 assert.equal(tests.includes("fetch(`http"), false);
 assert.equal(tests.includes("-----BEGIN PRIVATE KEY-----"), false);
 assert.equal(tests.includes("-----BEGIN RSA PRIVATE KEY-----"), false);

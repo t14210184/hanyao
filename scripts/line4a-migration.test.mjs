@@ -5,17 +5,13 @@ import { tmpdir } from "node:os";
 import { spawnSync } from "node:child_process";
 
 const cwd = process.cwd();
-const wrangler = [
-  join(cwd, "node_modules/.bin/wrangler"),
-  join(cwd, "..", "repo", "node_modules/.bin/wrangler"),
-  join(cwd, "..", "..", "node_modules/.bin/wrangler"),
-].find((path) => existsSync(path));
-if (!wrangler) throw new Error("WRANGLER_LOCAL_BINARY_NOT_FOUND");
+const wranglerBin = join(cwd, "node_modules", "wrangler", "bin", "wrangler.js");
+if (!existsSync(wranglerBin)) throw new Error("WRANGLER_LOCAL_BINARY_NOT_FOUND");
 const sourceMigrations = join(cwd, "migrations");
 const names = ["attribution_v1", "attribution_retention_integrity", "line_webhook_foundation", "google_uploader_state"];
 
 const run = (args) => {
-  const result = spawnSync(wrangler, args, {
+  const result = spawnSync(process.execPath, [wranglerBin, ...args], {
     cwd,
     encoding: "utf8",
     env: { ...process.env, NO_D1_WARNING: "true" },

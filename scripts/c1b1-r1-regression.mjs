@@ -11,11 +11,11 @@ import { tmpdir } from "node:os";
 import { spawn, spawnSync } from "node:child_process";
 
 const cwd = process.cwd();
-const wrangler = join(cwd, "node_modules/.bin/wrangler");
+const wrangler = join(cwd, "node_modules", "wrangler", "bin", "wrangler.js");
 const placeholder = "C1B1_LOCAL_ONLY_NO_PRODUCTION_ID";
 
 const run = (args, runCwd = cwd) => {
-  const result = spawnSync(wrangler, args, {
+  const result = spawnSync(process.execPath, [wrangler, ...args], {
     cwd: runCwd,
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"],
@@ -224,8 +224,8 @@ try {
   writeConfig(runtimeDir, "./migrations", "./out");
   const baseUrl = "http://127.0.0.1:8790";
   server = spawn(
-    wrangler,
-    [
+    process.execPath,
+    [wrangler,
       "pages",
       "dev",
       "out",

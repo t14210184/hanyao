@@ -6,7 +6,7 @@ import { spawn, spawnSync } from "node:child_process";
 import { prepareLineLead } from "../src/lib/line-contact.ts";
 
 const cwd = process.cwd();
-const wrangler = join(cwd, "node_modules/.bin/wrangler");
+const wrangler = join(cwd, "node_modules", "wrangler", "bin", "wrangler.js");
 const persistTo = mkdtempSync(join(tmpdir(), "line1b2a-local-d1-"));
 const runtimeDir = mkdtempSync(join(tmpdir(), "line1b2a-local-runtime-"));
 symlinkSync(join(cwd, "out"), join(runtimeDir, "out"), "dir");
@@ -37,7 +37,7 @@ writeFileSync(
 );
 
 const runWrangler = (args: string[]) => {
-  const result = spawnSync(wrangler, args, {
+  const result = spawnSync(process.execPath, [wrangler, ...args], {
     cwd: runtimeDir,
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"],
@@ -82,8 +82,8 @@ try {
   ]);
 
   server = spawn(
-    wrangler,
-    [
+    process.execPath,
+    [wrangler,
       "pages",
       "dev",
       "out",
