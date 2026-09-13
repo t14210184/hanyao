@@ -88,6 +88,7 @@ try {
       conversion_action.category,
       conversion_action.origin,
       conversion_action.primary_for_goal,
+      conversion_action.include_in_conversions_metric,
       conversion_action.counting_type
     FROM conversion_action
     WHERE conversion_action.id = ${CONVERSION_ACTION_ID}
@@ -107,20 +108,24 @@ try {
   // Proto3 JSON may omit scalar fields whose value is the default false.
   // For a selected bool, only explicit true means Primary/biddable here.
   const primaryForGoal = action.primaryForGoal === true;
+  const includeInConversionsMetric = action.includeInConversionsMetric === true;
 
   const hardFailures: string[] = [];
   const advisories: string[] = [];
 
   if (!resourceName) hardFailures.push("RESOURCE_NAME_MISSING");
   if (status !== "ENABLED") hardFailures.push(`STATUS_${status ?? "UNKNOWN"}`);
+  if (type !== "UPLOAD_CLICKS") hardFailures.push(`TYPE_${type}`);
+  if (origin !== "WEBSITE") hardFailures.push(`ORIGIN_${origin}`);
+  if (category !== "CONTACT") hardFailures.push(`CATEGORY_${category}`);
   if (countingType !== "MANY_PER_CLICK") {
     hardFailures.push(`COUNTING_TYPE_${countingType ?? "UNKNOWN"}`);
   }
   if (primaryForGoal) {
     hardFailures.push("PRIMARY_FOR_GOAL_TRUE");
   }
-  if (category !== "QUALIFIED_LEAD" && category !== "CONVERTED_LEAD") {
-    advisories.push(`CATEGORY_${category}`);
+  if (includeInConversionsMetric) {
+    hardFailures.push("INCLUDE_IN_CONVERSIONS_METRIC_TRUE");
   }
 
   const customerGoalRows = await query(
@@ -193,6 +198,7 @@ try {
       origin,
       countingType,
       primaryForGoal,
+      includeInConversionsMetric,
       customerGoalBiddable,
       enabledCustomGoalsContainingAction: enabledCustomGoalResources.size,
       activeCustomGoalCampaignCount,
