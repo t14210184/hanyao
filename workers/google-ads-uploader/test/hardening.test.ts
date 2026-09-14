@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { generateKeyPairSync } from "node:crypto";
 import { test } from "node:test";
 import { D1OutboxRepository } from "../src/repository.ts";
+import { ProviderRequestError } from "../src/errors.ts";
 import {
   ingestDataManagerEvent,
   retrieveDataManagerStatus,
@@ -207,12 +208,41 @@ test("ingest preserves sanitized fieldWarnings next to requestId", async () => {
     fetchImpl
   );
   assert.equal(result.requestId, "warning-request-1");
+  assert.equal(result.transportOutcome, "ACKNOWLEDGED");
   assert.deepEqual(result.fieldWarnings, [
     {
       field: "events.events[0].optional_field",
       reason: "WARNING_REASON_TEST_ONLY",
     },
   ]);
+});
+
+test("post-dispatch response body failure is RESULT_UNKNOWN and never a normal retry", async () => {
+  let ingestCalls = 0;
+  const fetchImpl = (async (input: RequestInfo | URL) => {
+    assert.equal(input.toString(), GOOGLE_DATA_MANAGER_EVENTS_URL);
+    ingestCalls += 1;
+    const stream = new ReadableStream({
+      start(controller) {
+        controller.error(new Error("SIMULATED_BODY_STREAM_FAILURE"));
+      },
+    });
+    return new Response(stream, { status: 200 });
+  }) as FetchLike;
+
+  await assert.rejects(
+    ingestDataManagerEvent(
+      "test-token",
+      { validateOnly: false } as DataManagerIngestRequest,
+      fetchImpl
+    ),
+    (error: unknown) =>
+      error instanceof ProviderRequestError &&
+      error.code === "INGEST_RESPONSE_BODY_READ_ERROR" &&
+      error.retryable === false &&
+      error.dispatchState === "RESULT_UNKNOWN"
+  );
+  assert.equal(ingestCalls, 1);
 });
 
 test("diagnostics normalize FAILURE and preserve warning reasons", async () => {
@@ -352,7 +382,7 @@ test("scheduler invokes bounded stale-claim recovery before normal selection", a
   ]);
 });
 
-test("D1 stale recovery uses one bounded update and distinguishes upload from diagnostic claims", async () => {
+test("D1 stale recovery restores unique durable ACK context before generic recovery", async () => {
   const capturedSql: string[] = [];
   const capturedArgs: unknown[][] = [];
   const database = {
@@ -363,7 +393,7 @@ test("D1 stale recovery uses one bounded update and distinguishes upload from di
           capturedArgs[index] = args;
           return {
             async run() {
-              return { meta: { changes: index === 0 ? 2 : 0 } };
+              return { meta: { changes: index === 1 ? 2 : 0 } };
             },
           };
         },
@@ -379,21 +409,26 @@ test("D1 stale recovery uses one bounded update and distinguishes upload from di
   );
 
   assert.equal(changed, 2);
-  assert.equal(capturedSql.length, 3);
-  assert.match(capturedSql[0], /status = CASE/);
-  assert.match(capturedSql[0], /provider_attempts pa/);
-  assert.match(capturedSql[0], /RECONCILIATION_REQUIRED/);
-  assert.match(capturedSql[0], /STALE_UPLOAD_RETRY_BUDGET_EXHAUSTED/);
-  assert.match(capturedSql[0], /lease_owner = NULL/);
-  assert.match(capturedSql[0], /status = 'processing'/);
+  assert.equal(capturedSql.length, 4);
+  assert.match(capturedSql[0], /WITH ack_candidates/);
+  assert.match(capturedSql[0], /provider_attempt_events/);
+  assert.match(capturedSql[0], /ACKNOWLEDGED/);
+  assert.match(capturedSql[0], /provider_request_id/);
+  assert.match(capturedSql[0], /pa.transaction_id = co.transaction_id/);
+  assert.match(capturedSql[0], /pa.destination_key = co.destination_key/);
+  assert.match(capturedSql[0], /pa.payload_hash = co.upload_payload_hash/);
+  assert.match(capturedSql[0], /COUNT\(DISTINCT pae.provider_request_id\) = 1/);
   assert.match(capturedSql[0], /LIMIT \?3/);
-  assert.deepEqual(capturedArgs[0], ["2026-08-28T03:30:00.000Z", NOW, 5, 8]);
-  assert.match(capturedSql[1], /UPDATE business_conversions/);
-  assert.match(capturedSql[1], /outcome_state = 'RECONCILIATION_REQUIRED'/);
-  assert.deepEqual(capturedArgs[1], [NOW, 5]);
-  assert.match(capturedSql[2], /UPDATE provider_delivery_leases/);
-  assert.match(capturedSql[2], /lease_state = 'RECONCILIATION_REQUIRED'/);
+  assert.deepEqual(capturedArgs[0], ["2026-08-28T03:30:00.000Z", NOW, 5]);
+  assert.match(capturedSql[1], /status = CASE/);
+  assert.match(capturedSql[1], /provider_attempts pa/);
+  assert.match(capturedSql[1], /RECONCILIATION_REQUIRED/);
+  assert.deepEqual(capturedArgs[1], ["2026-08-28T03:30:00.000Z", NOW, 5, 8]);
+  assert.match(capturedSql[2], /UPDATE business_conversions/);
   assert.deepEqual(capturedArgs[2], [NOW, 5]);
+  assert.match(capturedSql[3], /UPDATE provider_delivery_leases/);
+  assert.match(capturedSql[3], /lease_state = 'RECONCILIATION_REQUIRED'/);
+  assert.deepEqual(capturedArgs[3], [NOW, 5]);
 });
 
 
@@ -417,7 +452,7 @@ test("validateOnly ingest accepts a successful response without requestId", asyn
   assert.equal(result.requestId, null);
 });
 
-test("stale lease owner cannot overwrite a newer outbox state", async () => {
+test("stale lease owner cannot overwrite a newer nonterminal outbox state", async () => {
   const database = {
     prepare() {
       return {
@@ -429,7 +464,8 @@ test("stale lease owner cannot overwrite a newer outbox state", async () => {
   };
   const repository = new D1OutboxRepository(database as never);
   const row = baseRow({
-    status: "success",
+    status: "submitted",
+    terminal_result: null,
     updated_at: NOW,
     business_conversion_id: "business-hardening-1",
     lease_generation: 7,
@@ -456,6 +492,51 @@ test("due upload selector requires canonical eligible business conversion", asyn
   assert.match(capturedSql, /business_conversion_id IS NOT NULL/);
   assert.match(capturedSql, /eligibility_state = 'ELIGIBLE'/);
   assert.match(capturedSql, /outcome_state = 'PENDING'/);
+});
+
+test("duplicate delivery equivalence requires one exact durable acknowledged provider context", async () => {
+  let capturedSql = "";
+  let capturedArgs: unknown[] = [];
+  const database = {
+    prepare(sql: string) {
+      capturedSql = sql;
+      return {
+        bind(...args: unknown[]) {
+          capturedArgs = args;
+          return {
+            async first<T>() {
+              return { context_count: 1, request_count: 1 } as T;
+            },
+          };
+        },
+      };
+    },
+  };
+  const repository = new D1OutboxRepository(database as never);
+  const row = baseRow({
+    business_conversion_id: "business-duplicate-1",
+    transaction_id: "transaction-duplicate-1",
+    destination_key: "HY_VERIFIED_LINE_CONTACT",
+    upload_payload_hash: "b".repeat(64),
+    google_request_id: "requests/duplicate-context-1",
+  });
+  assert.equal(await repository.verifyProviderRequestContext(row), true);
+  assert.match(capturedSql, /provider_attempts pa/);
+  assert.match(capturedSql, /provider_attempt_events pae/);
+  assert.match(capturedSql, /pa.transaction_id = \?2/);
+  assert.match(capturedSql, /pa.destination_key = \?3/);
+  assert.match(capturedSql, /pa.payload_hash = \?4/);
+  assert.match(capturedSql, /pa.operation = 'events:ingest'/);
+  assert.match(capturedSql, /pa.attempt_intent = 'DELIVER_CONVERSION'/);
+  assert.match(capturedSql, /pae.event_type = 'ACKNOWLEDGED'/);
+  assert.match(capturedSql, /pae.provider_request_id = \?5/);
+  assert.deepEqual(capturedArgs, [
+    "business-duplicate-1",
+    "transaction-duplicate-1",
+    "HY_VERIFIED_LINE_CONTACT",
+    "b".repeat(64),
+    "requests/duplicate-context-1",
+  ]);
 });
 
 test("provider receipt save failure is not converted into a second provider failure write", async () => {
@@ -555,8 +636,9 @@ test("provider attempt start persists intent event and delivery lease fence", as
       };
     },
     async batch(statements: unknown[]) {
-      assert.equal(statements.length, 3);
+      assert.equal(statements.length, 4);
       return [
+        { meta: { changes: 1 } },
         { meta: { changes: 1 } },
         { meta: { changes: 1 } },
         { meta: { changes: 1 } },
@@ -572,18 +654,26 @@ test("provider attempt start persists intent event and delivery lease fence", as
     lease_expires_at: "2026-08-28T04:30:00.000Z",
     transaction_id: "attempt-transaction-1",
   });
-  const attemptId = await repository.beginProviderAttempt(row, NOW);
+  const payloadHash = "a".repeat(64);
+  const attemptId = await repository.beginProviderAttempt(row, payloadHash, NOW);
   assert.match(attemptId, /^[0-9a-f-]{36}$/);
-  assert.equal(prepared.length, 3);
+  assert.equal(prepared.length, 4);
   assert.match(prepared[0].sql, /INSERT INTO provider_attempts/);
   assert.match(prepared[0].sql, /DELIVER_CONVERSION/);
+  assert.match(prepared[0].sql, /destination_key/);
+  assert.match(prepared[0].sql, /payload_hash/);
   assert.equal(prepared[0].args[1], "business-attempt-1");
   assert.equal(prepared[0].args[2], "attempt-transaction-1");
   assert.equal(prepared[0].args[3], 3);
+  assert.equal(prepared[0].args[6], "HY_VERIFIED_LINE_CONTACT");
+  assert.equal(prepared[0].args[7], payloadHash);
   assert.match(prepared[1].sql, /ATTEMPT_STARTED/);
   assert.match(prepared[2].sql, /provider_delivery_leases/);
   assert.equal(prepared[2].args[0], "business-attempt-1");
   assert.equal(prepared[2].args[3], 3);
+  assert.match(prepared[3].sql, /upload_payload_hash/);
+  assert.equal(prepared[3].args[0], payloadHash);
+  assert.equal(row.upload_payload_hash, payloadHash);
 });
 
 test("ambiguous ingest network result becomes reconciliation-required instead of pending retry", async () => {
@@ -609,7 +699,9 @@ test("ambiguous ingest network result becomes reconciliation-required instead of
   let saveCalls = 0;
   let ingestCalls = 0;
   const repository: OutboxRepository = {
-    async listDueUploads() { return [{ ...current }]; },
+    async listDueUploads() {
+      return current.status === "pending" ? [{ ...current }] : [];
+    },
     async claimUpload(_id, nowIso) {
       current = {
         ...current,
@@ -668,6 +760,14 @@ test("ambiguous ingest network result becomes reconciliation-required instead of
   assert.equal(saveCalls, 1);
   assert.equal(current.status, "failed");
   assert.equal(current.next_retry_at, null);
-  assert.equal(current.terminal_result, "INGEST_NETWORK_ERROR");
+  assert.equal(current.terminal_result, "RECONCILIATION_REQUIRED");
   assert.equal(current.last_error_code, "INGEST_NETWORK_ERROR");
+
+  await runScheduledCycle(env, {
+    repository,
+    fetchImpl,
+    now: new Date("2026-08-28T04:05:00.000Z"),
+    random: () => 0.5,
+  });
+  assert.equal(ingestCalls, 1, "RESULT_UNKNOWN must not be blindly resent");
 });

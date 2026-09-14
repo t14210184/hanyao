@@ -34,6 +34,15 @@ const boundedRandom = (random: () => number): number => {
   return Number.isFinite(value) && value >= 0 && value <= 1 ? value : 0.5;
 };
 
+const sha256Hex = async (value: string): Promise<string> => {
+  const digest = new Uint8Array(
+    await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value))
+  );
+  return [...digest]
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+};
+
 export const nextRetryAt = (
   nowIso: string,
   attemptCount: number,
@@ -122,6 +131,22 @@ const writeFailure = async (
     row.next_retry_at = null;
     row.terminal_result = error.code;
   }
+  await repository.save(row);
+};
+
+const writeResultUnknown = async (
+  repository: OutboxRepository,
+  row: ConversionOutboxRow,
+  error: ProviderRequestError,
+  nowIso: string
+): Promise<void> => {
+  row.status = "failed";
+  row.next_retry_at = null;
+  row.last_error_code = error.code;
+  row.last_error_reason =
+    error.providerReason || (error.httpStatus ? `HTTP_${error.httpStatus}` : error.code);
+  row.terminal_result = "RECONCILIATION_REQUIRED";
+  row.updated_at = nowIso;
   await repository.save(row);
 };
 
@@ -310,6 +335,8 @@ const processUpload = async (
     return;
   }
 
+  const payloadHash = await sha256Hex(JSON.stringify(request));
+
   let accessToken: string;
   try {
     accessToken = await acquireToken();
@@ -326,7 +353,7 @@ const processUpload = async (
 
   let attemptId: string | null = null;
   if (!config.validateOnly && repository.beginProviderAttempt) {
-    attemptId = await repository.beginProviderAttempt(row, nowIso);
+    attemptId = await repository.beginProviderAttempt(row, payloadHash, nowIso);
   }
 
   let response;
@@ -335,7 +362,7 @@ const processUpload = async (
     logIngestWarnings(logger, response.fieldWarnings);
   } catch (error) {
     const providerError = asProviderError(error, "INGEST_REQUEST_FAILED");
-    if (!config.validateOnly && providerError.code === "INGEST_NETWORK_ERROR") {
+    if (!config.validateOnly && providerError.dispatchState === "RESULT_UNKNOWN") {
       if (attemptId && repository.recordProviderUnknown) {
         await repository.recordProviderUnknown(
           row,
@@ -344,18 +371,7 @@ const processUpload = async (
           nowIso
         );
       }
-      await writeFailure(
-        repository,
-        row,
-        new ProviderRequestError(
-          providerError.code,
-          false,
-          providerError.httpStatus,
-          providerError.providerReason
-        ),
-        nowIso,
-        random
-      );
+      await writeResultUnknown(repository, row, providerError, nowIso);
       return;
     }
     await writeFailure(repository, row, providerError, nowIso, random);
@@ -367,7 +383,23 @@ const processUpload = async (
     return;
   }
   if (!response.requestId) {
-    throw new Error("INGEST_REQUEST_ID_MISSING_AFTER_PROVIDER_ACCEPT");
+    const providerError = new ProviderRequestError(
+      "INGEST_REQUEST_ID_MISSING_AFTER_PROVIDER_ACCEPT",
+      false,
+      null,
+      null,
+      "RESULT_UNKNOWN"
+    );
+    if (attemptId && repository.recordProviderUnknown) {
+      await repository.recordProviderUnknown(
+        row,
+        attemptId,
+        providerError.code,
+        nowIso
+      );
+    }
+    await writeResultUnknown(repository, row, providerError, nowIso);
+    return;
   }
   if (attemptId && repository.recordProviderAcknowledged) {
     await repository.recordProviderAcknowledged(
@@ -502,9 +534,12 @@ const processDiagnostic = async (
     }
     if (response.status === "FAILED" && response.reasons.includes(DUPLICATE_TRANSACTION_REASON)) {
       const matchingTransaction =
-        !response.duplicateTransactionId ||
+        response.duplicateTransactionId !== null &&
         response.duplicateTransactionId === row.transaction_id;
-      if (matchingTransaction) {
+      const durableRequestContext = repository.verifyProviderRequestContext
+        ? await repository.verifyProviderRequestContext(row)
+        : false;
+      if (matchingTransaction && durableRequestContext) {
         await writeDiagnosticTerminal(
           repository,
           row,
@@ -517,6 +552,17 @@ const processDiagnostic = async (
         );
         return;
       }
+      await writeDiagnosticTerminal(
+        repository,
+        row,
+        "failed",
+        "DUPLICATE_CONTEXT_UNPROVEN",
+        "FAILED",
+        DUPLICATE_TRANSACTION_REASON,
+        response.recordCount,
+        nowIso
+      );
+      return;
     }
     if (response.status === "PARTIAL_SUCCESS") {
       await writeDiagnosticTerminal(

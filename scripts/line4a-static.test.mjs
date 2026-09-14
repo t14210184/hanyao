@@ -35,8 +35,17 @@ for (const required of [
 ]) {
   assert.equal(source.includes(required), true, `missing v1.2 contract: ${required}`);
 }
-assert.equal(tests.includes("stale lease owner cannot overwrite a newer outbox state"), true);
+assert.equal(tests.includes("stale lease owner cannot overwrite a newer nonterminal outbox state"), true);
 assert.equal(tests.includes("provider receipt save failure is not converted into a second provider failure write"), true);
+for (const required of [
+  "completion_id",
+  "terminal_completion_guard",
+  "terminal_completion_verified",
+  "RESULT_UNKNOWN",
+  "ACK_RESTORED_AFTER_STALE_CLAIM",
+]) {
+  assert.equal(source.includes(required), true, `missing v1.3 hardening contract: ${required}`);
+}
 assert.equal(tests.includes("fetch(`http"), false);
 assert.equal(tests.includes("-----BEGIN PRIVATE KEY-----"), false);
 assert.equal(tests.includes("-----BEGIN RSA PRIVATE KEY-----"), false);

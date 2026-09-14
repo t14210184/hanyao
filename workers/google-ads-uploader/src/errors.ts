@@ -13,17 +13,25 @@ export const sanitizeHttpReason = (status: number): string =>
     ? `HTTP_${status}`
     : "HTTP_STATUS_INVALID";
 
+export type ProviderDispatchState =
+  | "NOT_DISPATCHED"
+  | "REJECTED_CONFIRMED"
+  | "ACKNOWLEDGED"
+  | "RESULT_UNKNOWN";
+
 export class ProviderRequestError extends Error {
   readonly code: string;
   readonly retryable: boolean;
   readonly httpStatus: number | null;
   readonly providerReason: string | null;
+  readonly dispatchState: ProviderDispatchState | null;
 
   constructor(
     code: string,
     retryable: boolean,
     httpStatus: number | null = null,
-    providerReason: string | null = null
+    providerReason: string | null = null,
+    dispatchState: ProviderDispatchState | null = null
   ) {
     super(code);
     this.name = "ProviderRequestError";
@@ -31,6 +39,7 @@ export class ProviderRequestError extends Error {
     this.retryable = retryable;
     this.httpStatus = httpStatus;
     this.providerReason = sanitizeProviderReason(providerReason);
+    this.dispatchState = dispatchState;
   }
 }
 

@@ -1,10 +1,10 @@
 import type { D1Database } from "@cloudflare/workers-types";
-import {
-  selectGoogleAdsAttribution,
-  type AttributionSessionRow,
-  type GoogleAdsAttributionSelection,
-} from "./attribution.ts";
+import type { GoogleAdsAttributionSelection } from "./attribution.ts";
 import { extractLeadTokens } from "./lead-token.ts";
+import {
+  readVerifiedLeadAttributionSnapshot,
+  type LeadAttributionSnapshot,
+} from "./lead-attribution-snapshot.ts";
 
 export const MAX_LINE_WEBHOOK_BODY_BYTES = 128 * 1024;
 export const EXPECTED_LINE_DESTINATION = "Ua84119b8b81029fd10868116f1937d13";
@@ -285,6 +285,9 @@ interface LeadTokenLookupRow {
   session_id: string | null;
   channel: "line" | "phone" | "form";
   status: string;
+  attribution_snapshot_json: string | null;
+  attribution_snapshot_hash: string | null;
+  lineage_rule_version: string | null;
 }
 
 const unattributedDecision = (
@@ -299,6 +302,19 @@ const unattributedDecision = (
   tokenExtractionCount,
 });
 
+const snapshotAttribution = (
+  snapshot: LeadAttributionSnapshot
+): GoogleAdsAttributionSelection | null => {
+  if (!snapshot.selected_touch) return null;
+  if (!snapshot.gclid && !snapshot.gbraid && !snapshot.wbraid) return null;
+  return {
+    attribution_touch: snapshot.selected_touch,
+    gclid: snapshot.gclid,
+    gbraid: snapshot.gbraid,
+    wbraid: snapshot.wbraid,
+  };
+};
+
 const classifyTextMessage = async (
   database: D1Database,
   text: string,
@@ -310,7 +326,11 @@ const classifyTextMessage = async (
 
   const leadToken = tokens[0];
   const lead = await database
-    .prepare("SELECT lead_token, session_id, channel, status FROM lead_tokens WHERE lead_token = ?1")
+    .prepare(
+      `SELECT lead_token, session_id, channel, status,
+              attribution_snapshot_json, attribution_snapshot_hash, lineage_rule_version
+         FROM lead_tokens WHERE lead_token = ?1`
+    )
     .bind(leadToken)
     .first<LeadTokenLookupRow>();
   if (!lead) return unattributedDecision("UNMATCHED", 1);
@@ -318,19 +338,20 @@ const classifyTextMessage = async (
     return { matchStatus: "WRONG_CHANNEL", recordEventType: "line_message_received_unattributed",
       leadToken, attribution: null, attributionSessionId: lead.session_id, tokenExtractionCount: 1 };
   }
-  if (!lead.session_id) {
-    return { matchStatus: "MATCHED_UNATTRIBUTED", recordEventType: "line_message_received",
-      leadToken, attribution: null, attributionSessionId: null, tokenExtractionCount: 1 };
-  }
-  const session = await database
-    .prepare("SELECT * FROM attribution_sessions WHERE session_id = ?1")
-    .bind(lead.session_id)
-    .first<AttributionSessionRow>();
-  if (!session || Date.parse(session.expires_at) <= eventAt.getTime()) {
+
+  const snapshot = await readVerifiedLeadAttributionSnapshot(lead);
+  if (!snapshot || !lead.session_id) {
     return { matchStatus: "MATCHED_UNATTRIBUTED", recordEventType: "line_message_received",
       leadToken, attribution: null, attributionSessionId: lead.session_id, tokenExtractionCount: 1 };
   }
-  const attribution = selectGoogleAdsAttribution(session);
+  if (
+    snapshot.session_expires_at === null ||
+    Date.parse(snapshot.session_expires_at) <= eventAt.getTime()
+  ) {
+    return { matchStatus: "MATCHED_UNATTRIBUTED", recordEventType: "line_message_received",
+      leadToken, attribution: null, attributionSessionId: lead.session_id, tokenExtractionCount: 1 };
+  }
+  const attribution = snapshotAttribution(snapshot);
   if (!attribution) {
     return { matchStatus: "MATCHED_UNATTRIBUTED", recordEventType: "line_message_received",
       leadToken, attribution: null, attributionSessionId: lead.session_id, tokenExtractionCount: 1 };

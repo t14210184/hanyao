@@ -15,7 +15,8 @@ const OUTBOX_COLUMNS = `
   diagnostic_error_reason, diagnostic_attempt_count, updated_at,
   business_conversion_id, snapshot_version, eligibility_rule_version,
   google_ads_account_id, google_ads_conversion_action_id, event_source,
-  lease_generation, lease_owner, lease_expires_at`;
+  lease_generation, lease_owner, lease_expires_at, upload_payload_hash,
+  completion_id`;
 
 const changesFrom = (result: { meta?: { changes?: number } }): number =>
   Number(result.meta?.changes ?? 0);
@@ -23,6 +24,9 @@ const changesFrom = (result: { meta?: { changes?: number } }): number =>
 const businessOutcomeFor = (row: ConversionOutboxRow): "SUCCESS" | "FAILED" | "RECONCILIATION_REQUIRED" | null => {
   if (row.status === "success" || row.status === "deduplicated" || row.status === "sent") return "SUCCESS";
   if (row.status !== "failed") return null;
+  if (row.terminal_result === "RECONCILIATION_REQUIRED") {
+    return "RECONCILIATION_REQUIRED";
+  }
   const ambiguous = new Set([
     "PARTIAL_SUCCESS_HUMAN_REVIEW",
     "DIAGNOSTIC_TIMEBOX_EXCEEDED",
@@ -31,6 +35,7 @@ const businessOutcomeFor = (row: ConversionOutboxRow): "SUCCESS" | "FAILED" | "R
     "DIAGNOSTIC_HTTP_ERROR",
     "AUTH_TOKEN_ACQUISITION_FAILED",
     "INGEST_NETWORK_ERROR",
+    "DUPLICATE_CONTEXT_UNPROVEN",
   ]);
   return row.terminal_result && ambiguous.has(row.terminal_result) ? "RECONCILIATION_REQUIRED" : "FAILED";
 };
@@ -48,6 +53,75 @@ export class D1OutboxRepository implements OutboxRepository {
     limit: number
   ): Promise<number> {
     const boundedLimit = Math.max(1, Math.min(Math.floor(limit), 100));
+
+    const restoreResult = await this.database
+      .prepare(
+        `WITH ack_candidates AS (
+           SELECT co.conversion_id,
+                  MIN(pae.provider_request_id) AS provider_request_id,
+                  MAX(pae.recorded_at) AS acknowledged_at
+             FROM conversion_outbox co
+             JOIN provider_attempts pa
+               ON pa.business_conversion_id = co.business_conversion_id
+              AND pa.transaction_id = co.transaction_id
+              AND pa.fence_token = co.lease_generation
+              AND pa.destination_key = co.destination_key
+              AND pa.payload_hash = co.upload_payload_hash
+             JOIN provider_attempt_events pae
+               ON pae.attempt_id = pa.attempt_id
+              AND pae.event_type = 'ACKNOWLEDGED'
+              AND pae.provider_request_id IS NOT NULL
+            WHERE co.status = 'processing'
+              AND co.google_request_id IS NULL
+              AND co.business_conversion_id IS NOT NULL
+              AND co.upload_payload_hash IS NOT NULL
+              AND ((co.lease_expires_at IS NOT NULL AND co.lease_expires_at <= ?2)
+                OR (co.lease_expires_at IS NULL AND co.updated_at <= ?1))
+            GROUP BY co.conversion_id
+           HAVING COUNT(DISTINCT pae.provider_request_id) = 1
+            ORDER BY COALESCE(co.lease_expires_at, co.updated_at), co.conversion_id
+            LIMIT ?3
+         )
+         UPDATE conversion_outbox
+            SET status = 'submitted',
+                google_request_id = (
+                  SELECT provider_request_id FROM ack_candidates
+                   WHERE ack_candidates.conversion_id = conversion_outbox.conversion_id
+                ),
+                submitted_at = COALESCE(submitted_at, (
+                  SELECT acknowledged_at FROM ack_candidates
+                   WHERE ack_candidates.conversion_id = conversion_outbox.conversion_id
+                )),
+                next_diagnostic_at = ?2,
+                last_error_code = 'ACK_RESTORED_AFTER_STALE_CLAIM',
+                last_error_reason = 'ACK_RESTORED_AFTER_STALE_CLAIM',
+                terminal_result = NULL,
+                lease_owner = NULL,
+                lease_expires_at = NULL,
+                updated_at = ?2
+          WHERE conversion_id IN (SELECT conversion_id FROM ack_candidates)`
+      )
+      .bind(staleBeforeIso, nowIso, boundedLimit)
+      .run();
+    const restored = changesFrom(restoreResult);
+    if (restored > 0) {
+      await this.database
+        .prepare(
+          `UPDATE provider_delivery_leases
+              SET lease_state = 'CLOSED', lease_owner = NULL, lease_expires_at = NULL,
+                  last_reconciled_at = ?1, updated_at = ?1
+            WHERE business_conversion_id IN (
+              SELECT business_conversion_id FROM conversion_outbox
+               WHERE status = 'submitted'
+                 AND google_request_id IS NOT NULL
+                 AND last_error_code = 'ACK_RESTORED_AFTER_STALE_CLAIM'
+                 AND updated_at = ?1
+            )`
+        )
+        .bind(nowIso)
+        .run();
+    }
+
     const result = await this.database
       .prepare(
         `UPDATE conversion_outbox
@@ -136,7 +210,7 @@ export class D1OutboxRepository implements OutboxRepository {
       "WHERE business_conversion_id IS NOT NULL AND terminal_result = 'RECONCILIATION_REQUIRED' " +
       "ORDER BY updated_at, conversion_id LIMIT ?2)";
     await this.database.prepare(reconcileLeaseSql).bind(nowIso, boundedLimit).run();
-    return changesFrom(result);
+    return restored + changesFrom(result);
   }
 
   async listDueUploads(
@@ -195,18 +269,26 @@ export class D1OutboxRepository implements OutboxRepository {
 
   async beginProviderAttempt(
     row: ConversionOutboxRow,
+    payloadHash: string,
     nowIso: string
   ): Promise<string> {
-    if (!row.business_conversion_id || !row.lease_owner || row.lease_generation === undefined || !row.lease_expires_at) {
+    if (
+      !row.business_conversion_id ||
+      !row.lease_owner ||
+      row.lease_generation === undefined ||
+      !row.lease_expires_at ||
+      !payloadHash
+    ) {
       throw new Error("PROVIDER_ATTEMPT_CONTEXT_MISSING");
     }
     const attemptId = crypto.randomUUID();
     const eventId = crypto.randomUUID();
     const attemptSql =
       "INSERT INTO provider_attempts (attempt_id, business_conversion_id, attempt_sequence, transaction_id, " +
-      "provider_name, operation, attempt_intent, fence_token, lease_expires_at, started_at, created_at) " +
+      "provider_name, operation, attempt_intent, fence_token, lease_expires_at, started_at, created_at, " +
+      "destination_key, payload_hash) " +
       "SELECT ?1, ?2, COALESCE(MAX(attempt_sequence), 0) + 1, ?3, 'GOOGLE_DATA_MANAGER', " +
-      "'events:ingest', 'DELIVER_CONVERSION', ?4, ?5, ?6, ?6 FROM provider_attempts " +
+      "'events:ingest', 'DELIVER_CONVERSION', ?4, ?5, ?6, ?6, ?7, ?8 FROM provider_attempts " +
       "WHERE business_conversion_id = ?2";
     const eventSql =
       "INSERT INTO provider_attempt_events (attempt_event_id, attempt_id, event_sequence, event_type, " +
@@ -221,14 +303,45 @@ export class D1OutboxRepository implements OutboxRepository {
       "fence_token = excluded.fence_token, lease_expires_at = excluded.lease_expires_at, updated_at = excluded.updated_at " +
       "WHERE provider_delivery_leases.fence_token < excluded.fence_token OR " +
       "(provider_delivery_leases.fence_token = excluded.fence_token AND provider_delivery_leases.lease_owner = excluded.lease_owner)";
+    const outboxSql =
+      "UPDATE conversion_outbox SET upload_payload_hash = ?1 WHERE conversion_id = ?2 " +
+      "AND status = 'processing' AND lease_generation = ?3 AND lease_owner = ?4 AND lease_expires_at > ?5";
     const results = await this.database.batch([
-      this.database.prepare(attemptSql).bind(attemptId, row.business_conversion_id, row.transaction_id, row.lease_generation, row.lease_expires_at, nowIso),
+      this.database.prepare(attemptSql).bind(
+        attemptId,
+        row.business_conversion_id,
+        row.transaction_id,
+        row.lease_generation,
+        row.lease_expires_at,
+        nowIso,
+        row.destination_key,
+        payloadHash
+      ),
       this.database.prepare(eventSql).bind(eventId, attemptId, nowIso),
-      this.database.prepare(leaseSql).bind(row.business_conversion_id, row.lease_owner, attemptId, row.lease_generation, row.lease_expires_at, nowIso),
+      this.database.prepare(leaseSql).bind(
+        row.business_conversion_id,
+        row.lease_owner,
+        attemptId,
+        row.lease_generation,
+        row.lease_expires_at,
+        nowIso
+      ),
+      this.database.prepare(outboxSql).bind(
+        payloadHash,
+        row.conversion_id,
+        row.lease_generation,
+        row.lease_owner,
+        nowIso
+      ),
     ]);
-    if (changesFrom(results[0]) !== 1 || changesFrom(results[2]) !== 1) {
+    if (
+      changesFrom(results[0]) !== 1 ||
+      changesFrom(results[2]) !== 1 ||
+      changesFrom(results[3]) !== 1
+    ) {
       throw new Error("PROVIDER_ATTEMPT_FENCE_FAILED");
     }
+    row.upload_payload_hash = payloadHash;
     return attemptId;
   }
 
@@ -238,14 +351,86 @@ export class D1OutboxRepository implements OutboxRepository {
     requestId: string,
     nowIso: string
   ): Promise<void> {
-    if (!row.business_conversion_id || row.lease_generation === undefined) {
+    if (
+      !row.business_conversion_id ||
+      row.lease_generation === undefined ||
+      !row.upload_payload_hash
+    ) {
       throw new Error("PROVIDER_ATTEMPT_CONTEXT_MISSING");
     }
     const sql =
       "INSERT OR IGNORE INTO provider_attempt_events (attempt_event_id, attempt_id, event_sequence, event_type, " +
       "recorded_at, provider_request_id, normalized_status, retryable, ambiguous) " +
-      "VALUES (?1, ?2, 2, 'ACKNOWLEDGED', ?3, ?4, 'ACKNOWLEDGED', 0, 0)";
-    await this.database.prepare(sql).bind(crypto.randomUUID(), attemptId, nowIso, requestId).run();
+      "SELECT ?1, pa.attempt_id, 2, 'ACKNOWLEDGED', ?3, ?4, 'ACKNOWLEDGED', 0, 0 " +
+      "FROM provider_attempts pa WHERE pa.attempt_id = ?2 " +
+      "AND pa.business_conversion_id = ?5 AND pa.transaction_id = ?6 AND pa.fence_token = ?7 " +
+      "AND pa.destination_key = ?8 AND pa.payload_hash = ?9";
+    const result = await this.database
+      .prepare(sql)
+      .bind(
+        crypto.randomUUID(),
+        attemptId,
+        nowIso,
+        requestId,
+        row.business_conversion_id,
+        row.transaction_id,
+        row.lease_generation,
+        row.destination_key,
+        row.upload_payload_hash
+      )
+      .run();
+    if (changesFrom(result) === 1) return;
+    const existing = await this.database
+      .prepare(
+        "SELECT provider_request_id FROM provider_attempt_events " +
+        "WHERE attempt_id = ?1 AND event_type = 'ACKNOWLEDGED'"
+      )
+      .bind(attemptId)
+      .first<{ provider_request_id: string | null }>();
+    if (existing?.provider_request_id === requestId) return;
+    throw new Error("PROVIDER_ACK_CONTEXT_MISMATCH");
+  }
+
+  async verifyProviderRequestContext(
+    row: ConversionOutboxRow
+  ): Promise<boolean> {
+    if (
+      !row.business_conversion_id ||
+      !row.google_request_id ||
+      !row.upload_payload_hash ||
+      !row.transaction_id ||
+      !row.destination_key
+    ) {
+      return false;
+    }
+    const result = await this.database
+      .prepare(
+        `SELECT COUNT(*) AS context_count,
+                COUNT(DISTINCT pae.provider_request_id) AS request_count
+           FROM provider_attempts pa
+           JOIN provider_attempt_events pae ON pae.attempt_id = pa.attempt_id
+          WHERE pa.business_conversion_id = ?1
+            AND pa.transaction_id = ?2
+            AND pa.destination_key = ?3
+            AND pa.payload_hash = ?4
+            AND pa.provider_name = 'GOOGLE_DATA_MANAGER'
+            AND pa.operation = 'events:ingest'
+            AND pa.attempt_intent = 'DELIVER_CONVERSION'
+            AND pae.event_type = 'ACKNOWLEDGED'
+            AND pae.provider_request_id = ?5`
+      )
+      .bind(
+        row.business_conversion_id,
+        row.transaction_id,
+        row.destination_key,
+        row.upload_payload_hash,
+        row.google_request_id
+      )
+      .first<{ context_count: number | string; request_count: number | string }>();
+    return (
+      Number(result?.context_count ?? 0) === 1 &&
+      Number(result?.request_count ?? 0) === 1
+    );
   }
 
   async recordProviderUnknown(
@@ -346,67 +531,211 @@ export class D1OutboxRepository implements OutboxRepository {
     if (!row.lease_owner || row.lease_generation === undefined) {
       throw new Error("OUTBOX_LEASE_CONTEXT_MISSING");
     }
-    const result = await this.database
-      .prepare(
-        `UPDATE conversion_outbox SET
-          status = ?1,
-          retry_count = ?2,
-          next_retry_at = ?3,
-          last_error_code = ?4,
-          submitted_at = ?5,
-          google_request_id = ?6,
-          next_diagnostic_at = ?7,
-          terminal_result = ?8,
-          last_error_reason = ?9,
-          diagnostic_status = ?10,
-          diagnostic_record_count = ?11,
-          diagnostic_error_reason = ?12,
-          diagnostic_attempt_count = ?13,
-          sent_at = ?14,
-          updated_at = ?15,
+
+    const businessOutcome = row.business_conversion_id
+      ? businessOutcomeFor(row)
+      : null;
+    const terminalCompletion = Boolean(row.business_conversion_id && businessOutcome);
+    const completionId = terminalCompletion ? crypto.randomUUID() : null;
+    const outboxSql = `UPDATE conversion_outbox SET
+      status = ?1,
+      retry_count = ?2,
+      next_retry_at = ?3,
+      last_error_code = ?4,
+      submitted_at = ?5,
+      google_request_id = ?6,
+      next_diagnostic_at = ?7,
+      terminal_result = ?8,
+      last_error_reason = ?9,
+      diagnostic_status = ?10,
+      diagnostic_record_count = ?11,
+      diagnostic_error_reason = ?12,
+      diagnostic_attempt_count = ?13,
+      sent_at = ?14,
+      updated_at = ?15,
+      lease_owner = NULL,
+      lease_expires_at = NULL,
+      completion_id = ?19
+    WHERE conversion_id = ?16
+      AND status = 'processing'
+      AND lease_generation = ?17
+      AND lease_owner = ?18
+      AND lease_expires_at > ?15`;
+    const outboxStatement = this.database.prepare(outboxSql).bind(
+      row.status,
+      row.retry_count,
+      row.next_retry_at,
+      row.last_error_code,
+      row.submitted_at,
+      row.google_request_id,
+      row.next_diagnostic_at,
+      row.terminal_result,
+      row.last_error_reason,
+      row.diagnostic_status,
+      row.diagnostic_record_count,
+      row.diagnostic_error_reason,
+      row.diagnostic_attempt_count,
+      row.sent_at,
+      row.updated_at,
+      row.conversion_id,
+      row.lease_generation,
+      row.lease_owner,
+      completionId
+    );
+
+    if (!terminalCompletion || !row.business_conversion_id || !businessOutcome || !completionId) {
+      const result = await outboxStatement.run();
+      if (changesFrom(result) !== 1) throw new Error("STALE_LEASE_FENCE");
+      row.lease_owner = null;
+      row.lease_expires_at = null;
+      return;
+    }
+
+    const leaseState = businessOutcome === "RECONCILIATION_REQUIRED"
+      ? "RECONCILIATION_REQUIRED"
+      : "CLOSED";
+    const terminalEventType = businessOutcome === "RECONCILIATION_REQUIRED"
+      ? "RECONCILIATION_REQUIRED"
+      : row.status === "deduplicated"
+        ? "DUPLICATE_TRANSACTION_ID"
+        : businessOutcome === "SUCCESS"
+          ? "SUCCESS"
+          : "FAILED";
+    const normalizedStatus = row.terminal_result || businessOutcome;
+    const ambiguous = businessOutcome === "RECONCILIATION_REQUIRED" ? 1 : 0;
+
+    const guardSql = `SELECT CASE WHEN EXISTS (
+      SELECT 1
+        FROM conversion_outbox co
+        JOIN business_conversions bc
+          ON bc.business_conversion_id = co.business_conversion_id
+       WHERE co.conversion_id = ?1
+         AND co.business_conversion_id = ?2
+         AND co.status = 'processing'
+         AND co.lease_generation = ?3
+         AND co.lease_owner = ?4
+         AND co.lease_expires_at > ?5
+         AND bc.outcome_state IN ('PENDING', 'RECONCILIATION_REQUIRED')
+    ) THEN 1 ELSE abs(-9223372036854775808) END AS terminal_completion_guard`;
+    const businessSql = `UPDATE business_conversions
+      SET outcome_state = ?1,
+          completion_id = ?2,
+          updated_at = ?3,
+          version = version + 1
+      WHERE business_conversion_id = ?4
+        AND outcome_state IN ('PENDING', 'RECONCILIATION_REQUIRED')
+        AND EXISTS (
+          SELECT 1 FROM conversion_outbox
+           WHERE conversion_id = ?5 AND completion_id = ?2
+        )`;
+    const leaseSql = `UPDATE provider_delivery_leases
+      SET lease_state = ?1,
           lease_owner = NULL,
-          lease_expires_at = NULL
-        WHERE conversion_id = ?16
-          AND status = 'processing'
-          AND lease_generation = ?17
-          AND lease_owner = ?18
-          AND lease_expires_at > ?15`
+          lease_expires_at = NULL,
+          last_reconciled_at = ?2,
+          updated_at = ?2,
+          completion_id = ?3
+      WHERE business_conversion_id = ?4
+        AND EXISTS (
+          SELECT 1 FROM conversion_outbox
+           WHERE conversion_id = ?5 AND completion_id = ?3
+        )`;
+    const eventSql = `INSERT OR IGNORE INTO provider_attempt_events (
+      attempt_event_id, attempt_id, event_sequence, event_type, recorded_at,
+      provider_request_id, normalized_status, retryable, ambiguous,
+      sanitized_reason, record_count, completion_id
+    )
+    SELECT ?1, pdl.active_attempt_id, COALESCE(MAX(pae.event_sequence), 0) + 1,
+           ?2, ?3, ?4, ?5, 0, ?6, ?7, ?8, ?9
+      FROM provider_delivery_leases pdl
+      LEFT JOIN provider_attempt_events pae ON pae.attempt_id = pdl.active_attempt_id
+     WHERE pdl.business_conversion_id = ?10
+       AND pdl.active_attempt_id IS NOT NULL
+       AND pdl.completion_id = ?9
+       AND EXISTS (
+         SELECT 1 FROM conversion_outbox
+          WHERE conversion_id = ?11 AND completion_id = ?9
+       )
+     GROUP BY pdl.active_attempt_id`;
+    const verifySql = `SELECT CASE WHEN
+      EXISTS (
+        SELECT 1 FROM conversion_outbox
+         WHERE conversion_id = ?1 AND business_conversion_id = ?2
+           AND completion_id = ?3 AND status = ?4
       )
-      .bind(
-        row.status,
-        row.retry_count,
-        row.next_retry_at,
-        row.last_error_code,
-        row.submitted_at,
-        row.google_request_id,
-        row.next_diagnostic_at,
-        row.terminal_result,
-        row.last_error_reason,
-        row.diagnostic_status,
-        row.diagnostic_record_count,
-        row.diagnostic_error_reason,
-        row.diagnostic_attempt_count,
-        row.sent_at,
-        row.updated_at,
+      AND EXISTS (
+        SELECT 1 FROM business_conversions
+         WHERE business_conversion_id = ?2
+           AND completion_id = ?3 AND outcome_state = ?5
+      )
+      AND NOT EXISTS (
+        SELECT 1 FROM provider_delivery_leases
+         WHERE business_conversion_id = ?2
+           AND (completion_id IS NULL OR completion_id <> ?3 OR lease_state <> ?6)
+      )
+      AND NOT EXISTS (
+        SELECT 1 FROM provider_delivery_leases pdl
+         WHERE pdl.business_conversion_id = ?2
+           AND pdl.active_attempt_id IS NOT NULL
+           AND NOT EXISTS (
+             SELECT 1 FROM provider_attempt_events pae
+              WHERE pae.attempt_id = pdl.active_attempt_id
+                AND pae.completion_id = ?3
+           )
+      )
+      THEN 1 ELSE abs(-9223372036854775808)
+    END AS terminal_completion_verified`;
+
+    const results = await this.database.batch([
+      this.database.prepare(guardSql).bind(
         row.conversion_id,
+        row.business_conversion_id,
         row.lease_generation,
-        row.lease_owner
-      )
-      .run();
-    if (changesFrom(result) !== 1) throw new Error("STALE_LEASE_FENCE");
+        row.lease_owner,
+        row.updated_at
+      ),
+      outboxStatement,
+      this.database.prepare(businessSql).bind(
+        businessOutcome,
+        completionId,
+        row.updated_at,
+        row.business_conversion_id,
+        row.conversion_id
+      ),
+      this.database.prepare(leaseSql).bind(
+        leaseState,
+        row.updated_at,
+        completionId,
+        row.business_conversion_id,
+        row.conversion_id
+      ),
+      this.database.prepare(eventSql).bind(
+        crypto.randomUUID(),
+        terminalEventType,
+        row.updated_at,
+        row.google_request_id,
+        normalizedStatus,
+        ambiguous,
+        row.last_error_reason,
+        row.diagnostic_record_count,
+        completionId,
+        row.business_conversion_id,
+        row.conversion_id
+      ),
+      this.database.prepare(verifySql).bind(
+        row.conversion_id,
+        row.business_conversion_id,
+        completionId,
+        row.status,
+        businessOutcome,
+        leaseState
+      ),
+    ]);
+    if (changesFrom(results[1]) !== 1 || changesFrom(results[2]) !== 1) {
+      throw new Error("TERMINAL_COMPLETION_INVARIANT_FAILED");
+    }
     row.lease_owner = null;
     row.lease_expires_at = null;
-    if (!row.business_conversion_id) return;
-    const businessOutcome = businessOutcomeFor(row);
-    if (!businessOutcome) return;
-    await this.database
-      .prepare(
-        `UPDATE business_conversions
-            SET outcome_state = ?1, updated_at = ?2, version = version + 1
-          WHERE business_conversion_id = ?3
-            AND outcome_state IN ('PENDING', 'RECONCILIATION_REQUIRED')`
-      )
-      .bind(businessOutcome, row.updated_at, row.business_conversion_id)
-      .run();
+    row.completion_id = completionId;
   }
 }
