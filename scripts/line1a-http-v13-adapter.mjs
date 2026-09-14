@@ -95,6 +95,89 @@ patched = replaceExactlyOnce(
   "migration result label"
 );
 
+
+
+patched = replaceExactlyOnce(
+  patched,
+  '  mkdirSync,\n  mkdtempSync,',
+  '  mkdirSync,\n  readdirSync,\n  mkdtempSync,',
+  "fs sqlite import"
+);
+patched = replaceExactlyOnce(
+  patched,
+  'import { tmpdir } from "node:os";\nimport { spawn, spawnSync } from "node:child_process";',
+  'import { tmpdir } from "node:os";\nimport { DatabaseSync } from "node:sqlite";\nimport { spawn, spawnSync } from "node:child_process";',
+  "node sqlite import"
+);
+
+const executeAnchor = [
+  'const execute = (configPath, persistTo, command) =>',
+  '  JSON.parse(',
+  '    run([',
+  '      "d1",',
+  '      "execute",',
+  '      "ATTRIBUTION_DB",',
+  '      "--local",',
+  '      "--persist-to",',
+  '      persistTo,',
+  '      "--config",',
+  '      configPath,',
+  '      "--json",',
+  '      "--command",',
+  '      command,',
+  '    ])',
+  '  );',
+].join("\n");
+const executeReplacement = [
+  'const locateLocalD1Sqlite = (persistTo) => {',
+  '  const directory = join(persistTo, "v3", "d1", "miniflare-D1DatabaseObject");',
+  '  const candidates = readdirSync(directory).filter(',
+  '    (name) => name.endsWith(".sqlite") && name !== "metadata.sqlite"',
+  '  );',
+  '  assert.equal(candidates.length, 1, "expected exactly one local D1 sqlite database");',
+  '  return join(directory, candidates[0]);',
+  '};',
+  '',
+  'const execute = (configPath, persistTo, command) => {',
+  '  const statements = command.trim().split(";").map((part) => part.trim()).filter(Boolean);',
+  '  if (statements.length === 1 && /^(SELECT|EXPLAIN)\\b/i.test(statements[0])) {',
+  '    const db = new DatabaseSync(locateLocalD1Sqlite(persistTo), { readOnly: true });',
+  '    try {',
+  '      return [{ results: db.prepare(statements[0]).all() }];',
+  '    } finally {',
+  '      db.close();',
+  '    }',
+  '  }',
+  '  return JSON.parse(',
+  '    run([',
+  '      "d1",',
+  '      "execute",',
+  '      "ATTRIBUTION_DB",',
+  '      "--local",',
+  '      "--persist-to",',
+  '      persistTo,',
+  '      "--config",',
+  '      configPath,',
+  '      "--json",',
+  '      "--command",',
+  '      command,',
+  '    ])',
+  '  );',
+  '};',
+].join("\n");
+patched = replaceExactlyOnce(patched, executeAnchor, executeReplacement, "direct sqlite readback");
+patched = replaceExactlyOnce(
+  patched,
+  '  await waitForServer(server, baseUrl, output);\n  return { server, baseUrl, output };',
+  '  await waitForServer(server, baseUrl, output);\n  server.output = output;\n  return { server, baseUrl, output };',
+  "server output diagnostics"
+);
+patched = replaceExactlyOnce(
+  patched,
+  '      "--log-level",\n      "error",',
+  '      "--log-level",\n      "debug",',
+  "wrangler debug logging"
+);
 const tempRoot = mkdtempSync(join(tmpdir(), "line1a-v13-adapter-"));
 const generatedPath = join(tempRoot, "line1a-http-integration.mjs");
 writeFileSync(generatedPath, patched, "utf8");
