@@ -1,0 +1,51 @@
+name: Ads LINE required gate
+
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ads-line-required-gate-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact PR merge candidate
+        uses: actions/checkout@v4
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Build static export
+        run: npm run build
+      - name: TypeScript typecheck
+        run: npm run typecheck
+      - name: Verify immutable attribution snapshot
+        run: npm run test:v13:p0a
+      - name: Verify provider ACK and RESULT_UNKNOWN recovery
+        run: npm run test:v13:p0b
+      - name: Verify atomic terminal completion
+        run: npm run test:v13:p0c
+      - name: Verify uploader, duplicate context, and auth hardening
+        run: npm run test:line4a:unit
+      - name: Verify uploader static mutation boundary
+        run: npm run test:line4a:static
+      - name: Verify LINE token and webhook contracts
+        run: |
+          npm run test:line1a:unit
+          npm run test:line1b1:unit
+          npm run test:line1b2a:unit
+          npm run test:line1b2b:unit
+      - name: Verify workflow mutation boundary
+        run: node scripts/v12-workflow-safety.test.mjs

@@ -114,9 +114,15 @@ class MemoryRepository implements OutboxRepository {
   readonly rows = new Map<string, ConversionOutboxRow>();
   readonly claims = { uploads: 0, diagnostics: 0 };
   readonly cleanupCalls: Array<{ cutoffIso: string; limit: number }> = [];
+  readonly duplicateContextVerified: boolean;
 
-  constructor(rows: ConversionOutboxRow[]) {
+  constructor(rows: ConversionOutboxRow[], duplicateContextVerified = false) {
+    this.duplicateContextVerified = duplicateContextVerified;
     for (const row of rows) this.rows.set(row.conversion_id, copyRow(row));
+  }
+
+  async verifyProviderRequestContext(): Promise<boolean> {
+    return this.duplicateContextVerified;
   }
 
   async listDueUploads(nowIso: string, limit: number): Promise<ConversionOutboxRow[]> {
@@ -587,12 +593,11 @@ test("G: production validation-only configuration fails closed before claiming r
   assert.equal(mock.calls.length, 0);
 });
 
-test("S/T/V: 429, 5xx and ambiguous network errors schedule bounded retry with the same transaction ID", async () => {
+test("S/T: confirmed 429 and 5xx rejection schedule bounded retry with the same transaction ID", async () => {
   const fake = fakeServiceAccount();
-  for (const outcome of [429, 503, "network"] as const) {
+  for (const outcome of [429, 503] as const) {
     const mock = tokenThen(fake, (url) => {
       assert.equal(url, GOOGLE_DATA_MANAGER_EVENTS_URL);
-      if (outcome === "network") throw new Error("connection reset");
       return response({ error: { status: `HTTP_${outcome}` } }, outcome);
     });
     const repository = new MemoryRepository([baseRow()]);
@@ -603,6 +608,41 @@ test("S/T/V: 429, 5xx and ambiguous network errors schedule bounded retry with t
     assert.equal(row.transaction_id, "stable-transaction-1");
     assert.equal(mock.calls.filter((call) => call.url === GOOGLE_DATA_MANAGER_EVENTS_URL).length, 1);
   }
+});
+
+test("V: ambiguous network result requires reconciliation and is never blindly resent", async () => {
+  const fake = fakeServiceAccount();
+  const mock = tokenThen(fake, (url) => {
+    assert.equal(url, GOOGLE_DATA_MANAGER_EVENTS_URL);
+    throw new Error("connection reset");
+  });
+  const repository = new MemoryRepository([baseRow()]);
+  const env = testEnv(fake.json, {
+    GOOGLE_DATA_MANAGER_VALIDATE_ONLY: "false",
+    UPLOADER_ENVIRONMENT: "production",
+    PRODUCTION_HUMAN_GATE: "HUMAN_GATE_CONFIRMED",
+  });
+  await runScheduledCycle(env, {
+    repository,
+    fetchImpl: mock.fetchImpl,
+    now: new Date(NOW),
+    random: () => 0.5,
+  });
+  const row = repository.get();
+  assert.equal(row.status, "failed");
+  assert.equal(row.next_retry_at, null);
+  assert.equal(row.terminal_result, "RECONCILIATION_REQUIRED");
+  assert.equal(row.last_error_code, "INGEST_NETWORK_ERROR");
+  assert.equal(row.transaction_id, "stable-transaction-1");
+  const before = mock.calls.filter((call) => call.url === GOOGLE_DATA_MANAGER_EVENTS_URL).length;
+  await runScheduledCycle(env, {
+    repository,
+    fetchImpl: mock.fetchImpl,
+    now: new Date("2026-08-28T04:05:00.000Z"),
+    random: () => 0.5,
+  });
+  const after = mock.calls.filter((call) => call.url === GOOGLE_DATA_MANAGER_EVENTS_URL).length;
+  assert.equal(after, before);
 });
 
 test("U: HTTP 400 is terminal", async () => {
@@ -702,9 +742,37 @@ test("AA: PARTIAL_SUCCESS is explicit human review", async () => {
   assert.equal(repository.get().terminal_result, "PARTIAL_SUCCESS_HUMAN_REVIEW");
 });
 
-test("AB/AC: matching duplicate is explicit dedup success-equivalent; other errors are not", async () => {
+test("AB/AC: duplicate is success-equivalent only with exact provider transaction and durable request context", async () => {
   const fake = fakeServiceAccount();
-  const duplicateMock = tokenThen(fake, () =>
+  const duplicateResponse = () =>
+    response({
+      requestStatusPerDestination: [
+        {
+          requestStatus: "FAILED",
+          eventsIngestionStatus: { transactionId: "stable-transaction-1" },
+          errorInfo: {
+            errorCounts: [{ reason: "PROCESSING_ERROR_REASON_DUPLICATE_TRANSACTION_ID" }],
+          },
+        },
+      ],
+    });
+
+  const verifiedRepo = new MemoryRepository(
+    [submittedRow({ upload_payload_hash: "a".repeat(64) })],
+    true
+  );
+  await runOne(verifiedRepo, fake, tokenThen(fake, duplicateResponse).fetchImpl);
+  assert.equal(verifiedRepo.get().status, "deduplicated");
+  assert.equal(verifiedRepo.get().terminal_result, "DEDUPLICATED_SUCCESS_EQUIVALENT");
+
+  const unprovenRepo = new MemoryRepository([
+    submittedRow({ upload_payload_hash: "a".repeat(64) }),
+  ]);
+  await runOne(unprovenRepo, fake, tokenThen(fake, duplicateResponse).fetchImpl);
+  assert.equal(unprovenRepo.get().status, "failed");
+  assert.equal(unprovenRepo.get().terminal_result, "DUPLICATE_CONTEXT_UNPROVEN");
+
+  const missingTransactionMock = tokenThen(fake, () =>
     response({
       requestStatusPerDestination: [
         {
@@ -716,10 +784,13 @@ test("AB/AC: matching duplicate is explicit dedup success-equivalent; other erro
       ],
     })
   );
-  const duplicateRepo = new MemoryRepository([submittedRow()]);
-  await runOne(duplicateRepo, fake, duplicateMock.fetchImpl);
-  assert.equal(duplicateRepo.get().status, "deduplicated");
-  assert.equal(duplicateRepo.get().terminal_result, "DEDUPLICATED_SUCCESS_EQUIVALENT");
+  const missingTransactionRepo = new MemoryRepository(
+    [submittedRow({ upload_payload_hash: "a".repeat(64) })],
+    true
+  );
+  await runOne(missingTransactionRepo, fake, missingTransactionMock.fetchImpl);
+  assert.equal(missingTransactionRepo.get().status, "failed");
+  assert.equal(missingTransactionRepo.get().terminal_result, "DUPLICATE_CONTEXT_UNPROVEN");
 
   const otherMock = tokenThen(fake, () =>
     response({

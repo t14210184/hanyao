@@ -135,7 +135,19 @@ const fakeDatabase = (sessionIds: string[]): D1Database => {
           }
           if (sql.includes("FROM attribution_sessions")) {
             return (availableSessions.has(String(parameters[0]))
-              ? { session_id: parameters[0] }
+              ? {
+                  session_id: parameters[0],
+                  first_gclid: "G-FAKE",
+                  first_gbraid: null,
+                  first_wbraid: null,
+                  first_captured_at: "2026-08-25T00:00:00.000Z",
+                  last_gclid: "G-FAKE",
+                  last_gbraid: null,
+                  last_wbraid: null,
+                  last_captured_at: "2026-08-25T00:00:00.000Z",
+                  server_updated_at: "2026-08-25T00:00:00.000Z",
+                  expires_at: "2026-11-23T00:00:00.000Z",
+                }
               : null) as T | null;
           }
           if (sql.includes("FROM lead_tokens WHERE lead_token")) {
@@ -148,14 +160,30 @@ const fakeDatabase = (sessionIds: string[]): D1Database => {
             throw new Error(`Unexpected fake D1 run query: ${sql}`);
           }
           if (lead) throw new Error("UNIQUE_REQUEST_ID");
-          lead = {
-            lead_token: String(parameters[0]),
-            request_id: String(parameters[1]),
-            session_id: parameters[2] as string | null,
-            channel: parameters[3] as LeadTokenRow["channel"],
-            status: "issued",
-            server_created_at: String(parameters[4]),
-          };
+          const attributed = sql.includes("SELECT ?1, ?2, ?3, ?4");
+          lead = attributed
+            ? {
+                lead_token: String(parameters[0]),
+                request_id: String(parameters[1]),
+                session_id: parameters[2] as string,
+                channel: parameters[3] as LeadTokenRow["channel"],
+                status: "issued",
+                server_created_at: String(parameters[4]),
+                attribution_snapshot_json: String(parameters[5]),
+                attribution_snapshot_hash: String(parameters[6]),
+                lineage_rule_version: String(parameters[7]),
+              }
+            : {
+                lead_token: String(parameters[0]),
+                request_id: String(parameters[1]),
+                session_id: null,
+                channel: parameters[2] as LeadTokenRow["channel"],
+                status: "issued",
+                server_created_at: String(parameters[3]),
+                attribution_snapshot_json: String(parameters[4]),
+                attribution_snapshot_hash: String(parameters[5]),
+                lineage_rule_version: String(parameters[6]),
+              };
           return { success: true, meta: { changes: 1 } };
         },
       };

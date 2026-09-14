@@ -1,5 +1,9 @@
 import type { D1Database } from "@cloudflare/workers-types";
 import type { AttributionSessionRow } from "./attribution.ts";
+import {
+  createLeadAttributionSnapshot,
+  type StoredLeadAttributionSnapshot,
+} from "./lead-attribution-snapshot.ts";
 
 export const LEAD_TOKEN_PREFIX = "HY-";
 export const LEAD_TOKEN_LENGTH = 10;
@@ -43,7 +47,14 @@ export interface LeadTokenRow {
   channel: LeadChannel;
   status: string;
   server_created_at: string;
+  attribution_snapshot_json: string | null;
+  attribution_snapshot_hash: string | null;
+  lineage_rule_version: string | null;
 }
+
+const LEAD_TOKEN_SELECT_COLUMNS =
+  "lead_token, request_id, session_id, channel, status, server_created_at, " +
+  "attribution_snapshot_json, attribution_snapshot_hash, lineage_rule_version";
 
 export interface ValidationSuccess<T> {
   ok: true;
@@ -154,9 +165,7 @@ export const issueLeadToken = async (
   randomSource: Pick<Crypto, "getRandomValues"> = crypto
 ): Promise<LeadTokenRow> => {
   const existing = await database
-    .prepare(
-      "SELECT lead_token, request_id, session_id, channel, status, server_created_at FROM lead_tokens WHERE request_id = ?1"
-    )
+    .prepare(`SELECT ${LEAD_TOKEN_SELECT_COLUMNS} FROM lead_tokens WHERE request_id = ?1`)
     .bind(request.request_id)
     .first<LeadTokenRow>();
   if (existing) {
@@ -166,46 +175,75 @@ export const issueLeadToken = async (
     return existing;
   }
 
-  if (request.session_id !== null) {
-    const session = await database
-      .prepare("SELECT session_id FROM attribution_sessions WHERE session_id = ?1")
-      .bind(request.session_id)
-      .first<Pick<AttributionSessionRow, "session_id">>();
-    if (!session) throw new SessionNotFoundError();
-  }
-
   const serverCreatedAt = now.toISOString();
   for (let attempt = 0; attempt < LEAD_TOKEN_MAX_ATTEMPTS; attempt += 1) {
+    let session: AttributionSessionRow | null = null;
+    if (request.session_id !== null) {
+      session = await database
+        .prepare("SELECT * FROM attribution_sessions WHERE session_id = ?1")
+        .bind(request.session_id)
+        .first<AttributionSessionRow>();
+      if (!session) throw new SessionNotFoundError();
+    }
+
+    const snapshot: StoredLeadAttributionSnapshot =
+      await createLeadAttributionSnapshot(session, serverCreatedAt);
     const leadToken = generateLeadToken(randomSource);
     try {
-      await database
-        .prepare(
-          `INSERT INTO lead_tokens (
-            lead_token, request_id, session_id, channel, status, server_created_at
-          ) VALUES (?1, ?2, ?3, ?4, 'issued', ?5)`
-        )
-        .bind(
-          leadToken,
-          request.request_id,
-          request.session_id,
-          request.channel,
-          serverCreatedAt
-        )
-        .run();
+      let result;
+      if (session) {
+        result = await database
+          .prepare(
+            `INSERT INTO lead_tokens (
+              lead_token, request_id, session_id, channel, status, server_created_at,
+              attribution_snapshot_json, attribution_snapshot_hash, lineage_rule_version
+            )
+            SELECT ?1, ?2, ?3, ?4, 'issued', ?5, ?6, ?7, ?8
+              FROM attribution_sessions
+             WHERE session_id = ?3 AND server_updated_at = ?9`
+          )
+          .bind(
+            leadToken,
+            request.request_id,
+            request.session_id,
+            request.channel,
+            serverCreatedAt,
+            snapshot.json,
+            snapshot.hash,
+            snapshot.ruleVersion,
+            session.server_updated_at
+          )
+          .run();
+        if (Number(result.meta?.changes ?? 0) === 0) continue;
+      } else {
+        result = await database
+          .prepare(
+            `INSERT INTO lead_tokens (
+              lead_token, request_id, session_id, channel, status, server_created_at,
+              attribution_snapshot_json, attribution_snapshot_hash, lineage_rule_version
+            ) VALUES (?1, ?2, NULL, ?3, 'issued', ?4, ?5, ?6, ?7)`
+          )
+          .bind(
+            leadToken,
+            request.request_id,
+            request.channel,
+            serverCreatedAt,
+            snapshot.json,
+            snapshot.hash,
+            snapshot.ruleVersion
+          )
+          .run();
+      }
 
       const inserted = await database
-        .prepare(
-          "SELECT lead_token, request_id, session_id, channel, status, server_created_at FROM lead_tokens WHERE lead_token = ?1"
-        )
+        .prepare(`SELECT ${LEAD_TOKEN_SELECT_COLUMNS} FROM lead_tokens WHERE lead_token = ?1`)
         .bind(leadToken)
         .first<LeadTokenRow>();
       if (!inserted) throw new LeadTokenIssuanceError();
       return inserted;
     } catch {
       const retried = await database
-        .prepare(
-          "SELECT lead_token, request_id, session_id, channel, status, server_created_at FROM lead_tokens WHERE request_id = ?1"
-        )
+        .prepare(`SELECT ${LEAD_TOKEN_SELECT_COLUMNS} FROM lead_tokens WHERE request_id = ?1`)
         .bind(request.request_id)
         .first<LeadTokenRow>();
       if (retried) {

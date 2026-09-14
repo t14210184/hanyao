@@ -6,6 +6,7 @@ import {
 import type { DataManagerIngestRequest } from "./payload.ts";
 import {
   ProviderRequestError,
+  type ProviderDispatchState,
   parseSafeErrorReason,
   retryableHttpStatus,
   sanitizeHttpReason,
@@ -51,6 +52,7 @@ const parseFieldWarnings = (
 export interface IngestResponse {
   requestId: string | null;
   fieldWarnings: DataManagerFieldWarning[];
+  transportOutcome: ProviderDispatchState;
 }
 
 export const ingestDataManagerEvent = async (
@@ -69,25 +71,53 @@ export const ingestDataManagerEvent = async (
       body: JSON.stringify(request),
     });
   } catch {
-    throw new ProviderRequestError("INGEST_NETWORK_ERROR", true);
+    throw new ProviderRequestError(
+      "INGEST_NETWORK_ERROR",
+      false,
+      null,
+      null,
+      "RESULT_UNKNOWN"
+    );
   }
 
-  const body = await response.text();
+  let body: string;
+  try {
+    body = await response.text();
+  } catch {
+    throw new ProviderRequestError(
+      "INGEST_RESPONSE_BODY_READ_ERROR",
+      false,
+      response.status,
+      null,
+      "RESULT_UNKNOWN"
+    );
+  }
   if (!response.ok) {
     throw new ProviderRequestError(
       "INGEST_HTTP_ERROR",
       retryableHttpStatus(response.status),
       response.status,
-      parseSafeErrorReason(body) || sanitizeHttpReason(response.status)
+      parseSafeErrorReason(body) || sanitizeHttpReason(response.status),
+      "REJECTED_CONFIRMED"
     );
   }
 
   const record = parseJsonRecord(body);
   const requestId = asNonEmptyString(record?.requestId);
   if (!requestId && !request.validateOnly) {
-    throw new ProviderRequestError("INGEST_REQUEST_ID_MISSING", false, response.status);
+    throw new ProviderRequestError(
+      "INGEST_REQUEST_ID_MISSING",
+      false,
+      response.status,
+      null,
+      "RESULT_UNKNOWN"
+    );
   }
-  return { requestId, fieldWarnings: parseFieldWarnings(record) };
+  return {
+    requestId,
+    fieldWarnings: parseFieldWarnings(record),
+    transportOutcome: "ACKNOWLEDGED",
+  };
 };
 
 export interface DiagnosticResponse {
