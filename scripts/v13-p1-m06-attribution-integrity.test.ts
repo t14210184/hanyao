@@ -41,8 +41,8 @@ const payload = (
     first_touch: rawTouch(firstCapturedAt, firstGclid),
     last_touch: rawTouch(lastCapturedAt, lastGclid),
   });
+  if (!result.ok) throw new Error(`M06_TEST_PAYLOAD_INVALID:${result.code}`);
   assert.equal(result.ok, true);
-  if (!result.ok) throw new Error(result.code);
   return result.value;
 };
 
