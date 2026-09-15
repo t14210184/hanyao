@@ -75,6 +75,21 @@ const normalizeOptionalString = (value: string | null | undefined): string | nul
   return normalized.length > 0 ? normalized : null;
 };
 
+const minimizeStoredUrl = (
+  value: string | null | undefined,
+  part: "landing" | "referrer"
+): string | null => {
+  const normalized = normalizeOptionalString(value);
+  if (!normalized) return null;
+  try {
+    const parsed = new URL(normalized);
+    return part === "landing"
+      ? `${parsed.origin}${parsed.pathname || "/"}`
+      : parsed.origin;
+  } catch {
+    return null;
+  }
+};
 const hasAttributionValue = (touch: AttributionTouch): boolean =>
   TOUCH_FIELDS.some((field) => touch[field] !== null);
 
@@ -132,8 +147,8 @@ export const parseAttributionFromUrl = (
 
   const touch = emptyTouch();
   touch.captured_at = capturedAt;
-  touch.landing_url = normalizeOptionalString(url);
-  touch.referrer = normalizeOptionalString(referrer);
+  touch.landing_url = minimizeStoredUrl(url, "landing");
+  touch.referrer = minimizeStoredUrl(referrer, "referrer");
 
   for (const field of TOUCH_FIELDS) {
     touch[field] = normalizeOptionalString(parsedUrl.searchParams.get(field));

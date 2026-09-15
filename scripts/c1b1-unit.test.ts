@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { webcrypto } from "node:crypto";
 import test from "node:test";
 import {
+  sanitizeAttributionPayloadForServerTime,
   validateAttributionPayload,
 } from "../functions/_lib/attribution.ts";
 import {
@@ -77,6 +78,36 @@ test("server attribution validation allowlists fields and minimizes URLs", () =>
   assert.deepEqual(injection, { ok: false, code: "INVALID_SESSION_ID" });
 });
 
+test("server time window strips stale and future attribution sources without blocking the session", () => {
+  const result = validateAttributionPayload(validAttributionPayload());
+  assert.equal(result.ok, true);
+  if (!result.ok) return;
+  const now = new Date("2026-09-15T00:00:00.000Z");
+
+  const future = sanitizeAttributionPayloadForServerTime({
+    ...result.value,
+    last_touch: {
+      ...result.value.last_touch,
+      captured_at: "2026-09-16T00:00:00.000Z",
+      gclid: "G-FUTURE",
+    },
+  }, now);
+  assert.equal(future.last_touch.gclid, null);
+  assert.equal(future.last_touch.captured_at, null);
+  assert.equal(future.first_touch.gclid, "G1");
+
+  const stale = sanitizeAttributionPayloadForServerTime({
+    ...result.value,
+    first_touch: {
+      ...result.value.first_touch,
+      captured_at: "2026-05-01T00:00:00.000Z",
+      gclid: "G-STALE",
+    },
+  }, now);
+  assert.equal(stale.first_touch.gclid, null);
+  assert.equal(stale.first_touch.captured_at, null);
+  assert.equal(stale.last_touch.gclid, "G2");
+});
 test("lead token request validation rejects invalid channels, PII, and injection-shaped IDs", () => {
   assert.equal(
     validateLeadTokenRequest({

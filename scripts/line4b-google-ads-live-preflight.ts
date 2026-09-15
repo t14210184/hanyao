@@ -8,8 +8,13 @@ const API_URL = `https://googleads.googleapis.com/${GOOGLE_ADS_API_VERSION}/cust
 
 const credential = process.env.GOOGLE_DATA_MANAGER_SERVICE_ACCOUNT_JSON?.trim();
 const loginCustomerId = process.env.GOOGLE_ADS_LOGIN_CUSTOMER_ID?.replace(/-/g, "").trim();
+const liveGateRequired = process.env.GOOGLE_ADS_LIVE_GATE_REQUIRED === "1";
 
 if (!credential) {
+  if (liveGateRequired) {
+    console.error("GOOGLE_ADS_LIVE_GATE=FAIL:MISSING_REQUIRED_CREDENTIAL");
+    process.exit(1);
+  }
   console.log("GOOGLE_ADS_LIVE_GATE=SKIPPED_NO_GITHUB_CREDENTIAL");
   process.exit(0);
 }
@@ -88,7 +93,6 @@ try {
       conversion_action.category,
       conversion_action.origin,
       conversion_action.primary_for_goal,
-      conversion_action.include_in_conversions_metric,
       conversion_action.counting_type
     FROM conversion_action
     WHERE conversion_action.id = ${CONVERSION_ACTION_ID}
@@ -108,7 +112,6 @@ try {
   // Proto3 JSON may omit scalar fields whose value is the default false.
   // For a selected bool, only explicit true means Primary/biddable here.
   const primaryForGoal = action.primaryForGoal === true;
-  const includeInConversionsMetric = action.includeInConversionsMetric === true;
 
   const hardFailures: string[] = [];
   const advisories: string[] = [];
@@ -123,9 +126,6 @@ try {
   }
   if (primaryForGoal) {
     hardFailures.push("PRIMARY_FOR_GOAL_TRUE");
-  }
-  if (includeInConversionsMetric) {
-    hardFailures.push("INCLUDE_IN_CONVERSIONS_METRIC_TRUE");
   }
 
   const customerGoalRows = await query(
@@ -198,7 +198,6 @@ try {
       origin,
       countingType,
       primaryForGoal,
-      includeInConversionsMetric,
       customerGoalBiddable,
       enabledCustomGoalsContainingAction: enabledCustomGoalResources.size,
       activeCustomGoalCampaignCount,

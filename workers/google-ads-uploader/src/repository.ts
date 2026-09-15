@@ -581,10 +581,14 @@ export class D1OutboxRepository implements OutboxRepository {
       .prepare(
         `DELETE FROM conversion_outbox
          WHERE conversion_id IN (
-           SELECT conversion_id FROM conversion_outbox
-           WHERE status IN ('success', 'failed', 'deduplicated', 'validated_only', 'sent')
-             AND updated_at <= ?1
-           ORDER BY updated_at, conversion_id
+           SELECT candidate.conversion_id FROM conversion_outbox AS candidate
+           WHERE candidate.status IN ('success', 'failed', 'deduplicated', 'validated_only', 'sent')
+             AND candidate.updated_at <= ?1
+             AND NOT EXISTS (
+               SELECT 1 FROM legacy_conversion_bridge AS legacy
+               WHERE legacy.legacy_conversion_id = candidate.conversion_id
+             )
+           ORDER BY candidate.updated_at, candidate.conversion_id
            LIMIT ?2
          )`
       )

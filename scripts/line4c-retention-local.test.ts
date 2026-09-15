@@ -75,12 +75,15 @@ export default {
         env.ATTRIBUTION_DB.prepare("INSERT INTO lead_tokens (lead_token, request_id, session_id, channel, status, server_created_at) VALUES (?, ?, ?, ?, ?, ?)").bind("HY-TERMINAL02", "exact-terminal", null, "line", "received", old),
         env.ATTRIBUTION_DB.prepare("INSERT INTO lead_tokens (lead_token, request_id, session_id, channel, status, server_created_at) VALUES (?, ?, ?, ?, ?, ?)").bind("HY-TERMINAL03", "new-terminal", null, "line", "received", old),
         env.ATTRIBUTION_DB.prepare("INSERT INTO lead_tokens (lead_token, request_id, session_id, channel, status, server_created_at) VALUES (?, ?, ?, ?, ?, ?)").bind("HY-TERMINAL04", "overflow-terminal", null, "line", "received", old),
+        env.ATTRIBUTION_DB.prepare("INSERT INTO lead_tokens (lead_token, request_id, session_id, channel, status, server_created_at) VALUES (?, ?, ?, ?, ?, ?)").bind("HY-BRIDGE001", "bridge-terminal", null, "line", "received", old),
         env.ATTRIBUTION_DB.prepare("INSERT INTO lead_tokens (lead_token, request_id, session_id, channel, status, server_created_at) VALUES (?, ?, ?, ?, ?, ?)").bind("HY-SUBMITTED01", "submitted-terminal", null, "line", "received", old),
         env.ATTRIBUTION_DB.prepare("INSERT INTO lead_tokens (lead_token, request_id, session_id, channel, status, server_created_at) VALUES (?, ?, ?, ?, ?, ?)").bind("HY-RECENT001", "recent-null", null, "line", "issued", recent),
         env.ATTRIBUTION_DB.prepare("INSERT INTO lead_tokens (lead_token, request_id, session_id, channel, status, server_created_at) VALUES (?, ?, ?, ?, ?, ?)").bind("HY-UNKNOWN01", "old-unknown", null, "line", "future_status", old),
         env.ATTRIBUTION_DB.prepare("INSERT INTO line_events (line_event_id, webhook_event_id, message_id, lead_token, event_type, match_status, line_event_timestamp, received_at, created_at, line_user_key) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)").bind("line-event-old", "webhook-old", "message-old", "HY-OLDNULL01", "message", "MATCHED_UNATTRIBUTED", old, old, old),
         env.ATTRIBUTION_DB.prepare("INSERT INTO conversion_outbox (conversion_id, lead_token, conversion_type, event_timestamp, transaction_id, destination_key, status, retry_count, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?)").bind("pending-conversion", "HY-PENDING01", "verified_line_contact", old, "tx-pending", "HY_VERIFIED_LINE_CONTACT", "pending", old, old),
         env.ATTRIBUTION_DB.prepare("INSERT INTO conversion_outbox (conversion_id, lead_token, conversion_type, event_timestamp, transaction_id, destination_key, status, retry_count, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?)").bind("terminal-old", "HY-TERMINAL01", "verified_line_contact", old, "tx-old", "HY_VERIFIED_LINE_CONTACT", "success", old, old),
+        env.ATTRIBUTION_DB.prepare("INSERT INTO conversion_outbox (conversion_id, lead_token, conversion_type, event_timestamp, transaction_id, destination_key, status, retry_count, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?)").bind("terminal-bridge", "HY-BRIDGE001", "verified_line_contact", old, "tx-bridge", "HY_VERIFIED_LINE_CONTACT", "success", old, old),
+        env.ATTRIBUTION_DB.prepare("INSERT INTO legacy_conversion_bridge (legacy_conversion_id, legacy_transaction_id, source_event_timestamp, created_at) VALUES (?, ?, ?, ?)").bind("terminal-bridge", "tx-bridge", old, old),
         env.ATTRIBUTION_DB.prepare("INSERT INTO conversion_outbox (conversion_id, lead_token, conversion_type, event_timestamp, transaction_id, destination_key, status, retry_count, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?)").bind("terminal-exact", "HY-TERMINAL02", "verified_line_contact", exact, "tx-exact", "HY_VERIFIED_LINE_CONTACT", "failed", exact, exact),
         env.ATTRIBUTION_DB.prepare("INSERT INTO conversion_outbox (conversion_id, lead_token, conversion_type, event_timestamp, transaction_id, destination_key, status, retry_count, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?)").bind("terminal-new", "HY-TERMINAL03", "verified_line_contact", newer, "tx-new", "HY_VERIFIED_LINE_CONTACT", "failed", newer, newer),
         env.ATTRIBUTION_DB.prepare("INSERT INTO conversion_outbox (conversion_id, lead_token, conversion_type, event_timestamp, transaction_id, destination_key, status, retry_count, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?)").bind("terminal-overflow", "HY-TERMINAL04", "verified_line_contact", exact, "tx-overflow", "HY_VERIFIED_LINE_CONTACT", "deduplicated", exact, exact),
@@ -219,6 +222,7 @@ try {
   const readback = await getJson("/readback");
   assert.deepEqual(readback.leads, [
     { lead_token: "HY-ACTIVE001", session_id: "active-session", status: "received" },
+    { lead_token: "HY-BRIDGE001", session_id: null, status: "received" },
     { lead_token: "HY-PENDING01", session_id: null, status: "issued" },
     { lead_token: "HY-RECENT001", session_id: null, status: "issued" },
     { lead_token: "HY-SUBMITTED01", session_id: null, status: "received" },
@@ -230,6 +234,7 @@ try {
     { conversion_id: "pending-conversion", status: "pending" },
     { conversion_id: "processing-conversion", status: "processing" },
     { conversion_id: "submitted-conversion", status: "submitted" },
+    { conversion_id: "terminal-bridge", status: "success" },
     { conversion_id: "terminal-new", status: "failed" },
     { conversion_id: "terminal-overflow", status: "deduplicated" },
   ]);
@@ -238,7 +243,7 @@ try {
     status: "PASS",
     localD1: true,
     leadTokenCleanup: "bounded + expired + no-session/no-outbox guards",
-    outboxCleanup: "bounded + rolling 90-day cutoff + terminal-status guard",
+    outboxCleanup: "bounded + rolling 90-day cutoff + terminal-status + legacy-FK guard",
     foreignKeyReadback: "line_events.lead_token set NULL",
     remoteCalls: "NONE",
   }));
