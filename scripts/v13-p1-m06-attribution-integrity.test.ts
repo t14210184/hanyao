@@ -54,12 +54,18 @@ interface FakeState {
 
 class FakeStatement {
   args: unknown[] = [];
-  constructor(private readonly state: FakeState) {}
+  private readonly state: FakeState;
+
+  constructor(state: FakeState) {
+    this.state = state;
+  }
+
   bind(...args: unknown[]) {
     this.args = args;
     this.state.binds.push(args);
     return this;
   }
+
   async first<T>(): Promise<T | null> {
     this.state.queries += 1;
     return (this.state.conflict ? { session_id: "other-active-session" } : null) as T | null;
