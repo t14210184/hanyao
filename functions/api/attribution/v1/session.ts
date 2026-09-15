@@ -10,6 +10,7 @@ import {
   opportunisticCleanupExpiredAttribution,
   validateAttributionPayload,
 } from "../../../_lib/attribution";
+import { enforceAttributionIntegrity } from "../../../_lib/attribution-integrity";
 import {
   ABUSE_CONTROL_RETRY_AFTER_SECONDS,
   enforceAbuseControl,
@@ -39,11 +40,23 @@ export const onRequest: PageHandler = async ({ request, env }) => {
   }
 
   try {
+    const receivedAt = new Date();
+    const integrity = await enforceAttributionIntegrity(
+      env.ATTRIBUTION_DB,
+      payload.value,
+      receivedAt
+    );
+    if (!integrity.ok) return errorResponse(integrity.code, integrity.status);
+
     await opportunisticCleanupExpiredAttribution(
       env.ATTRIBUTION_DB,
-      payload.value.session_id
+      integrity.value.session_id
     );
-    const row = await upsertAttributionSession(env.ATTRIBUTION_DB, payload.value);
+    const row = await upsertAttributionSession(
+      env.ATTRIBUTION_DB,
+      integrity.value,
+      receivedAt
+    );
     return jsonResponse({
       session_id: row.session_id,
       schema_version: row.schema_version,
