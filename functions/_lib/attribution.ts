@@ -307,11 +307,44 @@ const touchColumns = (touch: NormalizedTouch): (string | null)[] => [
   touch.utm_content,
 ];
 
+export const ATTRIBUTION_CAPTURE_FUTURE_SKEW_MS = 5 * 60 * 1000;
+const ATTRIBUTION_CAPTURE_MAX_AGE_MS =
+  ATTRIBUTION_RETENTION_DAYS * 24 * 60 * 60 * 1000;
+
+const clearAttributionSource = (touch: NormalizedTouch): NormalizedTouch => {
+  const cleared: NormalizedTouch = { ...touch, captured_at: null };
+  for (const field of TOUCH_FIELDS) cleared[field] = null;
+  return cleared;
+};
+
+export const sanitizeAttributionPayloadForServerTime = (
+  payload: NormalizedAttributionPayload,
+  now = new Date()
+): NormalizedAttributionPayload => {
+  const serverMs = now.getTime();
+  const minMs = serverMs - ATTRIBUTION_CAPTURE_MAX_AGE_MS;
+  const maxMs = serverMs + ATTRIBUTION_CAPTURE_FUTURE_SKEW_MS;
+  const sanitizeTouch = (touch: NormalizedTouch): NormalizedTouch => {
+    if (!hasAttributionSource(touch)) return touch;
+    if (!touch.captured_at) return clearAttributionSource(touch);
+    const capturedMs = Date.parse(touch.captured_at);
+    if (!Number.isFinite(capturedMs) || capturedMs < minMs || capturedMs > maxMs) {
+      return clearAttributionSource(touch);
+    }
+    return touch;
+  };
+  return {
+    ...payload,
+    first_touch: sanitizeTouch(payload.first_touch),
+    last_touch: sanitizeTouch(payload.last_touch),
+  };
+};
 export const upsertAttributionSession = async (
   database: D1Database,
   payload: NormalizedAttributionPayload,
   now = new Date()
 ): Promise<AttributionSessionRow> => {
+  const effectivePayload = sanitizeAttributionPayloadForServerTime(payload, now);
   const serverNow = now.toISOString();
   const expiresAt = new Date(
     now.getTime() + ATTRIBUTION_RETENTION_DAYS * 24 * 60 * 60 * 1000
@@ -338,17 +371,17 @@ export const upsertAttributionSession = async (
       )`
     )
     .bind(
-      payload.session_id,
-      payload.schema_version,
-      ...touchColumns(payload.first_touch),
-      ...touchColumns(payload.last_touch),
+      effectivePayload.session_id,
+      effectivePayload.schema_version,
+      ...touchColumns(effectivePayload.first_touch),
+      ...touchColumns(effectivePayload.last_touch),
       serverNow,
       serverNow,
       expiresAt
     )
     .run();
 
-  if (hasAttributionSource(payload.first_touch)) {
+  if (hasAttributionSource(effectivePayload.first_touch)) {
     await database
       .prepare(
         `UPDATE attribution_sessions SET
@@ -358,12 +391,12 @@ export const upsertAttributionSession = async (
           first_utm_id = ?10, first_utm_term = ?11, first_utm_content = ?12
         WHERE session_id = ?13 AND ${FIRST_SOURCE_COLUMNS_EMPTY_SQL}`
       )
-      .bind(...touchColumns(payload.first_touch), payload.session_id)
+      .bind(...touchColumns(effectivePayload.first_touch), effectivePayload.session_id)
       .run();
   }
 
-  if (hasAttributionSource(payload.last_touch)) {
-    const incomingCapturedAt = payload.last_touch.captured_at;
+  if (hasAttributionSource(effectivePayload.last_touch)) {
+    const incomingCapturedAt = effectivePayload.last_touch.captured_at;
     await database
       .prepare(
         `UPDATE attribution_sessions SET
@@ -379,11 +412,11 @@ export const upsertAttributionSession = async (
         )`
       )
       .bind(
-        payload.schema_version,
-        ...touchColumns(payload.last_touch),
+        effectivePayload.schema_version,
+        ...touchColumns(effectivePayload.last_touch),
         serverNow,
         expiresAt,
-        payload.session_id,
+        effectivePayload.session_id,
         incomingCapturedAt
       )
       .run();
@@ -394,13 +427,13 @@ export const upsertAttributionSession = async (
          SET schema_version = ?1, server_updated_at = ?2, expires_at = ?3
          WHERE session_id = ?4`
       )
-      .bind(payload.schema_version, serverNow, expiresAt, payload.session_id)
+      .bind(effectivePayload.schema_version, serverNow, expiresAt, effectivePayload.session_id)
       .run();
   }
 
   const updated = await database
     .prepare("SELECT * FROM attribution_sessions WHERE session_id = ?1")
-    .bind(payload.session_id)
+    .bind(effectivePayload.session_id)
     .first<AttributionSessionRow>();
   if (!updated) throw new Error("ATTRIBUTION_UPDATE_READBACK_FAILED");
   return updated;
