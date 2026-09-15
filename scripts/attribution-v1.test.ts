@@ -53,8 +53,8 @@ test("parses gclid, braid identifiers, and all UTM fields without inventing valu
   assert.deepEqual(touch, {
     captured_at: "2026-08-24T00:00:00.000Z",
     landing_url:
-      "https://www.xusen.pro/?gclid=TEST_A&gbraid=TEST_GBRAID&wbraid=TEST_WBRAID&utm_source=google&utm_medium=cpc&utm_campaign=repair&utm_id=campaign-1&utm_term=air&utm_content=text",
-    referrer: "https://www.google.com/",
+      "https://www.xusen.pro/",
+    referrer: "https://www.google.com",
     gclid: "TEST_A",
     gbraid: "TEST_GBRAID",
     wbraid: "TEST_WBRAID",
@@ -73,6 +73,21 @@ test("parses gclid, braid identifiers, and all UTM fields without inventing valu
   );
 });
 
+test("minimizes persisted landing and referrer URLs before local storage", () => {
+  const touch = parseAttributionFromUrl(
+    "https://www.xusen.pro/contact/?gclid=TEST_SAFE&email=secret@example.com#private-note",
+    "https://ref.example/path?phone=0912345678#private",
+    "2026-08-24T00:00:00.000Z"
+  );
+  assert.ok(touch);
+  assert.equal(touch.landing_url, "https://www.xusen.pro/contact/");
+  assert.equal(touch.referrer, "https://ref.example");
+  assert.equal(touch.gclid, "TEST_SAFE");
+  const serialized = JSON.stringify(touch);
+  assert.equal(serialized.includes("secret@example.com"), false);
+  assert.equal(serialized.includes("0912345678"), false);
+  assert.equal(serialized.includes("private-note"), false);
+});
 test("preserves first touch, updates last touch, and keeps untagged navigation stable", () => {
   const storage = new MemoryStorage();
   const first = captureAttribution({
