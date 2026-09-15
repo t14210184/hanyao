@@ -41,6 +41,8 @@ jobs:
         run: npm run test:v13:p1m03
       - name: Verify LINE identity key rotation compatibility
         run: npm run test:v13:p1m05
+      - name: Verify bounded attribution timing and session reuse
+        run: npm run test:v13:p1m06
       - name: Verify uploader, duplicate context, and auth hardening
         run: npm run test:line4a:unit
       - name: Verify uploader static mutation boundary
