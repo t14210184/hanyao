@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { trackEvent, trackLineContactAttempt, trackPhoneClickAttempt } from "@/lib/tracking";
 import { siteConfig } from "@/data/site";
@@ -37,10 +37,30 @@ export default function CTAButton({
   dataLineStage,
 }: CTAButtonProps) {
   const lineAttemptInFlight = useRef(false);
+  const lineHandoffStarted = useRef(false);
   const [desktopLineQrHandoff, setDesktopLineQrHandoff] = useState<ReturnType<
     typeof buildDesktopLineQrHandoff
   >>(null);
 
+  useEffect(() => {
+    const resetAfterLineReturn = () => {
+      if (!lineHandoffStarted.current) return;
+      lineHandoffStarted.current = false;
+      lineAttemptInFlight.current = false;
+    };
+    const handlePageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) resetAfterLineReturn();
+    };
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") resetAfterLineReturn();
+    };
+    window.addEventListener("pageshow", handlePageShow);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      window.removeEventListener("pageshow", handlePageShow);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, []);
   const handleClick = async (e: React.MouseEvent<HTMLElement>) => {
     const resolveSource = (pos?: unknown): "header_cta" | "sticky_cta" | "hero_cta" | "service_page" | "footer_cta" | "contact_page" | "contact_form" | "unknown" => {
       if (!pos || typeof pos !== "string") return "unknown";
@@ -91,6 +111,7 @@ export default function CTAButton({
         ? buildLineOaMessageUrl(message)
         : siteConfig.lineUrl;
       if (typeof window !== "undefined") {
+        lineHandoffStarted.current = true;
         window.location.assign(destination);
       }
       return;
@@ -123,6 +144,7 @@ export default function CTAButton({
 
       lineAttemptInFlight.current = false;
       if (typeof window !== "undefined") {
+        lineHandoffStarted.current = true;
         window.location.assign(siteConfig.lineUrl);
       }
       return;
@@ -161,6 +183,7 @@ export default function CTAButton({
       onClose={() => {
         setDesktopLineQrHandoff(null);
         lineAttemptInFlight.current = false;
+        lineHandoffStarted.current = false;
       }}
     />
   ) : null;
