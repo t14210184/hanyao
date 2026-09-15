@@ -8,7 +8,7 @@ import {
 
 export const MAX_LINE_WEBHOOK_BODY_BYTES = 128 * 1024;
 export const EXPECTED_LINE_DESTINATION = "Ua84119b8b81029fd10868116f1937d13";
-export const LINE_IDENTITY_KEY_ID = "current";
+export const LINE_IDENTITY_KEY_ID = "v1";
 export const BUSINESS_DEDUPE_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
 export const GOOGLE_ADS_ACCOUNT_ID = "4801404246";
 export const GOOGLE_ADS_CONVERSION_ACTION_ID = "7674301565";
@@ -379,7 +379,8 @@ export const processLineWebhookEvent = async (
   database: D1Database,
   event: ParsedLineEvent,
   identitySecret: string,
-  now = new Date()
+  now = new Date(),
+  identityKeyId = LINE_IDENTITY_KEY_ID
 ): Promise<LineWebhookOutcome> => {
   const receivedAt = now.toISOString();
   const eventAt = new Date(event.lineEventTimestamp);
@@ -482,7 +483,7 @@ export const processLineWebhookEvent = async (
       decision.recordEventType, decision.matchStatus, event.lineEventTimestamp,
       receivedAt, receivedAt, lineUserKey, event.eventType, event.sourceType ?? "unknown",
       event.messageType, decision.tokenExtractionCount, identityKnown ? "KNOWN" : "ABSENT",
-      identityKnown ? LINE_IDENTITY_KEY_ID : null, event.destination,
+      identityKnown ? identityKeyId : null, event.destination,
       lineUserKey ? "LINE_USER_HMAC" : null, lineUserKey, decision.attributionSessionId,
       decision.attribution?.attribution_touch ?? null, decision.attribution?.gclid ?? null,
       decision.attribution?.gbraid ?? null, decision.attribution?.wbraid ?? null,
@@ -513,7 +514,7 @@ export const processLineWebhookEvent = async (
     ).bind(
       lineUserKey, event.eventType, event.sourceType ?? "unknown", event.messageType,
       decision.tokenExtractionCount, identityKnown ? "KNOWN" : "ABSENT",
-      identityKnown ? LINE_IDENTITY_KEY_ID : null, event.destination,
+      identityKnown ? identityKeyId : null, event.destination,
       lineUserKey ? "LINE_USER_HMAC" : null, lineUserKey,
       decision.attributionSessionId, decision.attribution?.attribution_touch ?? null,
       decision.attribution?.gclid ?? null, decision.attribution?.gbraid ?? null,
