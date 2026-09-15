@@ -1,6 +1,7 @@
 import type { D1Database } from "@cloudflare/workers-types";
 import {
   MAX_UPLOAD_ATTEMPTS,
+  PROVIDER_DISPATCH_MIN_LEASE_REMAINING_MS,
   STALE_PROCESSING_THRESHOLD_MS,
   type ConversionOutboxRow,
   type OutboxRepository,
@@ -42,9 +43,21 @@ const businessOutcomeFor = (row: ConversionOutboxRow): "SUCCESS" | "FAILED" | "R
 
 export class D1OutboxRepository implements OutboxRepository {
   private readonly database: D1Database;
+  private readonly clock: () => Date;
 
-  constructor(database: D1Database) {
+  constructor(database: D1Database, clock: () => Date = () => new Date()) {
     this.database = database;
+    this.clock = clock;
+  }
+
+  private freshNow(): Date {
+    return this.clock();
+  }
+
+  private safeThroughIso(now: Date): string {
+    return new Date(
+      now.getTime() + PROVIDER_DISPATCH_MIN_LEASE_REMAINING_MS
+    ).toISOString();
   }
 
   async recoverStaleClaims(
@@ -240,10 +253,13 @@ export class D1OutboxRepository implements OutboxRepository {
 
   async claimUpload(
     conversionId: string,
-    nowIso: string
+    _nowIso: string
   ): Promise<ConversionOutboxRow | null> {
+    const claimNowIso = this.freshNow().toISOString();
     const leaseOwner = crypto.randomUUID();
-    const leaseExpiresAt = new Date(Date.parse(nowIso) + STALE_PROCESSING_THRESHOLD_MS).toISOString();
+    const leaseExpiresAt = new Date(
+      Date.parse(claimNowIso) + STALE_PROCESSING_THRESHOLD_MS
+    ).toISOString();
     const result = await this.database
       .prepare(
         `UPDATE conversion_outbox
@@ -258,7 +274,7 @@ export class D1OutboxRepository implements OutboxRepository {
             AND (next_retry_at IS NULL OR next_retry_at <= ?1)
             AND retry_count < ?3`
       )
-      .bind(nowIso, conversionId, MAX_UPLOAD_ATTEMPTS, leaseOwner, leaseExpiresAt)
+      .bind(claimNowIso, conversionId, MAX_UPLOAD_ATTEMPTS, leaseOwner, leaseExpiresAt)
       .run();
     if (changesFrom(result) !== 1) return null;
     return this.database
@@ -270,7 +286,7 @@ export class D1OutboxRepository implements OutboxRepository {
   async beginProviderAttempt(
     row: ConversionOutboxRow,
     payloadHash: string,
-    nowIso: string
+    _nowIso: string
   ): Promise<string> {
     if (
       !row.business_conversion_id ||
@@ -281,23 +297,35 @@ export class D1OutboxRepository implements OutboxRepository {
     ) {
       throw new Error("PROVIDER_ATTEMPT_CONTEXT_MISSING");
     }
+    const freshNow = this.freshNow();
+    const dispatchNowIso = freshNow.toISOString();
+    const safeThroughIso = this.safeThroughIso(freshNow);
     const attemptId = crypto.randomUUID();
     const eventId = crypto.randomUUID();
     const attemptSql =
       "INSERT INTO provider_attempts (attempt_id, business_conversion_id, attempt_sequence, transaction_id, " +
       "provider_name, operation, attempt_intent, fence_token, lease_expires_at, started_at, created_at, " +
       "destination_key, payload_hash) " +
-      "SELECT ?1, ?2, COALESCE(MAX(attempt_sequence), 0) + 1, ?3, 'GOOGLE_DATA_MANAGER', " +
-      "'events:ingest', 'DELIVER_CONVERSION', ?4, ?5, ?6, ?6, ?7, ?8 FROM provider_attempts " +
-      "WHERE business_conversion_id = ?2";
+      "SELECT ?1, ?2, COALESCE((SELECT MAX(attempt_sequence) FROM provider_attempts WHERE business_conversion_id = ?2), 0) + 1, " +
+      "?3, 'GOOGLE_DATA_MANAGER', 'events:ingest', 'DELIVER_CONVERSION', ?4, ?5, ?6, ?6, ?7, ?8 " +
+      "WHERE EXISTS (SELECT 1 FROM conversion_outbox co JOIN business_conversions bc " +
+      "ON bc.business_conversion_id = co.business_conversion_id " +
+      "WHERE co.conversion_id = ?9 AND co.business_conversion_id = ?2 AND co.status = 'processing' " +
+      "AND co.lease_generation = ?4 AND co.lease_owner = ?10 AND co.lease_expires_at = ?5 " +
+      "AND co.lease_expires_at > ?11 AND co.transaction_id = ?3 AND co.destination_key = ?7 " +
+      "AND bc.eligibility_state = 'ELIGIBLE' AND bc.outcome_state = 'PENDING') " +
+      "AND NOT EXISTS (SELECT 1 FROM provider_delivery_leases pdl WHERE pdl.business_conversion_id = ?2 " +
+      "AND (pdl.fence_token > ?4 OR (pdl.fence_token = ?4 AND COALESCE(pdl.lease_owner, '') <> ?10)))";
     const eventSql =
       "INSERT INTO provider_attempt_events (attempt_event_id, attempt_id, event_sequence, event_type, " +
       "recorded_at, normalized_status, retryable, ambiguous) " +
-      "VALUES (?1, ?2, 1, 'ATTEMPT_STARTED', ?3, 'STARTED', 0, 0)";
+      "SELECT ?1, ?2, 1, 'ATTEMPT_STARTED', ?3, 'STARTED', 0, 0 " +
+      "WHERE EXISTS (SELECT 1 FROM provider_attempts WHERE attempt_id = ?2)";
     const leaseSql =
       "INSERT INTO provider_delivery_leases (business_conversion_id, lease_state, lease_owner, active_attempt_id, " +
       "fence_token, lease_expires_at, last_reconciled_at, updated_at) " +
-      "VALUES (?1, 'CLAIMED', ?2, ?3, ?4, ?5, NULL, ?6) " +
+      "SELECT ?1, 'CLAIMED', ?2, ?3, ?4, ?5, NULL, ?6 " +
+      "WHERE EXISTS (SELECT 1 FROM provider_attempts WHERE attempt_id = ?3 AND business_conversion_id = ?1) " +
       "ON CONFLICT(business_conversion_id) DO UPDATE SET lease_state = 'CLAIMED', " +
       "lease_owner = excluded.lease_owner, active_attempt_id = excluded.active_attempt_id, " +
       "fence_token = excluded.fence_token, lease_expires_at = excluded.lease_expires_at, updated_at = excluded.updated_at " +
@@ -305,7 +333,14 @@ export class D1OutboxRepository implements OutboxRepository {
       "(provider_delivery_leases.fence_token = excluded.fence_token AND provider_delivery_leases.lease_owner = excluded.lease_owner)";
     const outboxSql =
       "UPDATE conversion_outbox SET upload_payload_hash = ?1 WHERE conversion_id = ?2 " +
-      "AND status = 'processing' AND lease_generation = ?3 AND lease_owner = ?4 AND lease_expires_at > ?5";
+      "AND status = 'processing' AND lease_generation = ?3 AND lease_owner = ?4 " +
+      "AND lease_expires_at = ?5 AND lease_expires_at > ?6 AND business_conversion_id = ?7 " +
+      "AND EXISTS (SELECT 1 FROM business_conversions bc WHERE bc.business_conversion_id = ?7 " +
+      "AND bc.eligibility_state = 'ELIGIBLE' AND bc.outcome_state = 'PENDING') " +
+      "AND EXISTS (SELECT 1 FROM provider_attempts pa WHERE pa.attempt_id = ?8 " +
+      "AND pa.business_conversion_id = ?7 AND pa.fence_token = ?3 " +
+      "AND pa.transaction_id = conversion_outbox.transaction_id " +
+      "AND pa.destination_key = conversion_outbox.destination_key)";
     const results = await this.database.batch([
       this.database.prepare(attemptSql).bind(
         attemptId,
@@ -313,35 +348,43 @@ export class D1OutboxRepository implements OutboxRepository {
         row.transaction_id,
         row.lease_generation,
         row.lease_expires_at,
-        nowIso,
+        dispatchNowIso,
         row.destination_key,
-        payloadHash
+        payloadHash,
+        row.conversion_id,
+        row.lease_owner,
+        safeThroughIso
       ),
-      this.database.prepare(eventSql).bind(eventId, attemptId, nowIso),
+      this.database.prepare(eventSql).bind(eventId, attemptId, dispatchNowIso),
       this.database.prepare(leaseSql).bind(
         row.business_conversion_id,
         row.lease_owner,
         attemptId,
         row.lease_generation,
         row.lease_expires_at,
-        nowIso
+        dispatchNowIso
       ),
       this.database.prepare(outboxSql).bind(
         payloadHash,
         row.conversion_id,
         row.lease_generation,
         row.lease_owner,
-        nowIso
+        row.lease_expires_at,
+        safeThroughIso,
+        row.business_conversion_id,
+        attemptId
       ),
     ]);
     if (
       changesFrom(results[0]) !== 1 ||
+      changesFrom(results[1]) !== 1 ||
       changesFrom(results[2]) !== 1 ||
       changesFrom(results[3]) !== 1
     ) {
       throw new Error("PROVIDER_ATTEMPT_FENCE_FAILED");
     }
     row.upload_payload_hash = payloadHash;
+    row.updated_at = dispatchNowIso;
     return attemptId;
   }
 
@@ -349,7 +392,7 @@ export class D1OutboxRepository implements OutboxRepository {
     row: ConversionOutboxRow,
     attemptId: string,
     requestId: string,
-    nowIso: string
+    _nowIso: string
   ): Promise<void> {
     if (
       !row.business_conversion_id ||
@@ -358,6 +401,7 @@ export class D1OutboxRepository implements OutboxRepository {
     ) {
       throw new Error("PROVIDER_ATTEMPT_CONTEXT_MISSING");
     }
+    const recordedAt = this.freshNow().toISOString();
     const sql =
       "INSERT OR IGNORE INTO provider_attempt_events (attempt_event_id, attempt_id, event_sequence, event_type, " +
       "recorded_at, provider_request_id, normalized_status, retryable, ambiguous) " +
@@ -370,7 +414,7 @@ export class D1OutboxRepository implements OutboxRepository {
       .bind(
         crypto.randomUUID(),
         attemptId,
-        nowIso,
+        recordedAt,
         requestId,
         row.business_conversion_id,
         row.transaction_id,
@@ -437,11 +481,12 @@ export class D1OutboxRepository implements OutboxRepository {
     row: ConversionOutboxRow,
     attemptId: string,
     reason: string,
-    nowIso: string
+    _nowIso: string
   ): Promise<void> {
     if (!row.business_conversion_id || row.lease_generation === undefined) {
       throw new Error("PROVIDER_ATTEMPT_CONTEXT_MISSING");
     }
+    const recordedAt = this.freshNow().toISOString();
     const eventSql =
       "INSERT OR IGNORE INTO provider_attempt_events (attempt_event_id, attempt_id, event_sequence, event_type, " +
       "recorded_at, normalized_status, retryable, ambiguous, sanitized_reason) " +
@@ -454,9 +499,9 @@ export class D1OutboxRepository implements OutboxRepository {
       "UPDATE business_conversions SET outcome_state = 'RECONCILIATION_REQUIRED', updated_at = ?1, version = version + 1 " +
       "WHERE business_conversion_id = ?2 AND outcome_state IN ('PENDING', 'RECONCILIATION_REQUIRED')";
     await this.database.batch([
-      this.database.prepare(eventSql).bind(crypto.randomUUID(), attemptId, nowIso, reason),
-      this.database.prepare(leaseSql).bind(nowIso, row.business_conversion_id, attemptId, row.lease_generation),
-      this.database.prepare(businessSql).bind(nowIso, row.business_conversion_id),
+      this.database.prepare(eventSql).bind(crypto.randomUUID(), attemptId, recordedAt, reason),
+      this.database.prepare(leaseSql).bind(recordedAt, row.business_conversion_id, attemptId, row.lease_generation),
+      this.database.prepare(businessSql).bind(recordedAt, row.business_conversion_id),
     ]);
   }
 
@@ -481,10 +526,13 @@ export class D1OutboxRepository implements OutboxRepository {
 
   async claimDiagnostic(
     conversionId: string,
-    nowIso: string
+    _nowIso: string
   ): Promise<ConversionOutboxRow | null> {
+    const claimNowIso = this.freshNow().toISOString();
     const leaseOwner = crypto.randomUUID();
-    const leaseExpiresAt = new Date(Date.parse(nowIso) + STALE_PROCESSING_THRESHOLD_MS).toISOString();
+    const leaseExpiresAt = new Date(
+      Date.parse(claimNowIso) + STALE_PROCESSING_THRESHOLD_MS
+    ).toISOString();
     const result = await this.database
       .prepare(
         `UPDATE conversion_outbox
@@ -500,7 +548,7 @@ export class D1OutboxRepository implements OutboxRepository {
             AND next_diagnostic_at IS NOT NULL
             AND next_diagnostic_at <= ?1`
       )
-      .bind(nowIso, conversionId, leaseOwner, leaseExpiresAt)
+      .bind(claimNowIso, conversionId, leaseOwner, leaseExpiresAt)
       .run();
     if (changesFrom(result) !== 1) return null;
     return this.database
@@ -531,6 +579,7 @@ export class D1OutboxRepository implements OutboxRepository {
     if (!row.lease_owner || row.lease_generation === undefined) {
       throw new Error("OUTBOX_LEASE_CONTEXT_MISSING");
     }
+    row.updated_at = this.freshNow().toISOString();
 
     const businessOutcome = row.business_conversion_id
       ? businessOutcomeFor(row)
