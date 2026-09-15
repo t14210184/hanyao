@@ -11,7 +11,6 @@ export const ATTRIBUTION_MAX_CAPTURE_AGE_MS =
   ATTRIBUTION_RETENTION_DAYS * 24 * 60 * 60 * 1000;
 
 export type AttributionIntegrityCode =
-  | "ATTRIBUTION_CAPTURE_TIME_REQUIRED"
   | "ATTRIBUTION_CAPTURE_TIME_IN_FUTURE"
   | "ATTRIBUTION_CAPTURE_TIME_TOO_OLD"
   | "ATTRIBUTION_TOUCH_ORDER_INVALID"
@@ -27,6 +26,20 @@ const CLICK_ID_FIELDS = ["gclid", "gbraid", "wbraid"] as const;
 const clickIdIsSyntacticallySafe = (value: string): boolean =>
   value.length > 0 && !/[\s\u0000-\u001f\u007f]/u.test(value);
 
+const withoutAttributionSource = (touch: NormalizedTouch): NormalizedTouch => ({
+  ...touch,
+  captured_at: null,
+  gclid: null,
+  gbraid: null,
+  wbraid: null,
+  utm_source: null,
+  utm_medium: null,
+  utm_campaign: null,
+  utm_id: null,
+  utm_term: null,
+  utm_content: null,
+});
+
 const boundTouch = (
   touch: NormalizedTouch,
   serverReceivedAt: Date
@@ -39,13 +52,7 @@ const boundTouch = (
   }
 
   if (!hasAttributionSource(touch)) return { ...touch };
-  if (touch.captured_at === null) {
-    return {
-      ok: false,
-      code: "ATTRIBUTION_CAPTURE_TIME_REQUIRED",
-      status: 400,
-    };
-  }
+  if (touch.captured_at === null) return withoutAttributionSource(touch);
 
   const capturedMs = Date.parse(touch.captured_at);
   const serverMs = serverReceivedAt.getTime();
