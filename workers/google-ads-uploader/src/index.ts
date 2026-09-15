@@ -1,5 +1,5 @@
 import type { ExecutionContext, ScheduledController } from "@cloudflare/workers-types";
-import { runScheduledCycle } from "./scheduler.ts";
+import { runScheduledCycleP1 } from "./scheduler-p1.ts";
 import type { UploaderEnv } from "./types.ts";
 
 export default {
@@ -8,7 +8,7 @@ export default {
     env: UploaderEnv,
     context: ExecutionContext
   ): Promise<void> {
-    const run = runScheduledCycle(env, {
+    const run = runScheduledCycleP1(env, {
       now: new Date(controller.scheduledTime),
     });
     context.waitUntil(run);
