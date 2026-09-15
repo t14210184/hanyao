@@ -29,6 +29,7 @@
     "test:v13:p0b": "node scripts/v13-p0b-migration.test.mjs && node --experimental-strip-types scripts/v13-p0b-recovery.test.mjs",
     "test:v13:p0c": "node scripts/v13-p0c-migration.test.mjs && node --experimental-strip-types scripts/v13-p0c-atomicity.test.mjs",
     "test:v13:p1m03": "node scripts/v13-p1-m03-migration.test.mjs && node --experimental-strip-types --test workers/google-ads-uploader/test/m03-quality-evidence.test.ts",
+    "test:v13:p1m05": "node --experimental-strip-types --test scripts/v13-p1-m05-identity-rotation.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
