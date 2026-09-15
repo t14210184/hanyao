@@ -1,6 +1,7 @@
 import {
   GOOGLE_DATA_MANAGER_EVENTS_URL,
   GOOGLE_DATA_MANAGER_REQUEST_STATUS_URL,
+  PROVIDER_HTTP_TIMEOUT_MS,
   type FetchLike,
 } from "./types.ts";
 import type { DataManagerIngestRequest } from "./payload.ts";
@@ -69,6 +70,7 @@ export const ingestDataManagerEvent = async (
         "content-type": "application/json",
       },
       body: JSON.stringify(request),
+      signal: AbortSignal.timeout(PROVIDER_HTTP_TIMEOUT_MS),
     });
   } catch {
     throw new ProviderRequestError(
@@ -192,6 +194,7 @@ export const retrieveDataManagerStatus = async (
     response = await fetchImpl(url.toString(), {
       method: "GET",
       headers: { authorization: `Bearer ${accessToken}` },
+      signal: AbortSignal.timeout(PROVIDER_HTTP_TIMEOUT_MS),
     });
   } catch {
     throw new ProviderRequestError("DIAGNOSTIC_NETWORK_ERROR", true);

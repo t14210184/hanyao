@@ -4,13 +4,11 @@ import type { UploaderEnv } from "./types.ts";
 
 export default {
   async scheduled(
-    controller: ScheduledController,
+    _controller: ScheduledController,
     env: UploaderEnv,
     context: ExecutionContext
   ): Promise<void> {
-    const run = runScheduledCycleP1(env, {
-      now: new Date(controller.scheduledTime),
-    });
+    const run = runScheduledCycleP1(env);
     context.waitUntil(run);
     await run;
   },

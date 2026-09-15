@@ -194,7 +194,10 @@ const assertOpen = (db, ids) => {
 {
   const db = createDatabase();
   const ids = seed(db, "success");
-  const repository = new D1OutboxRepository(new DatabaseAdapter(db));
+  const repository = new D1OutboxRepository(
+    new DatabaseAdapter(db),
+    () => new Date(NOW)
+  );
   const row = successRow(ids);
   row.google_request_id = "request-success";
   await repository.save(row);
@@ -228,7 +231,10 @@ const assertOpen = (db, ids) => {
 {
   const db = createDatabase();
   const ids = seed(db, "rollback");
-  const repository = new D1OutboxRepository(new DatabaseAdapter(db, 3));
+  const repository = new D1OutboxRepository(
+    new DatabaseAdapter(db, 3),
+    () => new Date(NOW)
+  );
   const row = successRow(ids);
   row.google_request_id = "request-rollback";
   await assert.rejects(
@@ -241,7 +247,10 @@ const assertOpen = (db, ids) => {
 {
   const db = createDatabase();
   const ids = seed(db, "stale");
-  const repository = new D1OutboxRepository(new DatabaseAdapter(db));
+  const repository = new D1OutboxRepository(
+    new DatabaseAdapter(db),
+    () => new Date(NOW)
+  );
   const row = successRow(ids);
   row.lease_owner = "stale-owner";
   await assert.rejects(repository.save(row));
