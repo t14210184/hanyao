@@ -13,6 +13,7 @@ import {
   opportunisticCleanupExpiredAttribution,
   upsertAttributionSession,
 } from "../../_lib/attribution";
+import { enforceAttributionIntegrity } from "../../_lib/attribution-integrity";
 import {
   issueLeadToken,
   LeadTokenIdempotencyConflictError,
@@ -46,13 +47,22 @@ export const onRequest: PageHandler = async ({ request, env }) => {
   try {
     let sessionId: string | null = null;
     if (payload.value.attribution !== null) {
+      const receivedAt = new Date();
+      const integrity = await enforceAttributionIntegrity(
+        env.ATTRIBUTION_DB,
+        payload.value.attribution,
+        receivedAt
+      );
+      if (!integrity.ok) return errorResponse(integrity.code, integrity.status);
+
       await opportunisticCleanupExpiredAttribution(
         env.ATTRIBUTION_DB,
         payload.value.request_id
       );
       const session = await upsertAttributionSession(
         env.ATTRIBUTION_DB,
-        payload.value.attribution
+        integrity.value,
+        receivedAt
       );
       sessionId = session.session_id;
     }
