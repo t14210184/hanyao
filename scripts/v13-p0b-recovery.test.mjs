@@ -48,6 +48,7 @@ CREATE TABLE conversion_outbox (
   lease_owner TEXT,
   lease_expires_at TEXT,
   upload_payload_hash TEXT,
+  provider_warning_json TEXT,
   updated_at TEXT NOT NULL
 );
 CREATE TABLE provider_attempts (
@@ -65,7 +66,8 @@ CREATE TABLE provider_attempt_events (
   event_type TEXT NOT NULL,
   recorded_at TEXT NOT NULL,
   provider_request_id TEXT,
-  normalized_status TEXT NOT NULL
+  normalized_status TEXT NOT NULL,
+  provider_warning_json TEXT
 );
 CREATE TABLE business_conversions (
   business_conversion_id TEXT PRIMARY KEY,
@@ -87,6 +89,7 @@ const STALE = "2026-09-14T09:00:00.000Z";
 const NOW = "2026-09-14T10:00:00.000Z";
 const PAYLOAD_HASH = "b".repeat(64);
 const REQUEST_ID = "requests/p0b-exact-request";
+const WARNING_JSON = JSON.stringify({ ingest: [{ field: "events[0]", reason: "WARNING_P0B" }], diagnostic: [] });
 db.prepare(`INSERT INTO conversion_outbox (
   conversion_id, business_conversion_id, transaction_id, destination_key,
   status, retry_count, lease_generation, lease_owner, lease_expires_at,
@@ -122,9 +125,9 @@ db.prepare(`INSERT INTO provider_attempts (
 
 db.prepare(`INSERT INTO provider_attempt_events (
   attempt_event_id, attempt_id, event_sequence, event_type,
-  recorded_at, provider_request_id, normalized_status
-) VALUES (?, ?, 2, 'ACKNOWLEDGED', ?, ?, 'ACKNOWLEDGED')`)
-  .run("event-p0b-ack-1", "attempt-p0b-1", STALE, REQUEST_ID);
+  recorded_at, provider_request_id, normalized_status, provider_warning_json
+) VALUES (?, ?, 2, 'ACKNOWLEDGED', ?, ?, 'ACKNOWLEDGED', ?)`)
+  .run("event-p0b-ack-1", "attempt-p0b-1", STALE, REQUEST_ID, WARNING_JSON);
 
 db.prepare(`INSERT INTO provider_delivery_leases (
   business_conversion_id, lease_state, lease_owner, lease_expires_at,
@@ -142,7 +145,7 @@ assert.equal(changed, 1);
 
 const restored = db.prepare(`SELECT status, google_request_id, submitted_at,
   next_diagnostic_at, last_error_code, terminal_result, lease_owner,
-  lease_expires_at FROM conversion_outbox WHERE conversion_id = ?`)
+  lease_expires_at, provider_warning_json FROM conversion_outbox WHERE conversion_id = ?`)
   .get("conversion-p0b-1");
 assert.equal(restored.status, "submitted");
 assert.equal(restored.google_request_id, REQUEST_ID);
@@ -152,6 +155,7 @@ assert.equal(restored.last_error_code, "ACK_RESTORED_AFTER_STALE_CLAIM");
 assert.equal(restored.terminal_result, null);
 assert.equal(restored.lease_owner, null);
 assert.equal(restored.lease_expires_at, null);
+assert.equal(restored.provider_warning_json, WARNING_JSON);
 
 const lease = db.prepare(`SELECT lease_state, lease_owner, lease_expires_at,
   last_reconciled_at FROM provider_delivery_leases

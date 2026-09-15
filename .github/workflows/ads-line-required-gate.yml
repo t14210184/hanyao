@@ -37,6 +37,8 @@ jobs:
         run: npm run test:v13:p0b
       - name: Verify atomic terminal completion
         run: npm run test:v13:p0c
+      - name: Verify durable provider quality evidence
+        run: npm run test:v13:p1m03
       - name: Verify uploader, duplicate context, and auth hardening
         run: npm run test:line4a:unit
       - name: Verify uploader static mutation boundary

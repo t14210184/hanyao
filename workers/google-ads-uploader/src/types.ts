@@ -90,6 +90,7 @@ export interface ConversionOutboxRow {
   lease_expires_at?: string | null;
   upload_payload_hash?: string | null;
   completion_id?: string | null;
+  provider_warning_json?: string | null;
 }
 export interface UploaderEnv {
   ATTRIBUTION_DB: D1Database;
@@ -133,7 +134,13 @@ export interface OutboxRepository {
     payloadHash: string,
     nowIso: string
   ): Promise<string>;
-  recordProviderAcknowledged?(row: ConversionOutboxRow, attemptId: string, requestId: string, nowIso: string): Promise<void>;
+  recordProviderAcknowledged?(
+    row: ConversionOutboxRow,
+    attemptId: string,
+    requestId: string,
+    nowIso: string,
+    providerWarningJson?: string | null
+  ): Promise<void>;
   recordProviderUnknown?(row: ConversionOutboxRow, attemptId: string, reason: string, nowIso: string): Promise<void>;
   verifyProviderRequestContext?(row: ConversionOutboxRow): Promise<boolean>;
   cleanupTerminalRows(cutoffIso: string, limit: number): Promise<number>;

@@ -17,7 +17,7 @@ const OUTBOX_COLUMNS = `
   business_conversion_id, snapshot_version, eligibility_rule_version,
   google_ads_account_id, google_ads_conversion_action_id, event_source,
   lease_generation, lease_owner, lease_expires_at, upload_payload_hash,
-  completion_id`;
+  completion_id, provider_warning_json`;
 
 const changesFrom = (result: { meta?: { changes?: number } }): number =>
   Number(result.meta?.changes ?? 0);
@@ -72,7 +72,8 @@ export class D1OutboxRepository implements OutboxRepository {
         `WITH ack_candidates AS (
            SELECT co.conversion_id,
                   MIN(pae.provider_request_id) AS provider_request_id,
-                  MAX(pae.recorded_at) AS acknowledged_at
+                  MAX(pae.recorded_at) AS acknowledged_at,
+                  MAX(pae.provider_warning_json) AS provider_warning_json
              FROM conversion_outbox co
              JOIN provider_attempts pa
                ON pa.business_conversion_id = co.business_conversion_id
@@ -106,6 +107,10 @@ export class D1OutboxRepository implements OutboxRepository {
                    WHERE ack_candidates.conversion_id = conversion_outbox.conversion_id
                 )),
                 next_diagnostic_at = ?2,
+                provider_warning_json = COALESCE(provider_warning_json, (
+                  SELECT provider_warning_json FROM ack_candidates
+                   WHERE ack_candidates.conversion_id = conversion_outbox.conversion_id
+                )),
                 last_error_code = 'ACK_RESTORED_AFTER_STALE_CLAIM',
                 last_error_reason = 'ACK_RESTORED_AFTER_STALE_CLAIM',
                 terminal_result = NULL,
@@ -392,7 +397,8 @@ export class D1OutboxRepository implements OutboxRepository {
     row: ConversionOutboxRow,
     attemptId: string,
     requestId: string,
-    _nowIso: string
+    _nowIso: string,
+    providerWarningJson: string | null = null
   ): Promise<void> {
     if (
       !row.business_conversion_id ||
@@ -404,8 +410,8 @@ export class D1OutboxRepository implements OutboxRepository {
     const recordedAt = this.freshNow().toISOString();
     const sql =
       "INSERT OR IGNORE INTO provider_attempt_events (attempt_event_id, attempt_id, event_sequence, event_type, " +
-      "recorded_at, provider_request_id, normalized_status, retryable, ambiguous) " +
-      "SELECT ?1, pa.attempt_id, 2, 'ACKNOWLEDGED', ?3, ?4, 'ACKNOWLEDGED', 0, 0 " +
+      "recorded_at, provider_request_id, normalized_status, retryable, ambiguous, provider_warning_json) " +
+      "SELECT ?1, pa.attempt_id, 2, 'ACKNOWLEDGED', ?3, ?4, 'ACKNOWLEDGED', 0, 0, ?10 " +
       "FROM provider_attempts pa WHERE pa.attempt_id = ?2 " +
       "AND pa.business_conversion_id = ?5 AND pa.transaction_id = ?6 AND pa.fence_token = ?7 " +
       "AND pa.destination_key = ?8 AND pa.payload_hash = ?9";
@@ -420,7 +426,8 @@ export class D1OutboxRepository implements OutboxRepository {
         row.transaction_id,
         row.lease_generation,
         row.destination_key,
-        row.upload_payload_hash
+        row.upload_payload_hash,
+        providerWarningJson
       )
       .run();
     if (changesFrom(result) === 1) return;
@@ -431,7 +438,18 @@ export class D1OutboxRepository implements OutboxRepository {
       )
       .bind(attemptId)
       .first<{ provider_request_id: string | null }>();
-    if (existing?.provider_request_id === requestId) return;
+    if (existing?.provider_request_id === requestId) {
+      if (providerWarningJson) {
+        await this.database
+          .prepare(
+            "UPDATE provider_attempt_events SET provider_warning_json = COALESCE(provider_warning_json, ?2) " +
+            "WHERE attempt_id = ?1 AND event_type = 'ACKNOWLEDGED' AND provider_request_id = ?3"
+          )
+          .bind(attemptId, providerWarningJson, requestId)
+          .run();
+      }
+      return;
+    }
     throw new Error("PROVIDER_ACK_CONTEXT_MISMATCH");
   }
 
@@ -604,7 +622,8 @@ export class D1OutboxRepository implements OutboxRepository {
       updated_at = ?15,
       lease_owner = NULL,
       lease_expires_at = NULL,
-      completion_id = ?19
+      completion_id = ?19,
+      provider_warning_json = ?20
     WHERE conversion_id = ?16
       AND status = 'processing'
       AND lease_generation = ?17
@@ -629,7 +648,8 @@ export class D1OutboxRepository implements OutboxRepository {
       row.conversion_id,
       row.lease_generation,
       row.lease_owner,
-      completionId
+      completionId,
+      row.provider_warning_json ?? null
     );
 
     if (!terminalCompletion || !row.business_conversion_id || !businessOutcome || !completionId) {
@@ -692,10 +712,10 @@ export class D1OutboxRepository implements OutboxRepository {
     const eventSql = `INSERT OR IGNORE INTO provider_attempt_events (
       attempt_event_id, attempt_id, event_sequence, event_type, recorded_at,
       provider_request_id, normalized_status, retryable, ambiguous,
-      sanitized_reason, record_count, completion_id
+      sanitized_reason, record_count, completion_id, provider_warning_json
     )
     SELECT ?1, pdl.active_attempt_id, COALESCE(MAX(pae.event_sequence), 0) + 1,
-           ?2, ?3, ?4, ?5, 0, ?6, ?7, ?8, ?9
+           ?2, ?3, ?4, ?5, 0, ?6, ?7, ?8, ?9, ?12
       FROM provider_delivery_leases pdl
       LEFT JOIN provider_attempt_events pae ON pae.attempt_id = pdl.active_attempt_id
      WHERE pdl.business_conversion_id = ?10
@@ -769,7 +789,8 @@ export class D1OutboxRepository implements OutboxRepository {
         row.diagnostic_record_count,
         completionId,
         row.business_conversion_id,
-        row.conversion_id
+        row.conversion_id,
+        row.provider_warning_json ?? null
       ),
       this.database.prepare(verifySql).bind(
         row.conversion_id,

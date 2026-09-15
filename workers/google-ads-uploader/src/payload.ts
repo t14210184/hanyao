@@ -1,6 +1,8 @@
 import type { UploaderConfig } from "./types.ts";
 import type { ConversionOutboxRow } from "./types.ts";
 
+export const GOOGLE_ADS_DESTINATION_REFERENCE = "google-ads-destination";
+
 export interface GoogleAdsProductAccount {
   accountType: "GOOGLE_ADS";
   accountId: string;
@@ -63,7 +65,7 @@ export const buildDataManagerRequest = (
   ) {
     throw new Error("CANONICAL_DESTINATION_MISMATCH");
   }
-  const reference = "google-ads-destination";
+  const reference = GOOGLE_ADS_DESTINATION_REFERENCE;
   const account = {
     accountType: "GOOGLE_ADS" as const,
     accountId,

@@ -74,7 +74,8 @@ const createDatabase = () => {
       lease_generation INTEGER NOT NULL,
       lease_owner TEXT,
       lease_expires_at TEXT,
-      completion_id TEXT
+      completion_id TEXT,
+      provider_warning_json TEXT
     );
     CREATE TABLE business_conversions (
       business_conversion_id TEXT PRIMARY KEY,
@@ -106,6 +107,7 @@ const createDatabase = () => {
       sanitized_reason TEXT,
       record_count INTEGER,
       completion_id TEXT,
+      provider_warning_json TEXT,
       UNIQUE (attempt_id, event_sequence)
     );
   `);

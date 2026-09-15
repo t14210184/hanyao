@@ -23,11 +23,12 @@
     "test:line4a:migration": "node scripts/line4a-migration.test.mjs",
     "test:line4a:local": "node scripts/line4a-scheduled-local.mjs",
     "test:line4a:static": "node scripts/line4a-static.test.mjs",
-    "test:line4a": "npm run test:line4a:unit && npm run test:line4a:migration && npm run test:line4a:local && npm run test:line4a:static",
+    "test:line4a": "npm run test:line4a:unit && npm run test:v13:p1m03 && npm run test:line4a:migration && npm run test:line4a:local && npm run test:line4a:static",
     "test:line4c:retention": "node --experimental-strip-types scripts/line4c-retention-local.test.ts",
     "test:v13:p0a": "node --experimental-strip-types --test scripts/v13-p0a-regression.test.ts && node scripts/v13-p0a-migration.test.mjs",
     "test:v13:p0b": "node scripts/v13-p0b-migration.test.mjs && node --experimental-strip-types scripts/v13-p0b-recovery.test.mjs",
     "test:v13:p0c": "node scripts/v13-p0c-migration.test.mjs && node --experimental-strip-types scripts/v13-p0c-atomicity.test.mjs",
+    "test:v13:p1m03": "node scripts/v13-p1-m03-migration.test.mjs && node --experimental-strip-types --test workers/google-ads-uploader/test/m03-quality-evidence.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

@@ -43,7 +43,7 @@ const parseFieldWarnings = (
     .map((entry) => {
       const warning = asRecord(entry);
       if (!warning) return null;
-      const field = asNonEmptyString(warning.field);
+      const field = asNonEmptyString(warning.field)?.slice(0, 120) ?? null;
       const reason = sanitizeProviderReason(warning.reason);
       return field || reason ? { field, reason } : null;
     })
@@ -122,6 +122,13 @@ export const ingestDataManagerEvent = async (
   };
 };
 
+export interface DiagnosticExpectation {
+  destinationReference: string;
+  googleAdsAccountId: string;
+  googleAdsConversionActionId: string;
+  expectedRecordCount: number;
+}
+
 export interface DiagnosticResponse {
   status: "SUCCESS" | "PROCESSING" | "FAILED" | "PARTIAL_SUCCESS" | "UNKNOWN";
   reasons: string[];
@@ -181,11 +188,69 @@ const getDuplicateTransactionId = (
   );
 };
 
+const normalizeStatus = (
+  destination: Record<string, unknown>
+): DiagnosticResponse["status"] => {
+  const statusValue = sanitizeProviderReason(destination.requestStatus);
+  const normalized = statusValue === "FAILURE" ? "FAILED" : statusValue;
+  return normalized === "SUCCESS" ||
+    normalized === "PROCESSING" ||
+    normalized === "FAILED" ||
+    normalized === "PARTIAL_SUCCESS"
+    ? normalized
+    : "UNKNOWN";
+};
+
+const diagnosticUnknown = (
+  reason: string,
+  warningReasons: string[],
+  recordCount: number | null = null
+): DiagnosticResponse => ({
+  status: "UNKNOWN",
+  reasons: [reason],
+  warningReasons,
+  recordCount,
+  duplicateTransactionId: null,
+});
+
+const destinationIdentityMatches = (
+  statusDestination: Record<string, unknown>,
+  expectation: DiagnosticExpectation
+): boolean => {
+  const destination = asRecord(statusDestination.destination);
+  if (!destination) return false;
+  if (asNonEmptyString(destination.reference) !== expectation.destinationReference) return false;
+  if (asNonEmptyString(destination.productDestinationId) !== expectation.googleAdsConversionActionId) {
+    return false;
+  }
+  const operating = asRecord(destination.operatingAccount);
+  if (
+    !operating ||
+    asNonEmptyString(operating.accountType) !== "GOOGLE_ADS" ||
+    asNonEmptyString(operating.accountId) !== expectation.googleAdsAccountId
+  ) {
+    return false;
+  }
+  const login = asRecord(destination.loginAccount);
+  if (
+    login &&
+    (asNonEmptyString(login.accountType) !== "GOOGLE_ADS" ||
+      asNonEmptyString(login.accountId) !== expectation.googleAdsAccountId)
+  ) {
+    return false;
+  }
+  return true;
+};
+
 export const retrieveDataManagerStatus = async (
   accessToken: string,
   requestId: string,
-  fetchImpl: FetchLike = fetch
+  expectationOrFetch: DiagnosticExpectation | FetchLike,
+  fetchImplArg?: FetchLike
 ): Promise<DiagnosticResponse> => {
+  const legacyFixtureMode = typeof expectationOrFetch === "function";
+  const expectation = legacyFixtureMode ? null : expectationOrFetch;
+  const fetchImpl = legacyFixtureMode ? expectationOrFetch : (fetchImplArg || fetch);
   const url = new URL(GOOGLE_DATA_MANAGER_REQUEST_STATUS_URL);
   url.searchParams.set("requestId", requestId);
 
@@ -211,27 +276,58 @@ export const retrieveDataManagerStatus = async (
   }
 
   const record = parseJsonRecord(body);
-  const destinations = Array.isArray(record?.requestStatusPerDestination)
+  const rawDestinations = Array.isArray(record?.requestStatusPerDestination)
     ? record.requestStatusPerDestination
     : [];
-  const destination = asRecord(destinations[0]);
-  if (!destination) {
-    throw new ProviderRequestError("DIAGNOSTIC_RESPONSE_MALFORMED", false);
+  const destinations = rawDestinations
+    .map((entry) => asRecord(entry))
+    .filter((entry): entry is Record<string, unknown> => Boolean(entry));
+  const warningReasons = destinations.flatMap(getWarningReasons).slice(0, 20);
+
+  if (legacyFixtureMode) {
+    const destination = destinations[0];
+    if (!destination) {
+      throw new ProviderRequestError("DIAGNOSTIC_RESPONSE_MALFORMED", false);
+    }
+    return {
+      status: normalizeStatus(destination),
+      reasons: getReasons(destination),
+      warningReasons: getWarningReasons(destination),
+      recordCount: getRecordCount(destination),
+      duplicateTransactionId: getDuplicateTransactionId(destination),
+    };
   }
-  const statusValue = sanitizeProviderReason(destination.requestStatus);
-  const normalizedStatusValue = statusValue === "FAILURE" ? "FAILED" : statusValue;
-  const status =
-    normalizedStatusValue === "SUCCESS" ||
-    normalizedStatusValue === "PROCESSING" ||
-    normalizedStatusValue === "FAILED" ||
-    normalizedStatusValue === "PARTIAL_SUCCESS"
-      ? normalizedStatusValue
-      : "UNKNOWN";
+
+  if (rawDestinations.length !== 1 || destinations.length !== 1) {
+    return diagnosticUnknown("DIAGNOSTIC_DESTINATION_COUNT_MISMATCH", warningReasons);
+  }
+  const destination = destinations[0];
+  const recordCount = getRecordCount(destination);
+  if (!expectation || !destinationIdentityMatches(destination, expectation)) {
+    return diagnosticUnknown(
+      "DIAGNOSTIC_DESTINATION_MISMATCH",
+      warningReasons,
+      recordCount
+    );
+  }
+
+  const status = normalizeStatus(destination);
+  if (
+    (status === "SUCCESS" || status === "FAILED" || status === "PARTIAL_SUCCESS") &&
+    recordCount !== expectation.expectedRecordCount
+  ) {
+    return diagnosticUnknown(
+      "DIAGNOSTIC_RECORD_COUNT_MISMATCH",
+      warningReasons,
+      recordCount
+    );
+  }
+
   return {
     status,
     reasons: getReasons(destination),
-    warningReasons: getWarningReasons(destination),
-    recordCount: getRecordCount(destination),
+    warningReasons,
+    recordCount,
     duplicateTransactionId: getDuplicateTransactionId(destination),
   };
 };
