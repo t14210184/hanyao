@@ -808,16 +808,103 @@ test("AB/AC: duplicate is success-equivalent only with exact provider transactio
   assert.equal(otherRepo.get().terminal_result, "DIAGNOSTIC_FAILED");
 });
 
-test("AD: diagnostic timebox stops without a status request", async () => {
+test("AD/M02: 23:59 PROCESSING remains observable and schedules another diagnostic", async () => {
   const fake = fakeServiceAccount();
-  const mock = tokenThen(fake, () => response({ requestStatusPerDestination: [] }));
+  const mock = tokenThen(fake, (url) => {
+    assert.ok(url.startsWith(GOOGLE_DATA_MANAGER_REQUEST_STATUS_URL));
+    return response({
+      requestStatusPerDestination: [
+        { requestStatus: "PROCESSING", eventsIngestionStatus: { recordCount: 1 } },
+      ],
+    });
+  });
   const repository = new MemoryRepository([
-    submittedRow({ submitted_at: "2026-08-26T03:59:59.000Z", next_diagnostic_at: NOW }),
+    submittedRow({ submitted_at: "2026-08-27T04:00:01.000Z", next_diagnostic_at: NOW }),
+  ]);
+  await runOne(repository, fake, mock.fetchImpl);
+  assert.equal(repository.get().status, "submitted");
+  assert.equal(repository.get().diagnostic_status, "PROCESSING");
+  assert.equal(repository.get().terminal_result, null);
+  assert.ok((repository.get().next_diagnostic_at as string) > NOW);
+  assert.equal(
+    mock.calls.filter((call) => call.url.startsWith(GOOGLE_DATA_MANAGER_REQUEST_STATUS_URL)).length,
+    1
+  );
+});
+
+test("AD/M02: 24h boundary performs final readback and accepts late SUCCESS", async () => {
+  const fake = fakeServiceAccount();
+  const mock = tokenThen(fake, (url) => {
+    assert.ok(url.startsWith(GOOGLE_DATA_MANAGER_REQUEST_STATUS_URL));
+    return response({
+      requestStatusPerDestination: [
+        { requestStatus: "SUCCESS", eventsIngestionStatus: { recordCount: 1 } },
+      ],
+    });
+  });
+  const repository = new MemoryRepository([
+    submittedRow({ submitted_at: "2026-08-27T04:00:00.000Z", next_diagnostic_at: NOW }),
+  ]);
+  await runOne(repository, fake, mock.fetchImpl);
+  assert.equal(repository.get().status, "success");
+  assert.equal(repository.get().terminal_result, "SUCCESS");
+  assert.equal(repository.get().diagnostic_status, "SUCCESS");
+  assert.equal(
+    mock.calls.filter((call) => call.url.startsWith(GOOGLE_DATA_MANAGER_REQUEST_STATUS_URL)).length,
+    1
+  );
+  assert.equal(
+    mock.calls.filter((call) => call.url === GOOGLE_DATA_MANAGER_EVENTS_URL).length,
+    0
+  );
+});
+
+test("AD/M02: 24h unresolved PROCESSING becomes reconciliation and is never re-ingested", async () => {
+  const fake = fakeServiceAccount();
+  const mock = tokenThen(fake, (url) => {
+    assert.ok(url.startsWith(GOOGLE_DATA_MANAGER_REQUEST_STATUS_URL));
+    return response({
+      requestStatusPerDestination: [
+        { requestStatus: "PROCESSING", eventsIngestionStatus: { recordCount: 1 } },
+      ],
+    });
+  });
+  const repository = new MemoryRepository([
+    submittedRow({ submitted_at: "2026-08-27T04:00:00.000Z", next_diagnostic_at: NOW }),
   ]);
   await runOne(repository, fake, mock.fetchImpl);
   assert.equal(repository.get().status, "failed");
   assert.equal(repository.get().terminal_result, "DIAGNOSTIC_TIMEBOX_EXCEEDED");
-  assert.equal(mock.calls.length, 0);
+  assert.equal(repository.get().diagnostic_status, "TIMEBOX_EXCEEDED");
+  assert.equal(repository.get().last_error_reason, "DIAGNOSTIC_STILL_PROCESSING_AT_TIMEBOX");
+  assert.equal(repository.get().next_diagnostic_at, null);
+  assert.equal(
+    mock.calls.filter((call) => call.url === GOOGLE_DATA_MANAGER_EVENTS_URL).length,
+    0
+  );
+
+  const noProvider = sequencedFetch(() => {
+    throw new Error("terminal timebox row must not call provider again");
+  });
+  await runOne(repository, fake, noProvider.fetchImpl, "2026-08-28T04:05:00.000Z");
+  assert.equal(noProvider.calls.length, 0);
+});
+
+test("AD/M02: 24h malformed final readback becomes reconciliation, not provider rejection", async () => {
+  const fake = fakeServiceAccount();
+  const mock = tokenThen(fake, () => response({ requestStatusPerDestination: [] }));
+  const repository = new MemoryRepository([
+    submittedRow({ submitted_at: "2026-08-27T04:00:00.000Z", next_diagnostic_at: NOW }),
+  ]);
+  await runOne(repository, fake, mock.fetchImpl);
+  assert.equal(repository.get().status, "failed");
+  assert.equal(repository.get().terminal_result, "DIAGNOSTIC_TIMEBOX_EXCEEDED");
+  assert.equal(repository.get().diagnostic_status, "TIMEBOX_EXCEEDED");
+  assert.equal(repository.get().last_error_reason, "DIAGNOSTIC_RESPONSE_MALFORMED");
+  assert.equal(
+    mock.calls.filter((call) => call.url.startsWith(GOOGLE_DATA_MANAGER_REQUEST_STATUS_URL)).length,
+    1
+  );
 });
 
 test("AE: conditional claims prevent two concurrent scheduled invocations from uploading one row", async () => {

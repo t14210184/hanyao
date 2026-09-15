@@ -275,6 +275,24 @@ const writeDiagnosticTerminal = async (
   await repository.save(row);
 };
 
+const writeDiagnosticTimeboxReconciliation = async (
+  repository: OutboxRepository,
+  row: ConversionOutboxRow,
+  reason: string,
+  recordCount: number | null,
+  nowIso: string
+): Promise<void> =>
+  writeDiagnosticTerminal(
+    repository,
+    row,
+    "failed",
+    "DIAGNOSTIC_TIMEBOX_EXCEEDED",
+    "TIMEBOX_EXCEEDED",
+    reason,
+    recordCount,
+    nowIso
+  );
+
 const isPastDiagnosticTimebox = (
   row: ConversionOutboxRow,
   nowIso: string
@@ -434,26 +452,22 @@ const processDiagnostic = async (
     );
     return;
   }
-  if (isPastDiagnosticTimebox(row, nowIso)) {
-    await writeDiagnosticTerminal(
-      repository,
-      row,
-      "failed",
-      "DIAGNOSTIC_TIMEBOX_EXCEEDED",
-      "TIMEBOX_EXCEEDED",
-      "DIAGNOSTIC_TIMEBOX_EXCEEDED",
-      row.diagnostic_record_count,
-      nowIso
-    );
-    return;
-  }
+  const timeboxExpired = isPastDiagnosticTimebox(row, nowIso);
 
   let accessToken: string;
   try {
     accessToken = await acquireToken();
   } catch (error) {
     const providerError = asProviderError(error, "AUTH_TOKEN_ACQUISITION_FAILED");
-    if (providerError.retryable) {
+    if (timeboxExpired) {
+      await writeDiagnosticTimeboxReconciliation(
+        repository,
+        row,
+        providerError.providerReason || providerError.code,
+        row.diagnostic_record_count,
+        nowIso
+      );
+    } else if (providerError.retryable) {
       await writeDiagnosticRetry(repository, row, providerError, nowIso, random);
     } else {
       await writeDiagnosticTerminal(
@@ -492,6 +506,16 @@ const processDiagnostic = async (
       return;
     }
     if (response.status === "PROCESSING") {
+      if (timeboxExpired) {
+        await writeDiagnosticTimeboxReconciliation(
+          repository,
+          row,
+          "DIAGNOSTIC_STILL_PROCESSING_AT_TIMEBOX",
+          response.recordCount,
+          nowIso
+        );
+        return;
+      }
       row.status = "submitted";
       row.next_diagnostic_at = nextDiagnosticAt(
         nowIso,
@@ -508,6 +532,23 @@ const processDiagnostic = async (
       return;
     }
     if (response.status === "FAILED" && response.reasons.includes(TOO_RECENT_CLICK_REASON)) {
+      if (timeboxExpired) {
+        await writeDiagnosticTerminal(
+          repository,
+          row,
+          "failed",
+          "DIAGNOSTIC_FAILED",
+          "FAILED",
+          TOO_RECENT_CLICK_REASON,
+          response.recordCount,
+          nowIso
+        );
+        logger?.warn?.("google-ads-uploader click too recent after diagnostic timebox; not requeued", {
+          conversion_id: row.conversion_id,
+          retry_count: row.retry_count,
+        });
+        return;
+      }
       if (row.retry_count >= MAX_UPLOAD_ATTEMPTS) {
         await writeDiagnosticTerminal(
           repository,
@@ -590,6 +631,16 @@ const processDiagnostic = async (
       );
       return;
     }
+    if (timeboxExpired) {
+      await writeDiagnosticTimeboxReconciliation(
+        repository,
+        row,
+        "DIAGNOSTIC_STATUS_UNKNOWN",
+        response.recordCount,
+        nowIso
+      );
+      return;
+    }
     await writeDiagnosticTerminal(
       repository,
       row,
@@ -609,7 +660,17 @@ const processDiagnostic = async (
       throw error;
     }
     const providerError = asProviderError(error, "DIAGNOSTIC_REQUEST_FAILED");
-    if (providerError.retryable && !isPastDiagnosticTimebox(row, nowIso)) {
+    if (timeboxExpired) {
+      await writeDiagnosticTimeboxReconciliation(
+        repository,
+        row,
+        providerError.providerReason || providerError.code,
+        row.diagnostic_record_count,
+        nowIso
+      );
+      return;
+    }
+    if (providerError.retryable) {
       await writeDiagnosticRetry(repository, row, providerError, nowIso, random);
       return;
     }
