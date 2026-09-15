@@ -96,7 +96,12 @@ patched = replaceExactlyOnce(
   "migration result label"
 );
 
-
+patched = replaceExactlyOnce(
+  patched,
+  '  assert.equal(w20Readback.identity_key_id, "current");',
+  '  assert.equal(w20Readback.identity_key_id, "v1");',
+  "identity key version"
+);
 
 patched = replaceExactlyOnce(
   patched,
