@@ -1,7 +1,10 @@
 import { computeTerminalRetentionCutoff, getUploaderConfig } from "./config.ts";
 import { exchangeServiceAccountToken } from "./auth.ts";
 import { ProviderRequestError } from "./errors.ts";
-import { buildDataManagerRequest } from "./payload.ts";
+import {
+  buildDataManagerRequest,
+  GOOGLE_ADS_DESTINATION_REFERENCE,
+} from "./payload.ts";
 import { D1OutboxRepository } from "./repository.ts";
 import {
   DIAGNOSTIC_DELAY_CAP_MS,
@@ -109,6 +112,95 @@ const logDiagnosticWarnings = (
     warning_count: warnings.length,
     first_warning_reason: warnings[0] ?? null,
   });
+};
+
+interface ProviderWarningEvidence {
+  ingest: Array<{ field: string | null; reason: string | null }>;
+  diagnostic: string[];
+}
+
+const MAX_PROVIDER_WARNINGS = 20;
+
+const emptyProviderWarningEvidence = (): ProviderWarningEvidence => ({
+  ingest: [],
+  diagnostic: [],
+});
+
+const parseProviderWarningEvidence = (
+  serialized: string | null | undefined
+): ProviderWarningEvidence => {
+  if (!serialized) return emptyProviderWarningEvidence();
+  try {
+    const value: unknown = JSON.parse(serialized);
+    if (!value || typeof value !== "object" || Array.isArray(value)) {
+      return emptyProviderWarningEvidence();
+    }
+    const record = value as Record<string, unknown>;
+    const ingest = Array.isArray(record.ingest) ? record.ingest : [];
+    const diagnostic = Array.isArray(record.diagnostic) ? record.diagnostic : [];
+    return {
+      ingest: ingest
+        .map((entry) => {
+          if (!entry || typeof entry !== "object" || Array.isArray(entry)) return null;
+          const warning = entry as Record<string, unknown>;
+          const field = typeof warning.field === "string" ? warning.field.slice(0, 120) : null;
+          const reason = typeof warning.reason === "string" ? warning.reason.slice(0, 120) : null;
+          return field || reason ? { field, reason } : null;
+        })
+        .filter((entry): entry is { field: string | null; reason: string | null } => Boolean(entry))
+        .slice(0, MAX_PROVIDER_WARNINGS),
+      diagnostic: diagnostic
+        .filter((entry): entry is string => typeof entry === "string")
+        .map((entry) => entry.slice(0, 120))
+        .filter(Boolean)
+        .slice(0, MAX_PROVIDER_WARNINGS),
+    };
+  } catch {
+    return emptyProviderWarningEvidence();
+  }
+};
+
+const dedupeWarningObjects = (
+  warnings: Array<{ field: string | null; reason: string | null }>
+): Array<{ field: string | null; reason: string | null }> => {
+  const seen = new Set<string>();
+  return warnings.filter((warning) => {
+    const key = JSON.stringify(warning);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  }).slice(0, MAX_PROVIDER_WARNINGS);
+};
+
+const mergeIngestWarnings = (
+  row: ConversionOutboxRow,
+  warnings: Array<{ field: string | null; reason: string | null }>
+): void => {
+  if (warnings.length === 0) return;
+  const current = parseProviderWarningEvidence(row.provider_warning_json);
+  current.ingest = dedupeWarningObjects([
+    ...current.ingest,
+    ...warnings.map((warning) => ({
+      field: warning.field?.slice(0, 120) ?? null,
+      reason: warning.reason?.slice(0, 120) ?? null,
+    })),
+  ]);
+  row.provider_warning_json = JSON.stringify(current);
+};
+
+const mergeDiagnosticWarnings = (
+  row: ConversionOutboxRow,
+  warnings: string[]
+): void => {
+  if (warnings.length === 0) return;
+  const current = parseProviderWarningEvidence(row.provider_warning_json);
+  current.diagnostic = [
+    ...new Set([
+      ...current.diagnostic,
+      ...warnings.map((warning) => warning.slice(0, 120)),
+    ]),
+  ].slice(0, MAX_PROVIDER_WARNINGS);
+  row.provider_warning_json = JSON.stringify(current);
 };
 
 const writeFailure = async (
@@ -378,6 +470,7 @@ const processUpload = async (
   try {
     response = await ingestDataManagerEvent(accessToken, request, fetchImpl);
     logIngestWarnings(logger, response.fieldWarnings);
+    mergeIngestWarnings(row, response.fieldWarnings);
   } catch (error) {
     const providerError = asProviderError(error, "INGEST_REQUEST_FAILED");
     if (!config.validateOnly && providerError.dispatchState === "RESULT_UNKNOWN") {
@@ -424,7 +517,8 @@ const processUpload = async (
       row,
       attemptId,
       response.requestId,
-      nowIso
+      nowIso,
+      row.provider_warning_json ?? null
     );
   }
   await writeSubmitted(repository, row, response.requestId, nowIso, random);
@@ -436,10 +530,18 @@ const processDiagnostic = async (
   acquireToken: () => Promise<string>,
   fetchImpl: FetchLike,
   logger: UploaderLogger | undefined,
+  requireDurableDestinationEvidence: boolean,
   nowIso: string,
   random: () => number
 ): Promise<void> => {
-  if (!row.google_request_id || !row.submitted_at) {
+  const hasDurableDestinationEvidence = Boolean(
+    row.google_ads_account_id && row.google_ads_conversion_action_id
+  );
+  if (
+    !row.google_request_id ||
+    !row.submitted_at ||
+    (requireDurableDestinationEvidence && !hasDurableDestinationEvidence)
+  ) {
     await writeDiagnosticTerminal(
       repository,
       row,
@@ -485,12 +587,25 @@ const processDiagnostic = async (
   }
 
   try {
-    const response = await retrieveDataManagerStatus(
-      accessToken,
-      row.google_request_id,
-      fetchImpl
-    );
+    const response = requireDurableDestinationEvidence
+      ? await retrieveDataManagerStatus(
+          accessToken,
+          row.google_request_id,
+          {
+            destinationReference: GOOGLE_ADS_DESTINATION_REFERENCE,
+            googleAdsAccountId: row.google_ads_account_id ?? "",
+            googleAdsConversionActionId: row.google_ads_conversion_action_id ?? "",
+            expectedRecordCount: 1,
+          },
+          fetchImpl
+        )
+      : await retrieveDataManagerStatus(
+          accessToken,
+          row.google_request_id,
+          fetchImpl
+        );
     logDiagnosticWarnings(logger, response.warningReasons);
+    mergeDiagnosticWarnings(row, response.warningReasons);
     const reason = response.reasons[0] || null;
     if (response.status === "SUCCESS") {
       await writeDiagnosticTerminal(
@@ -635,7 +750,7 @@ const processDiagnostic = async (
       await writeDiagnosticTimeboxReconciliation(
         repository,
         row,
-        "DIAGNOSTIC_STATUS_UNKNOWN",
+        reason || "DIAGNOSTIC_STATUS_UNKNOWN",
         response.recordCount,
         nowIso
       );
@@ -647,7 +762,7 @@ const processDiagnostic = async (
       "failed",
       "DIAGNOSTIC_STATUS_UNKNOWN",
       "UNKNOWN",
-      "DIAGNOSTIC_STATUS_UNKNOWN",
+      reason || "DIAGNOSTIC_STATUS_UNKNOWN",
       response.recordCount,
       nowIso
     );
@@ -762,6 +877,7 @@ export const runScheduledCycle = async (
       acquireToken,
       fetchImpl,
       options.logger,
+      env.UPLOADER_ENVIRONMENT === "production",
       nowIso,
       random
     );

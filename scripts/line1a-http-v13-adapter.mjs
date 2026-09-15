@@ -32,6 +32,7 @@ const migrationReplacement = [
   '    "0009_immutable_lead_attribution_snapshot.sql",',
   '    "0010_provider_transport_recovery.sql",',
   '    "0011_atomic_terminal_completion.sql",',
+  '    "0012_provider_quality_evidence.sql",',
   '  ]) {',
 ].join("\n");
 patched = replaceExactlyOnce(
@@ -91,7 +92,7 @@ patched = replaceExactlyOnce(
 patched = replaceExactlyOnce(
   patched,
   'migration: "0001 -> existing data -> 0002 -> existing data -> 0003 -> 0008 PASS",',
-  'migration: "0001 -> existing data -> 0002 -> existing data -> 0003 -> 0011 PASS",',
+  'migration: "0001 -> existing data -> 0002 -> existing data -> 0003 -> 0012 PASS",',
   "migration result label"
 );
 

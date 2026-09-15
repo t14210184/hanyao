@@ -8,7 +8,7 @@ const migrationsDir = path.join(root, "migrations");
 const files = fs.readdirSync(migrationsDir)
   .filter((name) => /^\d{4}_.*\.sql$/.test(name))
   .sort();
-assert.equal(files.at(-1), "0011_atomic_terminal_completion.sql");
+assert.ok(files.includes("0011_atomic_terminal_completion.sql"));
 
 const db = new DatabaseSync(":memory:");
 db.exec("PRAGMA foreign_keys = ON;");
