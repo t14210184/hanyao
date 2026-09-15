@@ -5,6 +5,9 @@ export interface Env {
   ATTRIBUTION_RATE_LIMITER?: RateLimitBinding;
   LINE_CHANNEL_SECRET?: string;
   LINE_USER_KEY_HMAC_SECRET?: string;
+  LINE_USER_KEY_HMAC_KEY_ID?: string;
+  LINE_USER_KEY_HMAC_PREVIOUS_KEY_ID?: string;
+  LINE_USER_KEY_HMAC_PREVIOUS_SECRET?: string;
 }
 
 export interface RateLimitBinding {
