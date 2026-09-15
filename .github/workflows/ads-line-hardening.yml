@@ -81,6 +81,8 @@ jobs:
         run: node --experimental-strip-types --test scripts/line4d-reporting-evidence.test.ts
       - name: Verify workflows remain non-mutating
         run: node scripts/v12-workflow-safety.test.mjs
+      - name: Verify bounded attribution timing and session reuse
+        run: npm run test:v13:p1m06
       - name: Verify v1.3 attribution, CTA, modal, and live-gate closure
         run: npm run test:v13:p1m06m11
       - name: Run attribution/prepare regressions
