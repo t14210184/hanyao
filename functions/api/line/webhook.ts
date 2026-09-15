@@ -4,6 +4,10 @@ import {
   methodNotAllowed,
 } from "../../_lib/http";
 import {
+  resolveLineIdentityForEvent,
+  resolveLineIdentityKeyring,
+} from "../../_lib/line-identity";
+import {
   MAX_LINE_WEBHOOK_BODY_BYTES,
   parseLineWebhookPayload,
   processLineWebhookEvent,
@@ -24,9 +28,17 @@ export const onRequest: PageHandler = async ({ request, env }) => {
   if (request.method !== "POST") return methodNotAllowed();
 
   const channelSecret = env.LINE_CHANNEL_SECRET?.trim();
-  const identitySecret = env.LINE_USER_KEY_HMAC_SECRET?.trim();
   if (!channelSecret) return errorResponse("WEBHOOK_NOT_CONFIGURED", 503);
-  if (!identitySecret) return errorResponse("WEBHOOK_IDENTITY_NOT_CONFIGURED", 503);
+
+  let identityKeyring;
+  try {
+    identityKeyring = resolveLineIdentityKeyring(env);
+  } catch {
+    return errorResponse("WEBHOOK_IDENTITY_CONFIGURATION_INVALID", 503);
+  }
+  if (!identityKeyring) {
+    return errorResponse("WEBHOOK_IDENTITY_NOT_CONFIGURED", 503);
+  }
 
   const body = await readRawRequestBody(
     request,
@@ -49,7 +61,20 @@ export const onRequest: PageHandler = async ({ request, env }) => {
   try {
     const outcomes: Array<"accepted" | "duplicate" | "ignored"> = [];
     for (const event of payload.value.events) {
-      outcomes.push(await processLineWebhookEvent(env.ATTRIBUTION_DB, event, identitySecret));
+      const identity = await resolveLineIdentityForEvent(
+        env.ATTRIBUTION_DB,
+        event,
+        identityKeyring
+      );
+      outcomes.push(
+        await processLineWebhookEvent(
+          env.ATTRIBUTION_DB,
+          event,
+          identity.secret,
+          new Date(),
+          identity.keyId
+        )
+      );
     }
     return jsonResponse({ status: summarizeOutcomes(outcomes) });
   } catch {
