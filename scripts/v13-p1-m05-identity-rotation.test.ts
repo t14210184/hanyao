@@ -52,10 +52,13 @@ interface IdentityState {
 
 class IdentityStatement {
   args: unknown[] = [];
-  constructor(
-    readonly sql: string,
-    private readonly state: IdentityState
-  ) {}
+  readonly sql: string;
+  private readonly state: IdentityState;
+
+  constructor(sql: string, state: IdentityState) {
+    this.sql = sql;
+    this.state = state;
+  }
 
   bind(...args: unknown[]) {
     this.args = args;
