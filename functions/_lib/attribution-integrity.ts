@@ -21,6 +21,12 @@ export type AttributionIntegrityResult =
   | { ok: true; value: NormalizedAttributionPayload }
   | { ok: false; code: AttributionIntegrityCode; status: 400 | 409 };
 
+type AttributionIntegrityFailure = Extract<
+  AttributionIntegrityResult,
+  { ok: false }
+>;
+type TouchGuardResult = NormalizedTouch | AttributionIntegrityFailure;
+
 const CLICK_ID_FIELDS = ["gclid", "gbraid", "wbraid"] as const;
 
 const clickIdIsSyntacticallySafe = (value: string): boolean =>
@@ -43,7 +49,7 @@ const withoutAttributionSource = (touch: NormalizedTouch): NormalizedTouch => ({
 const boundTouch = (
   touch: NormalizedTouch,
   serverReceivedAt: Date
-): AttributionIntegrityResult | NormalizedTouch => {
+): TouchGuardResult => {
   for (const field of CLICK_ID_FIELDS) {
     const value = touch[field];
     if (value !== null && !clickIdIsSyntacticallySafe(value)) {
@@ -77,9 +83,7 @@ const boundTouch = (
   };
 };
 
-const isFailure = (
-  value: AttributionIntegrityResult | NormalizedTouch
-): value is Extract<AttributionIntegrityResult, { ok: false }> =>
+const isFailure = (value: TouchGuardResult): value is AttributionIntegrityFailure =>
   "ok" in value && value.ok === false;
 
 const activeClickConflict = async (
