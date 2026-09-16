@@ -15,6 +15,7 @@ concurrency:
 
 jobs:
   verify:
+    name: Ads LINE required gate
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
