@@ -15,6 +15,7 @@ test("D1/D9: desktop QR handoff uses the official short message and HY token", (
   assert.ok(handoff);
   assert.equal(handoff.leadToken, token);
   assert.equal(handoff.message, buildGenericLineMessage(token));
+  assert.match(handoff.message, /保留編號並按送出；只加好友不會送出需求/);
   assert.equal(handoff.oaMessageUrl, buildLineOaMessageUrl(handoff.message));
   assert.match(
     handoff.oaMessageUrl,
@@ -75,6 +76,8 @@ test("D10/D11: QR dialog is local SVG with required accessibility and no QR netw
   assert.match(dialog, /aria-modal="true"/);
   assert.match(dialog, /event\.key === "Escape"/);
   assert.match(dialog, /title="LINE 官方帳號詢價訊息 QR code"/);
+  assert.match(dialog, /備援：直接開啟 LINE（不帶詢價編號）/);
+  assert.match(dialog, /LINE 不會自動帶入詢價編號/);
   assert.doesNotMatch(dialog, /fetch\s*\(/);
   assert.doesNotMatch(dialog, /<img\b/);
   assert.doesNotMatch(dialog, /quickchart|qrserver|google\.com\/chart/i);

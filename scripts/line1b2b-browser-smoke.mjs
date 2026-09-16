@@ -207,6 +207,9 @@ try {
   assert.match(genericQrValue, /HY-[A-Z2-9_]{10}/);
   assert.equal(genericDialogText.includes("使用手機 LINE 掃描"), true);
   assert.equal(genericDialogText.includes("詢價編號"), true);
+  assert.equal(genericDialogText.includes("不帶詢價編號"), true);
+  const decodedGenericQr = decodeURIComponent(genericQrValue.split("?")[1] || "");
+  assert.equal(decodedGenericQr.includes("只加好友不會送出需求"), true);
   assert.equal(prepareBodies.length, 1, "double click must dedupe one active prepare");
   assert.equal(requests.some((url) => /quickchart|qrserver|chart\.googleapis|qr-code-generator/i.test(url)), false);
 
@@ -248,7 +251,15 @@ try {
   await failPage.waitForSelector(lineSelector, { timeout: 8_000 });
   const failCta = await firstVisible(failPage, lineSelector);
   await failCta.click();
-  await new Promise((resolve) => setTimeout(resolve, 3_600));
+  const failOpenDeadline = Date.now() + 8_000;
+  while (profileFallbackRequests === 0 && Date.now() < failOpenDeadline) {
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+  assert.equal(
+    profileFallbackRequests > 0,
+    true,
+    "prepare failure must fall back to the LINE profile"
+  );
   assert.equal(await failPage.$('[role="dialog"]'), null, "failure must not show QR success");
 
   failPrepare = false;

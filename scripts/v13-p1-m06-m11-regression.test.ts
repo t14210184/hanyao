@@ -29,6 +29,8 @@ test("M10 QR dialog is modal, traps focus, restores focus, and scales QR", () =>
   assert.match(source, /event\.key !== "Tab"/);
   assert.match(source, /previousFocus\?\.focus\(\)/);
   assert.match(source, /min\(240px, 70vw\)/);
+  assert.match(source, /備援：直接開啟 LINE（不帶詢價編號）/);
+  assert.match(source, /LINE 不會自動帶入詢價編號/);
 });
 
 test("M11 required Google Ads live gate fails closed without credential", () => {
