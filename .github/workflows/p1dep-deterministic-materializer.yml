@@ -1,0 +1,69 @@
+name: P1-DEP deterministic materializer
+
+on:
+  push:
+    branches:
+      - transport-p1dep-next-15.5.25-20260916
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.19.0'
+      - name: Rebuild exact P1-DEP candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD^)" = "5ba7feb9ba2ac4f12e199417253ec01324fd2eb4"
+          npm install -g npm@11.17.0
+          test "$(npm --version)" = "11.17.0"
+          cp package-lock.json /tmp/package-lock.base.json
+          node <<'NODE'
+          const fs = require('fs');
+          const p = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+          p.dependencies.next = '15.5.25';
+          p.devDependencies['eslint-config-next'] = '15.5.25';
+          p.overrides = { next: { postcss: '8.5.28' }, nanoid: '3.3.18' };
+          fs.writeFileSync('package.json', JSON.stringify(p, null, 2) + '\n');
+          NODE
+          npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+          node <<'NODE'
+          const fs = require('fs');
+          const oldv = JSON.parse(fs.readFileSync('/tmp/package-lock.base.json', 'utf8'));
+          const newv = JSON.parse(fs.readFileSync('package-lock.json', 'utf8'));
+          function reorder(n, o) {
+            if (Array.isArray(n)) return n.map((v, i) => reorder(v, Array.isArray(o) ? o[i] : undefined));
+            if (n && typeof n === 'object') {
+              const out = {};
+              const used = new Set();
+              if (o && typeof o === 'object' && !Array.isArray(o)) {
+                for (const k of Object.keys(o)) {
+                  if (Object.prototype.hasOwnProperty.call(n, k)) {
+                    out[k] = reorder(n[k], o[k]);
+                    used.add(k);
+                  }
+                }
+              }
+              for (const k of Object.keys(n)) if (!used.has(k)) out[k] = reorder(n[k], undefined);
+              return out;
+            }
+            return n;
+          }
+          fs.writeFileSync('package-lock.json', JSON.stringify(reorder(newv, oldv), null, 2) + '\n');
+          NODE
+          test "$(git hash-object package.json)" = "54d22bea63c53de76279663b5ba606a19bc4ab89"
+          test "$(git hash-object package-lock.json)" = "f0a17f5cc64f2e1e2fe743b83a1e2fafe939e576"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add package.json package-lock.json
+          git commit -m 'Materialize exact P1-DEP dependency candidate'
+          git push origin "HEAD:${GITHUB_REF_NAME}"
