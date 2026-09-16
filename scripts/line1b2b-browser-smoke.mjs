@@ -41,6 +41,12 @@ writeFileSync(
 
 const browserCandidates = [
   process.env.PUPPETEER_EXECUTABLE_PATH,
+  "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+  "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
+  "/usr/bin/google-chrome",
+  "/usr/bin/google-chrome-stable",
+  "/usr/bin/chromium",
+  "/usr/bin/chromium-browser",
   "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
   "/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary",
   "/Applications/Chromium.app/Contents/MacOS/Chromium",
@@ -48,15 +54,15 @@ const browserCandidates = [
 const executablePath = browserCandidates.find((candidate) => existsSync(candidate));
 
 if (!executablePath) {
-  console.log(
-    JSON.stringify({
-      status: "PARTIAL",
-      browser_binary: "UNAVAILABLE",
-      fallback: "line1b2b-unit source/contract tests remain available",
-      remote_calls: "NONE",
-    })
-  );
-  process.exit(0);
+  const required = process.env.LINE_BROWSER_GATE_REQUIRED === "1";
+  const payload = {
+    status: required ? "FAIL" : "PARTIAL",
+    browser_binary: "UNAVAILABLE",
+    fallback: "line1b2b-unit source/contract tests remain available",
+    remote_calls: "NONE",
+  };
+  console.log(JSON.stringify(payload));
+  process.exit(required ? 1 : 0);
 }
 
 const runWrangler = (args) => {
