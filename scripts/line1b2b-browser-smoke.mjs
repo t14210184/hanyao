@@ -41,6 +41,12 @@ writeFileSync(
 
 const browserCandidates = [
   process.env.PUPPETEER_EXECUTABLE_PATH,
+  "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+  "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
+  "/usr/bin/google-chrome",
+  "/usr/bin/google-chrome-stable",
+  "/usr/bin/chromium",
+  "/usr/bin/chromium-browser",
   "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
   "/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary",
   "/Applications/Chromium.app/Contents/MacOS/Chromium",
@@ -48,15 +54,15 @@ const browserCandidates = [
 const executablePath = browserCandidates.find((candidate) => existsSync(candidate));
 
 if (!executablePath) {
-  console.log(
-    JSON.stringify({
-      status: "PARTIAL",
-      browser_binary: "UNAVAILABLE",
-      fallback: "line1b2b-unit source/contract tests remain available",
-      remote_calls: "NONE",
-    })
-  );
-  process.exit(0);
+  const required = process.env.LINE_BROWSER_GATE_REQUIRED === "1";
+  const payload = {
+    status: required ? "FAIL" : "PARTIAL",
+    browser_binary: "UNAVAILABLE",
+    fallback: "line1b2b-unit source/contract tests remain available",
+    remote_calls: "NONE",
+  };
+  console.log(JSON.stringify(payload));
+  process.exit(required ? 1 : 0);
 }
 
 const runWrangler = (args) => {
@@ -207,6 +213,9 @@ try {
   assert.match(genericQrValue, /HY-[A-Z2-9_]{10}/);
   assert.equal(genericDialogText.includes("使用手機 LINE 掃描"), true);
   assert.equal(genericDialogText.includes("詢價編號"), true);
+  assert.equal(genericDialogText.includes("不帶詢價編號"), true);
+  const decodedGenericQr = decodeURIComponent(genericQrValue.split("?")[1] || "");
+  assert.equal(decodedGenericQr.includes("只加好友不會送出需求"), true);
   assert.equal(prepareBodies.length, 1, "double click must dedupe one active prepare");
   assert.equal(requests.some((url) => /quickchart|qrserver|chart\.googleapis|qr-code-generator/i.test(url)), false);
 
@@ -248,7 +257,15 @@ try {
   await failPage.waitForSelector(lineSelector, { timeout: 8_000 });
   const failCta = await firstVisible(failPage, lineSelector);
   await failCta.click();
-  await new Promise((resolve) => setTimeout(resolve, 3_600));
+  const failOpenDeadline = Date.now() + 8_000;
+  while (profileFallbackRequests === 0 && Date.now() < failOpenDeadline) {
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+  assert.equal(
+    profileFallbackRequests > 0,
+    true,
+    "prepare failure must fall back to the LINE profile"
+  );
   assert.equal(await failPage.$('[role="dialog"]'), null, "failure must not show QR success");
 
   failPrepare = false;

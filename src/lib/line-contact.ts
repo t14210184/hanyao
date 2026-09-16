@@ -125,9 +125,10 @@ export const buildGenericLineMessage = (
   if (!isLeadToken(leadToken)) return null;
 
   return [
-    "您好，我想透過網站諮詢焓耀空調工程。",
+    "您好，我想諮詢焓耀空調工程。",
     `【詢價編號】${leadToken}`,
-    "請協助回覆，謝謝。",
+    "請保留編號並按送出；只加好友不會送出需求。",
+    "謝謝。",
   ].join("\n");
 };
 

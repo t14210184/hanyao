@@ -51,6 +51,7 @@ permissions:
   contents: read
 jobs:
   verify:
+    name: Ads LINE hardening
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -93,3 +94,7 @@ jobs:
           npm run test:c1b1:http
           npm run test:c1b1:r1
           npm run test:c1b1:config
+      - name: Run LINE QR browser smoke
+        env:
+          LINE_BROWSER_GATE_REQUIRED: "1"
+        run: npm run test:line1b2b:browser

@@ -159,6 +159,7 @@ export default function LineDesktopQrDialog({
         <p className="mt-3 text-sm leading-6 text-slate-300">
           QR 只帶入固定詢問文案與詢價編號。表單完整內容沒有上傳追蹤伺服器，
           也沒有編進 QR；掃描後可先送出編號，再於 LINE 補充需求或照片。
+          若改用下方備援按鈕，LINE 不會自動帶入詢價編號；請先複製短訊息再貼上送出。
         </p>
 
         <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
@@ -180,7 +181,7 @@ export default function LineDesktopQrDialog({
             onClick={onClose}
             className="rounded-xl bg-green-600 px-4 py-3 font-semibold text-white transition-colors hover:bg-green-500"
           >
-            直接開啟 LINE 官方帳號
+            備援：直接開啟 LINE（不帶詢價編號）
           </a>
         </div>
       </div>
