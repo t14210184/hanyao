@@ -9,6 +9,7 @@ const API_URL = `https://googleads.googleapis.com/${API_VERSION}/customers/${CUS
 const CLASSIFICATION_VERSION = "hanyao-search-hygiene-v1";
 
 const credential = process.env.GOOGLE_DATA_MANAGER_SERVICE_ACCOUNT_JSON?.trim();
+const developerToken = process.env.GOOGLE_ADS_DEVELOPER_TOKEN?.trim();
 const loginCustomerId = process.env.GOOGLE_ADS_LOGIN_CUSTOMER_ID?.replace(/-/g, "").trim();
 const outputPath = process.env.ADS_HYGIENE_OUTPUT_PATH?.trim();
 const liveRequired = process.env.ADS_HYGIENE_LIVE_REQUIRED === "1";
@@ -55,17 +56,25 @@ const rowsFrom = (payload: unknown): RecordLike[] => {
   return rows;
 };
 
+const missingRequirements = [
+  !credential ? "GOOGLE_DATA_MANAGER_SERVICE_ACCOUNT_JSON" : null,
+  !developerToken ? "GOOGLE_ADS_DEVELOPER_TOKEN" : null,
+].filter((value): value is string => value !== null);
+
 const skipped = {
   schemaVersion: 1,
-  result: "SKIPPED_NO_GOOGLE_ADS_CREDENTIAL",
+  result: "SKIPPED_MISSING_GOOGLE_ADS_READ_REQUIREMENTS",
   customerId: CUSTOMER_ID,
   apiVersion: API_VERSION,
   classificationVersion: CLASSIFICATION_VERSION,
   dateRange: { start: startDate, end: endDate },
+  missingRequirements,
 };
 
-if (!credential) {
-  if (liveRequired) throw new Error("GOOGLE_ADS_CREDENTIAL_REQUIRED");
+if (missingRequirements.length > 0) {
+  if (liveRequired) {
+    throw new Error(`GOOGLE_ADS_READ_REQUIREMENTS_REQUIRED_${missingRequirements.join("_")}`);
+  }
   console.log(JSON.stringify(skipped, null, 2));
   process.exit(0);
 }
@@ -74,6 +83,7 @@ const auth = await exchangeServiceAccountTokenForScopes(credential, [GOOGLE_ADS_
 const headers: Record<string, string> = {
   authorization: `Bearer ${auth.accessToken}`,
   "content-type": "application/json",
+  "developer-token": developerToken,
 };
 if (loginCustomerId) headers["login-customer-id"] = loginCustomerId;
 
