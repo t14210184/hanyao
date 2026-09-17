@@ -109,4 +109,5 @@ jobs:
           name: wp06-lighthouse-mobile-${{ github.sha }}
           path: .wp06-lighthouse/
           if-no-files-found: error
+          include-hidden-files: true
           retention-days: 7
