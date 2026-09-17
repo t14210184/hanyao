@@ -1,5 +1,3 @@
-"use client";
-
 import React from "react";
 import { siteConfig } from "@/data/site";
 import { servicesData } from "@/data/services";
@@ -16,10 +14,6 @@ import ContactForm from "@/components/ContactForm";
 import FinalCTA from "@/components/FinalCTA";
 
 export default function HomeClient() {
-  const handleAreaChange = () => {
-    // Area changes are tracked inside the AreaSelector component
-  };
-
   return (
     <main className="flex-1 flex flex-col">
       {/* 1. Hero Section */}
@@ -193,7 +187,7 @@ export default function HomeClient() {
           </div>
 
           {/* Selector component with description */}
-          <AreaSelector onAreaChange={handleAreaChange} />
+          <AreaSelector />
         </div>
       </section>
 

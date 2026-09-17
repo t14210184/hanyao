@@ -1,5 +1,3 @@
-"use client";
-
 import React from "react";
 import { ServiceItem } from "@/data/services";
 import CTAButton from "./CTAButton";
