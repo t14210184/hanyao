@@ -33,7 +33,9 @@ on:
       - "functions/_lib/types.ts"
       - "workers/google-ads-uploader/**"
       - "src/components/MobileStickyCTA.tsx"
+      - "src/app/services/ac-repair/AcRepairServiceClient.tsx"
       - "scripts/ads-cro-repair-static.test.mjs"
+      - "scripts/ads-cro-repair-hero-static.test.mjs"
       - "scripts/line1a-*"
       - "scripts/line1b1-*"
       - "scripts/line1b2a-*"
@@ -72,6 +74,8 @@ jobs:
         run: npm run typecheck
       - name: Verify repair mobile CRO invariants
         run: node scripts/ads-cro-repair-static.test.mjs
+      - name: Verify repair hero CRO invariants
+        run: node scripts/ads-cro-repair-hero-static.test.mjs
       - name: Run canonical LINE webhook unit regression
         run: npm run test:line1a:unit
       - name: Run canonical LINE webhook HTTP regression
