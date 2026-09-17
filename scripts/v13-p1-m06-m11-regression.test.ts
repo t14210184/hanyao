@@ -33,44 +33,27 @@ test("M10 QR dialog is modal, traps focus, restores focus, and scales QR", () =>
   assert.match(source, /LINE 不會自動帶入詢價編號/);
 });
 
-test("M11 required Google Ads live gate fails closed without every read requirement", () => {
+test("M11 required Google Ads live gate fails closed without Cloud-project credential", () => {
   const script = path.join(root, "scripts/line4b-google-ads-live-preflight.ts");
-
-  const missingCredential = spawnSync(
+  const required = spawnSync(
     process.execPath,
     ["--experimental-strip-types", script],
     {
       env: {
         ...process.env,
         GOOGLE_DATA_MANAGER_SERVICE_ACCOUNT_JSON: "",
-        GOOGLE_ADS_DEVELOPER_TOKEN: "dummy-developer-token",
         GOOGLE_ADS_LIVE_GATE_REQUIRED: "1",
       },
       encoding: "utf8",
     }
   );
-  assert.equal(missingCredential.status, 1);
-  assert.match(missingCredential.stderr, /MISSING_REQUIRED_READ_REQUIREMENTS/);
-  assert.match(missingCredential.stderr, /GOOGLE_DATA_MANAGER_SERVICE_ACCOUNT_JSON/);
 
-  const missingDeveloperToken = spawnSync(
-    process.execPath,
-    ["--experimental-strip-types", script],
-    {
-      env: {
-        ...process.env,
-        GOOGLE_DATA_MANAGER_SERVICE_ACCOUNT_JSON: "{}",
-        GOOGLE_ADS_DEVELOPER_TOKEN: "",
-        GOOGLE_ADS_LIVE_GATE_REQUIRED: "1",
-      },
-      encoding: "utf8",
-    }
-  );
-  assert.equal(missingDeveloperToken.status, 1);
-  assert.match(missingDeveloperToken.stderr, /MISSING_REQUIRED_READ_REQUIREMENTS/);
-  assert.match(missingDeveloperToken.stderr, /GOOGLE_ADS_DEVELOPER_TOKEN/);
+  assert.equal(required.status, 1);
+  assert.match(required.stderr, /MISSING_CLOUD_PROJECT_CREDENTIAL/);
 
   const source = read("scripts/line4b-google-ads-live-preflight.ts");
-  assert.match(source, /"developer-token": developerToken/);
+  assert.match(source, /authorization:\s*`Bearer \$\{accessToken\}`/);
+  assert.doesNotMatch(source, /GOOGLE_ADS_DEVELOPER_TOKEN/);
+  assert.doesNotMatch(source, /["']developer-token["']\s*:/);
   assert.doesNotMatch(source, /include_in_conversions_metric/);
 });
