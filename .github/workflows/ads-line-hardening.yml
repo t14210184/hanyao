@@ -12,6 +12,7 @@ on:
       - "workers/google-ads-uploader/**"
       - "scripts/ads-search-hygiene-*"
       - "scripts/ads-rsa-*"
+      - "scripts/ads-line-message-*"
       - "scripts/google-ads-read-*"
       - "scripts/line1a-*"
       - "scripts/line1b1-*"
@@ -42,6 +43,7 @@ on:
       - "scripts/ads-cro-repair-hero-static.test.mjs"
       - "scripts/ads-search-hygiene-*"
       - "scripts/ads-rsa-*"
+      - "scripts/ads-line-message-*"
       - "scripts/google-ads-read-*"
       - "scripts/line1a-*"
       - "scripts/line1b1-*"
@@ -88,6 +90,8 @@ jobs:
         run: node --experimental-strip-types --test scripts/ads-search-hygiene-rules.test.ts
       - name: Verify RSA candidate limits and rollout boundary
         run: node --experimental-strip-types --test scripts/ads-rsa-candidates.test.ts
+      - name: Verify LINE Message Asset pilot isolation and fail-closed gates
+        run: node --experimental-strip-types --test scripts/ads-line-message-pilot.test.ts
       - name: Verify Google Ads read auth and audit log privacy
         run: node scripts/google-ads-read-contract-static.test.mjs
       - name: Run canonical LINE webhook unit regression
