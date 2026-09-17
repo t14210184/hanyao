@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import { classifySearchTerm } from "./ads-search-hygiene-rules.ts";
 
 test("brand-bound customer service query becomes Tier A exact-negative candidate", () => {
@@ -62,4 +63,21 @@ test("single phone concept is not a broad exclusion rule", () => {
   const result = classifySearchTerm("冷氣電話");
   assert.notEqual(result.action, "NEGATIVE_EXACT");
   assert.equal(result.recommendedMatchType, null);
+});
+
+test("live audit requires Google Ads developer token and stays search-only", async () => {
+  const auditSource = await readFile(
+    new URL("./ads-search-hygiene-audit.ts", import.meta.url),
+    "utf8"
+  );
+
+  assert.match(auditSource, /GOOGLE_ADS_DEVELOPER_TOKEN/);
+  assert.match(auditSource, /"developer-token": developerToken/);
+  assert.match(auditSource, /googleAds:searchStream/);
+  assert.match(auditSource, /AUDIT_COMPLETE_NO_MUTATION/);
+  assert.doesNotMatch(
+    auditSource,
+    /googleAds:mutate|adGroupCriteria:mutate|campaignCriteria:mutate/i,
+    "search-hygiene audit must not contain a Google Ads mutation endpoint"
+  );
 });
