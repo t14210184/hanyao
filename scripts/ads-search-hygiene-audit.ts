@@ -71,7 +71,7 @@ const skipped = {
   missingRequirements,
 };
 
-if (missingRequirements.length > 0) {
+if (!credential || !developerToken) {
   if (liveRequired) {
     throw new Error(`GOOGLE_ADS_READ_REQUIREMENTS_REQUIRED_${missingRequirements.join("_")}`);
   }
