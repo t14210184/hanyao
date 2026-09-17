@@ -10,6 +10,7 @@ const expectedPaths = [
   "/services/commercial-ac/",
 ];
 const expectedRunsPerPage = Number(process.env.WP06_RUNS || 3);
+const lighthouseReportName = /^(home|repair|cleaning|installation|commercial)-\d+\.json$/;
 
 const median = (values) => {
   const sorted = values.filter(Number.isFinite).sort((a, b) => a - b);
@@ -48,7 +49,7 @@ if (!fs.existsSync(reportDir)) {
 
 const files = fs
   .readdirSync(reportDir)
-  .filter((name) => name.endsWith(".json") && name !== "summary.json")
+  .filter((name) => lighthouseReportName.test(name))
   .sort();
 
 const reports = files.map((name) => {
