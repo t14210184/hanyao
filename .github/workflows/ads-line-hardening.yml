@@ -39,6 +39,8 @@ on:
       - "workers/google-ads-uploader/**"
       - "src/components/MobileStickyCTA.tsx"
       - "src/app/services/ac-repair/AcRepairServiceClient.tsx"
+      - "src/app/layout.tsx"
+      - "src/app/globals.css"
       - "scripts/ads-cro-repair-static.test.mjs"
       - "scripts/ads-cro-repair-hero-static.test.mjs"
       - "scripts/ads-search-hygiene-*"
@@ -54,12 +56,14 @@ on:
       - "scripts/line4b-*"
       - "scripts/line4c-*"
       - "scripts/line4d-*"
+      - "scripts/wp06-lighthouse-summarize.mjs"
       - "scripts/v12-migration-reconstruction.test.mjs"
       - "scripts/v12-workflow-safety.test.mjs"
       - "migrations/**"
       - "package.json"
       - "package-lock.json"
       - ".github/workflows/ads-line-hardening.yml"
+      - ".github/workflows/wp06-mobile-performance-audit.yml"
 
 permissions:
   contents: read
