@@ -94,67 +94,83 @@ const symptomCards = [
 export default function AcRepairServiceClient() {
   return (
     <main className="flex-1 flex flex-col pt-16">
-      {/* 一、Hero 首屏 */}
-      <section className="relative py-16 sm:py-20 overflow-hidden bg-slate-900/10 border-b border-slate-900">
+      {/* 一、Hero 首屏：行動版優先的低摩擦諮詢入口 */}
+      <section className="relative py-10 sm:py-16 overflow-hidden bg-slate-900/10 border-b border-slate-900">
         <div className="absolute inset-0 z-0">
           <div className="absolute top-0 left-0 w-[50%] h-[100%] rounded-full bg-slate-900/15 blur-[120px] pointer-events-none"></div>
         </div>
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
           <span className="text-xs font-bold text-sky-400 uppercase tracking-widest px-3 py-1 bg-sky-950/50 rounded-full border border-sky-900/30">
-            透明診斷 • 誠實報價
+            高雄・屏東｜先判斷再報價
           </span>
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-white mt-6 tracking-tight leading-tight">
-            高雄、屏東冷氣維修｜冷氣不冷、漏水、異音、跳電先檢查再說明
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-white mt-5 tracking-tight leading-tight">
+            冷氣不冷、滴水、漏水、異音或跳電？先傳照片與症狀
           </h1>
-          <p className="text-xs sm:text-sm text-slate-400 mt-4 leading-relaxed max-w-2xl mx-auto">
-            家用與商用冷氣常見故障檢修，協助判斷不冷、滴水、漏水、異音、跳電、不啟動、冷媒異常等問題。可先透過 LINE 描述狀況，師傅依現場情況評估處理方向。
+          <p className="text-sm sm:text-base text-slate-300 mt-4 leading-relaxed max-w-2xl mx-auto">
+            高雄、屏東冷氣維修檢修。先提供品牌型號、故障照片或症狀與所在地區，協助初步判斷處理方向；需要到場時再安排檢查，確認原因與報價後施工。
           </p>
 
-          {/* 首屏 CTA 按鈕 */}
-          <div className="mt-8 flex flex-col sm:flex-row justify-center items-center gap-4 max-w-md mx-auto">
+          <div className="mt-7 max-w-xl mx-auto">
             <CTAButton
               href={siteConfig.lineUrl}
               external
               trackEventName="line_click"
               trackParams={{ service_type: "ac_repair", cta_position: "lp_hero_line" }}
-              className="w-full sm:flex-1 py-3.5 bg-green-600 hover:bg-green-500 text-white font-bold rounded-xl flex items-center justify-center gap-2 text-sm shadow-md transition-all"
+              className="w-full min-h-14 px-6 py-4 bg-green-600 hover:bg-green-500 text-white font-extrabold rounded-xl flex items-center justify-center gap-2 text-base shadow-lg shadow-green-950/20 transition-all"
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
               </svg>
-              <span>LINE 傳照片諮詢</span>
+              <span>傳照片／症狀快速諮詢</span>
             </CTAButton>
+            <p className="mt-2 text-xs text-slate-400">
+              會先帶入詢價編號；請在 LINE 確認內容後按「送出」，只加好友不會送出需求。
+            </p>
 
-            <CTAButton
-              href={siteConfig.phone1Link}
-              trackEventName="phone_click"
-              trackParams={{ service_type: "ac_repair", cta_position: "lp_hero_phone" }}
-              className="w-full sm:flex-1 py-3.5 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl border border-slate-700 flex items-center justify-center gap-2 text-sm transition-all"
-            >
-              <svg className="w-5 h-5 text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.94.725l.548 2.2a1 1 0 01-.321.988l-1.305.98a10.582 10.582 0 004.872 4.872l.98-1.305a1 1 0 01.988-.321l2.2.548a1 1 0 01.725.94V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-              </svg>
-              <span>立即電話諮詢</span>
-            </CTAButton>
+            <div className="mt-4 grid grid-cols-3 gap-2 text-left" aria-label="快速諮詢前準備資料">
+              {[
+                ["1", "品牌／型號", "拍銘牌即可"],
+                ["2", "故障症狀", "照片或簡短描述"],
+                ["3", "所在區域", "高雄或屏東"],
+              ].map(([step, title, note]) => (
+                <div key={step} className="rounded-xl border border-slate-800 bg-slate-950/55 px-3 py-3">
+                  <span className="text-[10px] font-bold text-sky-400">{step}</span>
+                  <strong className="mt-1 block text-xs text-white">{title}</strong>
+                  <span className="mt-0.5 block text-[10px] leading-4 text-slate-400">{note}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs">
+              <CTAButton
+                href={siteConfig.phone1Link}
+                trackEventName="phone_click"
+                trackParams={{ service_type: "ac_repair", cta_position: "lp_hero_phone" }}
+                className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-lg border border-slate-700 bg-slate-900 px-4 py-2.5 font-bold text-slate-100 transition-colors hover:bg-slate-800"
+              >
+                <span>電話詢問</span>
+              </CTAButton>
+              <a
+                href="#contact-section"
+                className="inline-flex min-h-11 items-center px-2 py-2.5 font-semibold text-sky-300 hover:text-sky-200"
+              >
+                填完整到府估價資料 ↓
+              </a>
+            </div>
           </div>
 
-          {/* 首屏下方信任點 */}
-          <div className="mt-10 grid grid-cols-2 md:grid-cols-4 gap-4 text-left border-t border-slate-850 pt-8 max-w-3xl mx-auto">
-            <div className="flex items-start gap-2">
-              <span className="text-sky-400 font-bold shrink-0">✓</span>
-              <p className="text-xs text-slate-350"><strong className="text-white block">高雄 / 屏東服務</strong>提供在地技術士團隊到府評估</p>
+          <div className="mt-7 grid grid-cols-1 sm:grid-cols-3 gap-2 text-left border-t border-slate-850 pt-6 max-w-3xl mx-auto">
+            <div className="rounded-lg bg-slate-950/35 px-3 py-3">
+              <strong className="text-xs text-white block">乙級冷凍空調裝修技術士</strong>
+              <span className="text-[11px] text-slate-400">專業資格可查驗</span>
             </div>
-            <div className="flex items-start gap-2">
-              <span className="text-sky-400 font-bold shrink-0">✓</span>
-              <p className="text-xs text-slate-350"><strong className="text-white block">整合空調服務</strong>提供維修、清洗與安裝一條龍</p>
+            <div className="rounded-lg bg-slate-950/35 px-3 py-3">
+              <strong className="text-xs text-white block">冷凍空調業登記・公會會員</strong>
+              <span className="text-[11px] text-slate-400">合法登記的工程服務</span>
             </div>
-            <div className="flex items-start gap-2">
-              <span className="text-sky-400 font-bold shrink-0">✓</span>
-              <p className="text-xs text-slate-350"><strong className="text-white block">線上故障說明</strong>依據描述與影像分析可能原因</p>
-            </div>
-            <div className="flex items-start gap-2">
-              <span className="text-sky-400 font-bold shrink-0">✓</span>
-              <p className="text-xs text-slate-350"><strong className="text-white block">不誇大保證</strong>不捏造數據，實事求是報價</p>
+            <div className="rounded-lg bg-slate-950/35 px-3 py-3">
+              <strong className="text-xs text-white block">先說明原因與報價</strong>
+              <span className="text-[11px] text-slate-400">確認同意後再施工</span>
             </div>
           </div>
         </div>
