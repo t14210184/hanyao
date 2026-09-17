@@ -75,7 +75,7 @@ if (!credential || !developerToken) {
   if (liveRequired) {
     throw new Error(`GOOGLE_ADS_READ_REQUIREMENTS_REQUIRED_${missingRequirements.join("_")}`);
   }
-  console.log(JSON.stringify(skipped, null, 2));
+  console.log(JSON.stringify(skipped));
   process.exit(0);
 }
 
@@ -161,6 +161,9 @@ const audited = rows.map((row) => {
 const candidates = audited.filter((row) => row.candidate !== null);
 const candidateCostMicros = candidates.reduce((sum, row) => sum + row.metrics.costMicros, 0);
 const candidateClicks = candidates.reduce((sum, row) => sum + row.metrics.clicks, 0);
+const reviewRows = audited.filter((row) =>
+  ["REVIEW_NAVIGATION", "KEEP_REVIEW"].includes(row.decision.action)
+);
 
 const manifest = {
   schemaVersion: 1,
@@ -184,11 +187,28 @@ const manifest = {
     candidateCostMicros,
   },
   candidates,
-  reviewRows: audited.filter((row) =>
-    ["REVIEW_NAVIGATION", "KEEP_REVIEW"].includes(row.decision.action)
-  ),
+  reviewRows,
 };
 
 const serialized = `${JSON.stringify(manifest, null, 2)}\n`;
 if (outputPath) await writeFile(outputPath, serialized, "utf8");
-console.log(serialized.trimEnd());
+
+// Default stdout is intentionally metadata-only. Exact search terms, campaign/ad-group
+// identities and spend detail are written only when an explicit output path is supplied.
+console.log(
+  JSON.stringify({
+    schemaVersion: 1,
+    result: manifest.result,
+    generatedAt: manifest.generatedAt,
+    customerId: CUSTOMER_ID,
+    apiVersion: API_VERSION,
+    sourceView: manifest.sourceView,
+    classificationVersion: CLASSIFICATION_VERSION,
+    dateRange: manifest.dateRange,
+    mutationApplied: false,
+    auditedRows: audited.length,
+    candidateRows: candidates.length,
+    reviewRows: reviewRows.length,
+    detailOutputWritten: Boolean(outputPath),
+  })
+);
