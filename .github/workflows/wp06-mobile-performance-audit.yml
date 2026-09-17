@@ -1,0 +1,112 @@
+name: WP06 mobile performance audit
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/wp06-mobile-performance-audit.yml"
+      - "scripts/wp06-lighthouse-summarize.mjs"
+      - "src/**"
+      - "public/**"
+      - "next.config.*"
+      - "package.json"
+      - "package-lock.json"
+
+concurrency:
+  group: wp06-mobile-performance-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  lighthouse-mobile:
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.head_ref, 'feat/wp06-')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      WP06_RUNS: "3"
+      WP06_BASE_URL: "https://www.xusen.pro"
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Resolve Chrome and pin Lighthouse
+        shell: bash
+        run: |
+          set -euo pipefail
+          chrome_path="$(command -v google-chrome || command -v chromium || command -v chromium-browser || true)"
+          if [[ -z "$chrome_path" ]]; then
+            echo "WP06_CHROME_NOT_FOUND" >&2
+            exit 1
+          fi
+          echo "CHROME_PATH=$chrome_path" >> "$GITHUB_ENV"
+          "$chrome_path" --version
+          node --version
+          npx --yes lighthouse@13.4.1 --version
+
+      - name: Run 3x Lighthouse mobile per production page
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .wp06-lighthouse
+          pages=(
+            "home:/"
+            "repair:/services/ac-repair/"
+            "cleaning:/services/ac-cleaning/"
+            "installation:/services/ac-installation/"
+            "commercial:/services/commercial-ac/"
+          )
+
+          for page in "${pages[@]}"; do
+            slug="${page%%:*}"
+            page_path="${page#*:}"
+            url="${WP06_BASE_URL}${page_path}"
+            for run in $(seq 1 "$WP06_RUNS"); do
+              output=".wp06-lighthouse/${slug}-${run}.json"
+              success=0
+              for attempt in 1 2; do
+                echo "WP06_LIGHTHOUSE url=$url run=$run attempt=$attempt"
+                if npx --yes lighthouse@13.4.1 "$url" \
+                  --only-categories=performance \
+                  --form-factor=mobile \
+                  --throttling-method=simulate \
+                  --max-wait-for-load=60000 \
+                  --chrome-flags="--headless --no-sandbox --disable-dev-shm-usage" \
+                  --output=json \
+                  --output-path="$output" \
+                  --quiet; then
+                  success=1
+                  break
+                fi
+                sleep 5
+              done
+              if [[ "$success" -ne 1 || ! -s "$output" ]]; then
+                echo "WP06_LIGHTHOUSE_FAILED url=$url run=$run" >&2
+                exit 1
+              fi
+            done
+          done
+
+      - name: Summarize median mobile baseline
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/wp06-lighthouse-summarize.mjs .wp06-lighthouse > .wp06-lighthouse/summary.stdout.json
+          cat .wp06-lighthouse/summary.md >> "$GITHUB_STEP_SUMMARY"
+          cat .wp06-lighthouse/summary.md
+
+      - name: Upload reproducible WP06 evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: wp06-lighthouse-mobile-${{ github.sha }}
+          path: .wp06-lighthouse/
+          if-no-files-found: error
+          retention-days: 7
