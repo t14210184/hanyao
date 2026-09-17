@@ -36,6 +36,7 @@ on:
       - "src/app/services/ac-repair/AcRepairServiceClient.tsx"
       - "scripts/ads-cro-repair-static.test.mjs"
       - "scripts/ads-cro-repair-hero-static.test.mjs"
+      - "scripts/ads-search-hygiene-*"
       - "scripts/line1a-*"
       - "scripts/line1b1-*"
       - "scripts/line1b2a-*"
@@ -76,6 +77,8 @@ jobs:
         run: node scripts/ads-cro-repair-static.test.mjs
       - name: Verify repair hero CRO invariants
         run: node scripts/ads-cro-repair-hero-static.test.mjs
+      - name: Verify Ads search-hygiene classification boundaries
+        run: node --experimental-strip-types --test scripts/ads-search-hygiene-rules.test.ts
       - name: Run canonical LINE webhook unit regression
         run: npm run test:line1a:unit
       - name: Run canonical LINE webhook HTTP regression
