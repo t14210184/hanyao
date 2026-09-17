@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Noto_Sans_TC, Inter } from "next/font/google";
+import { Noto_Sans_TC } from "next/font/google";
 import Script from "next/script";
 import { GoogleTagManager } from "@next/third-parties/google";
 import "./globals.css";
@@ -10,16 +10,12 @@ import AttributionBootstrap from "@/components/AttributionBootstrap";
 import JsonLd from "@/components/JsonLd";
 import { siteConfig } from "@/data/site";
 
-// Configure fonts
+// Use the variable Noto Sans TC file so one font family can cover the required
+// 100–900 weight axis without preloading five discrete weights. Noto Sans TC
+// also covers Latin, so a separately preloaded Inter fallback is unnecessary.
 const noto = Noto_Sans_TC({
   subsets: ["latin"],
   variable: "--font-noto",
-  weight: ["300", "400", "500", "700", "900"],
-});
-
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-inter",
 });
 
 export const metadata: Metadata = {
@@ -81,7 +77,7 @@ export default function RootLayout({
   return (
     <html
       lang="zh-Hant-TW"
-      className={`${noto.variable} ${inter.variable} h-full scroll-smooth antialiased`}
+      className={`${noto.variable} h-full scroll-smooth antialiased`}
     >
       <GoogleTagManager gtmId={siteConfig.gtmId} />
       <head>

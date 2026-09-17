@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: var(--font-noto), var(--font-inter), sans-serif;
+  --font-sans: var(--font-noto), sans-serif;
   --color-slate-850: #152035;
   --color-slate-925: #0b1329;
 }
