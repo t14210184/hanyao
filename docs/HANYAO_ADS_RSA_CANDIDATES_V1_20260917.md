@@ -32,8 +32,9 @@ The executable candidate copy is stored in `scripts/ads-rsa-candidates.ts` and g
 - exactly two differentiated RSA variants per campaign template;
 - 8–15 headlines per variant;
 - 2–4 descriptions per variant;
-- headline length <= 30 characters;
-- description length <= 90 characters;
+- headline limit <= 30 Google Ads character units;
+- description limit <= 90 Google Ads character units;
+- Traditional-Chinese / other double-width characters are counted as 2 units, not 1;
 - no `LINE` in headlines;
 - no duplicated headlines across A/B within the same campaign;
 - no unsupported `免費`, `保證`, `最低價`, 24-hour, same-day-arrival or lifetime-warranty claims;
