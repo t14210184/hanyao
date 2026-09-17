@@ -27,6 +27,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
+      # Measurement-only PR trigger after the font change reached Production.
       WP06_RUNS: "3"
       WP06_BASE_URL: "https://www.xusen.pro"
     steps:
