@@ -65,14 +65,16 @@ test("single phone concept is not a broad exclusion rule", () => {
   assert.equal(result.recommendedMatchType, null);
 });
 
-test("live audit requires Google Ads developer token and stays search-only", async () => {
+test("live audit uses Cloud-project OAuth access and stays search-only", async () => {
   const auditSource = await readFile(
     new URL("./ads-search-hygiene-audit.ts", import.meta.url),
     "utf8"
   );
 
-  assert.match(auditSource, /GOOGLE_ADS_DEVELOPER_TOKEN/);
-  assert.match(auditSource, /"developer-token": developerToken/);
+  assert.match(auditSource, /GOOGLE_DATA_MANAGER_SERVICE_ACCOUNT_JSON/);
+  assert.match(auditSource, /authorization:\s*`Bearer \$\{auth\.accessToken\}`/);
+  assert.doesNotMatch(auditSource, /GOOGLE_ADS_DEVELOPER_TOKEN/);
+  assert.doesNotMatch(auditSource, /["']developer-token["']\s*:/);
   assert.match(auditSource, /googleAds:searchStream/);
   assert.match(auditSource, /AUDIT_COMPLETE_NO_MUTATION/);
   assert.doesNotMatch(
