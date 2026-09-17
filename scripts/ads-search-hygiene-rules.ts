@@ -14,6 +14,13 @@ export interface SearchHygieneDecision {
   recommendedMatchType: "EXACT" | null;
 }
 
+export type CampaignIntent =
+  | "REPAIR"
+  | "CLEANING"
+  | "INSTALLATION"
+  | "COMMERCIAL"
+  | "UNKNOWN";
+
 export const OBSERVED_BRAND_TOKENS = [
   "大金",
   "日立",
@@ -54,6 +61,43 @@ const CLEAR_NON_SERVICE_TOKENS = [
 ] as const;
 
 const COMMERCIAL_RESEARCH_TOKENS = ["價格", "費用", "多少錢", "推薦", "評價"] as const;
+
+const REPAIR_INTENT_TOKENS = [
+  "維修",
+  "修理",
+  "故障",
+  "不冷",
+  "漏水",
+  "滴水",
+  "跳電",
+  "異音",
+  "不啟動",
+  "漏冷媒",
+] as const;
+
+const CLEANING_INTENT_TOKENS = [
+  "冷氣清洗",
+  "清洗冷氣",
+  "洗冷氣",
+  "冷氣保養",
+  "清潔冷氣",
+] as const;
+
+const INSTALLATION_INTENT_TOKENS = [
+  "冷氣安裝",
+  "安裝冷氣",
+  "新裝冷氣",
+  "裝冷氣",
+  "冷氣新裝",
+] as const;
+
+const RESIDENTIAL_INTENT_TOKENS = [
+  "家用冷氣",
+  "住家冷氣",
+  "住宅冷氣",
+  "房間冷氣",
+  "套房冷氣",
+] as const;
 
 const firstIncluded = (value: string, tokens: readonly string[]): string | null =>
   tokens.find((token) => value.includes(token)) ?? null;
@@ -137,4 +181,105 @@ export const classifySearchTerm = (term: string): SearchHygieneDecision => {
     matchedToken: null,
     recommendedMatchType: null,
   };
+};
+
+export const inferCampaignIntent = (campaignName: string): CampaignIntent => {
+  const normalized = normalizeSearchTerm(campaignName);
+  if (normalized.includes("冷氣維修")) return "REPAIR";
+  if (normalized.includes("冷氣清洗") || normalized.includes("清洗保養")) return "CLEANING";
+  if (normalized.includes("冷氣安裝")) return "INSTALLATION";
+  if (normalized.includes("商用")) return "COMMERCIAL";
+  return "UNKNOWN";
+};
+
+const exactCrossCampaignDecision = (
+  base: SearchHygieneDecision,
+  reason: string,
+  token: string
+): SearchHygieneDecision => ({
+  ...base,
+  action: "NEGATIVE_EXACT",
+  tier: "B",
+  reason,
+  matchedToken: token,
+  recommendedMatchType: "EXACT",
+});
+
+const crossCampaignReviewDecision = (
+  base: SearchHygieneDecision,
+  reason: string,
+  token: string | null
+): SearchHygieneDecision => ({
+  ...base,
+  action: "KEEP_REVIEW",
+  tier: base.tier === "A" ? "A" : "C",
+  reason,
+  matchedToken: token,
+  recommendedMatchType: null,
+});
+
+export const classifySearchTermForCampaign = (
+  campaignName: string,
+  term: string
+): SearchHygieneDecision => {
+  const base = classifySearchTerm(term);
+
+  // Global high-confidence exclusions remain valid regardless of campaign routing.
+  if (base.action === "NEGATIVE_EXACT") return base;
+
+  const campaignIntent = inferCampaignIntent(campaignName);
+  if (campaignIntent === "UNKNOWN") return base;
+
+  const value = base.normalizedTerm;
+  const repairToken = firstIncluded(value, REPAIR_INTENT_TOKENS);
+  const cleaningToken = firstIncluded(value, CLEANING_INTENT_TOKENS);
+  const installationToken = firstIncluded(value, INSTALLATION_INTENT_TOKENS);
+  const residentialToken = firstIncluded(value, RESIDENTIAL_INTENT_TOKENS);
+  const serviceIntentCount = [repairToken, cleaningToken, installationToken].filter(Boolean).length;
+
+  // Mixed service intent can be genuine replacement/diagnostic demand. Review it instead
+  // of auto-excluding, even if one token would otherwise look cross-campaign.
+  if (serviceIntentCount > 1) {
+    return crossCampaignReviewDecision(
+      base,
+      "MULTI_SERVICE_INTENT_REVIEW",
+      repairToken ?? cleaningToken ?? installationToken
+    );
+  }
+
+  if (campaignIntent === "REPAIR") {
+    if (cleaningToken) {
+      return exactCrossCampaignDecision(base, "CROSS_CAMPAIGN_CLEANING_INTENT", cleaningToken);
+    }
+    if (installationToken) {
+      return exactCrossCampaignDecision(base, "CROSS_CAMPAIGN_INSTALLATION_INTENT", installationToken);
+    }
+    return base;
+  }
+
+  if (campaignIntent === "CLEANING") {
+    if (repairToken) {
+      return exactCrossCampaignDecision(base, "CROSS_CAMPAIGN_REPAIR_INTENT", repairToken);
+    }
+    if (installationToken) {
+      return exactCrossCampaignDecision(base, "CROSS_CAMPAIGN_INSTALLATION_INTENT", installationToken);
+    }
+    return base;
+  }
+
+  if (campaignIntent === "INSTALLATION") {
+    if (repairToken) {
+      return exactCrossCampaignDecision(base, "CROSS_CAMPAIGN_REPAIR_INTENT", repairToken);
+    }
+    if (cleaningToken) {
+      return exactCrossCampaignDecision(base, "CROSS_CAMPAIGN_CLEANING_INTENT", cleaningToken);
+    }
+    return base;
+  }
+
+  if (campaignIntent === "COMMERCIAL" && residentialToken) {
+    return exactCrossCampaignDecision(base, "CROSS_CAMPAIGN_RESIDENTIAL_INTENT", residentialToken);
+  }
+
+  return base;
 };

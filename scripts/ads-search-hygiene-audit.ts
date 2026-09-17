@@ -1,12 +1,12 @@
 import { writeFile } from "node:fs/promises";
 import { exchangeServiceAccountTokenForScopes } from "../workers/google-ads-uploader/src/auth.ts";
 import { GOOGLE_ADS_SCOPE } from "../workers/google-ads-uploader/src/types.ts";
-import { classifySearchTerm } from "./ads-search-hygiene-rules.ts";
+import { classifySearchTermForCampaign } from "./ads-search-hygiene-rules.ts";
 
 const CUSTOMER_ID = "4801404246";
 const API_VERSION = "v25";
 const API_URL = `https://googleads.googleapis.com/${API_VERSION}/customers/${CUSTOMER_ID}/googleAds:searchStream`;
-const CLASSIFICATION_VERSION = "hanyao-search-hygiene-v1";
+const CLASSIFICATION_VERSION = "hanyao-search-hygiene-v2";
 
 const credential = process.env.GOOGLE_DATA_MANAGER_SERVICE_ACCOUNT_JSON?.trim();
 const loginCustomerId = process.env.GOOGLE_ADS_LOGIN_CUSTOMER_ID?.replace(/-/g, "").trim();
@@ -120,13 +120,14 @@ const audited = rows.map((row) => {
   const view = asRecord(row.searchTermView) ?? {};
   const metrics = asRecord(row.metrics) ?? {};
   const searchTerm = asString(view.searchTerm) ?? "";
-  const decision = classifySearchTerm(searchTerm);
+  const campaignName = asString(campaign.name) ?? "";
+  const decision = classifySearchTermForCampaign(campaignName, searchTerm);
   const status = asString(view.status) ?? "UNKNOWN";
   const alreadyExcluded = status.includes("EXCLUDED");
 
   return {
     campaignId: asString(campaign.id),
-    campaignName: asString(campaign.name),
+    campaignName: campaignName || null,
     adGroupId: asString(adGroup.id),
     adGroupName: asString(adGroup.name),
     searchTerm,
