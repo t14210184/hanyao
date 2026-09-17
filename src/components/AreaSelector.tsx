@@ -2,11 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { areasData } from "@/data/areas";
-interface AreaSelectorProps {
-  onAreaChange: (areaId: string) => void;
-}
-
-export default function AreaSelector({ onAreaChange }: AreaSelectorProps) {
+export default function AreaSelector() {
   const [selectedArea, setSelectedArea] = useState<string>("all");
 
   // Synchronize with URL parameter and custom window event
@@ -16,7 +12,6 @@ export default function AreaSelector({ onAreaChange }: AreaSelectorProps) {
     const areaParam = params.get("area");
     if (areaParam && areasData[areaParam]) {
       setSelectedArea(areaParam);
-      onAreaChange(areaParam);
     }
 
     // 2. Listen to custom event fired by public/scripts/geo.js
@@ -25,17 +20,15 @@ export default function AreaSelector({ onAreaChange }: AreaSelectorProps) {
       const newArea = customEvent.detail;
       if (newArea && areasData[newArea]) {
         setSelectedArea(newArea);
-        onAreaChange(newArea);
       }
     };
 
     window.addEventListener("areaChanged", handleAreaChangeCustom);
     return () => window.removeEventListener("areaChanged", handleAreaChangeCustom);
-  }, [onAreaChange]);
+  }, []);
 
   const handleSelect = (areaId: string) => {
     setSelectedArea(areaId);
-    onAreaChange(areaId);
   };
 
   return (
