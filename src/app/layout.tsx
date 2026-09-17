@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { Noto_Sans_TC, Inter } from "next/font/google";
 import Script from "next/script";
 import { GoogleTagManager } from "@next/third-parties/google";
 import "./globals.css";
@@ -9,18 +8,6 @@ import MobileStickyCTA from "@/components/MobileStickyCTA";
 import AttributionBootstrap from "@/components/AttributionBootstrap";
 import JsonLd from "@/components/JsonLd";
 import { siteConfig } from "@/data/site";
-
-// Configure fonts
-const noto = Noto_Sans_TC({
-  subsets: ["latin"],
-  variable: "--font-noto",
-  weight: ["300", "400", "500", "700", "900"],
-});
-
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-inter",
-});
 
 export const metadata: Metadata = {
   // title 與 description 由各頁面自行定義（移除全域預設以避免雙重輸出）
@@ -79,10 +66,7 @@ export default function RootLayout({
   };
 
   return (
-    <html
-      lang="zh-Hant-TW"
-      className={`${noto.variable} ${inter.variable} h-full scroll-smooth antialiased`}
-    >
+    <html lang="zh-Hant-TW" className="h-full scroll-smooth antialiased">
       <GoogleTagManager gtmId={siteConfig.gtmId} />
       <head>
         {/* Inject JSON-LD Schema */}
