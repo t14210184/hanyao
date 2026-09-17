@@ -8,7 +8,12 @@ import {
   RSA_ROLLOUT_CONTRACT,
 } from "./ads-rsa-candidates.ts";
 
-const characterCount = (value: string): number => Array.from(value).length;
+// Google Ads counts each character in double-width languages such as Chinese as
+// two characters toward RSA text limits. Treat ASCII as one unit and all
+// non-ASCII code points in this bounded Traditional-Chinese copy set as two.
+const googleAdsCharacterUnits = (value: string): number =>
+  Array.from(value).reduce((total, char) => total + (char.codePointAt(0)! <= 0x7f ? 1 : 2), 0);
+
 const forbiddenClaims = [
   "免費",
   "保證",
@@ -51,7 +56,10 @@ test("every campaign has differentiated A/B RSA copy within Google text limits",
       assert.equal(new Set(variant.descriptions).size, variant.descriptions.length);
 
       for (const headline of variant.headlines) {
-        assert.ok(characterCount(headline) <= 30, `${campaign.campaign}/${variant.id} headline too long: ${headline}`);
+        assert.ok(
+          googleAdsCharacterUnits(headline) <= 30,
+          `${campaign.campaign}/${variant.id} headline too long: ${headline}`
+        );
         assert.doesNotMatch(headline, /LINE/i, `${campaign.campaign}/${variant.id} headline must stay Message-Asset compatible`);
         assert.equal(campaignHeadlines.has(headline), false, `${campaign.campaign} A/B duplicate headline: ${headline}`);
         campaignHeadlines.add(headline);
@@ -59,7 +67,10 @@ test("every campaign has differentiated A/B RSA copy within Google text limits",
       }
 
       for (const description of variant.descriptions) {
-        assert.ok(characterCount(description) <= 90, `${campaign.campaign}/${variant.id} description too long: ${description}`);
+        assert.ok(
+          googleAdsCharacterUnits(description) <= 90,
+          `${campaign.campaign}/${variant.id} description too long: ${description}`
+        );
         for (const claim of forbiddenClaims) assert.equal(description.includes(claim), false, `forbidden claim in description: ${description}`);
       }
     }
