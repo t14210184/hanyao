@@ -13,8 +13,9 @@ const adsReadScripts = [
 for (const name of adsReadScripts) {
   const source = await read(name);
   assert.match(source, /googleAds:searchStream/, `${name} must stay on SearchStream`);
-  assert.match(source, /GOOGLE_ADS_DEVELOPER_TOKEN/, `${name} must require a developer token`);
-  assert.match(source, /"developer-token": developerToken/, `${name} must send the developer-token header`);
+  assert.match(source, /authorization:\s*`Bearer \$\{/, `${name} must use OAuth bearer auth`);
+  assert.doesNotMatch(source, /GOOGLE_ADS_DEVELOPER_TOKEN/, `${name} must not require the retired developer token`);
+  assert.doesNotMatch(source, /["']developer-token["']\s*:/, `${name} must not send the retired developer-token header`);
   assert.doesNotMatch(
     source,
     /googleAds:mutate|adGroupCriteria:mutate|campaignCriteria:mutate|customers\/[^`"']+\/[^`"']+:mutate/i,

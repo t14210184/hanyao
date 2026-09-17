@@ -7,21 +7,15 @@ const GOOGLE_ADS_API_VERSION = "v25";
 const API_URL = `https://googleads.googleapis.com/${GOOGLE_ADS_API_VERSION}/customers/${CUSTOMER_ID}/googleAds:searchStream`;
 
 const credential = process.env.GOOGLE_DATA_MANAGER_SERVICE_ACCOUNT_JSON?.trim();
-const developerToken = process.env.GOOGLE_ADS_DEVELOPER_TOKEN?.trim();
 const loginCustomerId = process.env.GOOGLE_ADS_LOGIN_CUSTOMER_ID?.replace(/-/g, "").trim();
 const liveGateRequired = process.env.GOOGLE_ADS_LIVE_GATE_REQUIRED === "1";
-const missingReadRequirements = [
-  !credential ? "GOOGLE_DATA_MANAGER_SERVICE_ACCOUNT_JSON" : null,
-  !developerToken ? "GOOGLE_ADS_DEVELOPER_TOKEN" : null,
-].filter((value): value is string => value !== null);
 
-if (!credential || !developerToken) {
-  const suffix = missingReadRequirements.join(",");
+if (!credential) {
   if (liveGateRequired) {
-    console.error(`GOOGLE_ADS_LIVE_GATE=FAIL:MISSING_REQUIRED_READ_REQUIREMENTS:${suffix}`);
+    console.error("GOOGLE_ADS_LIVE_GATE=FAIL:MISSING_CLOUD_PROJECT_CREDENTIAL");
     process.exit(1);
   }
-  console.log(`GOOGLE_ADS_LIVE_GATE=SKIPPED_MISSING_READ_REQUIREMENTS:${suffix}`);
+  console.log("GOOGLE_ADS_LIVE_GATE=SKIPPED_NO_CLOUD_PROJECT_CREDENTIAL");
   process.exit(0);
 }
 
@@ -53,7 +47,6 @@ const query = async (accessToken: string, gaql: string): Promise<JsonRecord[]> =
   const headers: Record<string, string> = {
     authorization: `Bearer ${accessToken}`,
     "content-type": "application/json",
-    "developer-token": developerToken,
   };
   if (loginCustomerId) headers["login-customer-id"] = loginCustomerId;
 

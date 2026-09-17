@@ -234,6 +234,12 @@ try {
   trace("testing fail-open page");
   const failPage = await browser.newPage();
   await failPage.setViewport({ width: 1440, height: 1000, deviceScaleFactor: 1 });
+  let failOpenDialogObserved = false;
+  failPage.on("console", (message) => {
+    if (message.text() === "LINE_FAIL_OPEN_DIALOG_OBSERVED") {
+      failOpenDialogObserved = true;
+    }
+  });
   await failPage.setRequestInterception(true);
   failPage.on("request", (request) => {
     if (request.url() === "https://line.me/R/ti/p/@451vpomq") {
@@ -255,18 +261,38 @@ try {
   });
   await failPage.goto(`${baseUrl}/`, { waitUntil: "domcontentloaded" });
   await failPage.waitForSelector(lineSelector, { timeout: 8_000 });
+  assert.equal(await failPage.$('[role="dialog"]'), null, "failure page must start without QR dialog");
+  await failPage.evaluate(() => {
+    const markIfDialogExists = () => {
+      if (document.querySelector('[role="dialog"]')) {
+        console.log("LINE_FAIL_OPEN_DIALOG_OBSERVED");
+      }
+    };
+    const observer = new MutationObserver(markIfDialogExists);
+    observer.observe(document.documentElement, { childList: true, subtree: true });
+    markIfDialogExists();
+  });
+  const fallbackRequestBaseline = profileFallbackRequests;
   const failCta = await firstVisible(failPage, lineSelector);
   await failCta.click();
   const failOpenDeadline = Date.now() + 8_000;
-  while (profileFallbackRequests === 0 && Date.now() < failOpenDeadline) {
+  while (
+    profileFallbackRequests === fallbackRequestBaseline &&
+    Date.now() < failOpenDeadline
+  ) {
     await new Promise((resolve) => setTimeout(resolve, 100));
   }
   assert.equal(
-    profileFallbackRequests > 0,
+    profileFallbackRequests > fallbackRequestBaseline,
     true,
     "prepare failure must fall back to the LINE profile"
   );
-  assert.equal(await failPage.$('[role="dialog"]'), null, "failure must not show QR success");
+  await new Promise((resolve) => setTimeout(resolve, 250));
+  assert.equal(
+    failOpenDialogObserved,
+    false,
+    "prepare failure must not render a QR success dialog before fallback navigation"
+  );
 
   failPrepare = false;
   trace("testing ContactForm QR");
@@ -328,7 +354,8 @@ try {
       prepare_post_body_keys: Object.keys(formPrepareBody).sort(),
       double_click_prepare_count: 1,
       close_then_new_intent: "PASS",
-      fail_open_profile_requests: profileFallbackRequests > 0,
+      fail_open_profile_requests: profileFallbackRequests > fallbackRequestBaseline,
+      fail_open_qr_dialog_observed: failOpenDialogObserved,
       remote_calls: "NONE",
     })
   );

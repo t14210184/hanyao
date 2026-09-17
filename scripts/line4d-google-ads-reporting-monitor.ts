@@ -11,18 +11,11 @@ const API_VERSION = "v25";
 const API_URL = `https://googleads.googleapis.com/${API_VERSION}/customers/${CUSTOMER_ID}/googleAds:searchStream`;
 
 const credential = process.env.GOOGLE_DATA_MANAGER_SERVICE_ACCOUNT_JSON?.trim();
-const developerToken = process.env.GOOGLE_ADS_DEVELOPER_TOKEN?.trim();
 const loginCustomerId = process.env.GOOGLE_ADS_LOGIN_CUSTOMER_ID?.replace(/-/g, "").trim();
 const reportingBaselineJson = process.env.GOOGLE_ADS_REPORTING_BASELINE_JSON?.trim();
-const missingReadRequirements = [
-  !credential ? "GOOGLE_DATA_MANAGER_SERVICE_ACCOUNT_JSON" : null,
-  !developerToken ? "GOOGLE_ADS_DEVELOPER_TOKEN" : null,
-].filter((value): value is string => value !== null);
 
-if (!credential || !developerToken) {
-  console.log(
-    `GOOGLE_ADS_REPORTING_MONITOR=SKIPPED_MISSING_READ_REQUIREMENTS:${missingReadRequirements.join(",")}`
-  );
+if (!credential) {
+  console.log("GOOGLE_ADS_REPORTING_MONITOR=SKIPPED_NO_CLOUD_PROJECT_CREDENTIAL");
   process.exit(0);
 }
 
@@ -80,7 +73,6 @@ try {
   const headers: Record<string, string> = {
     authorization: `Bearer ${auth.accessToken}`,
     "content-type": "application/json",
-    "developer-token": developerToken,
   };
   if (loginCustomerId) headers["login-customer-id"] = loginCustomerId;
 
