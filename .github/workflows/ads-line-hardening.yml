@@ -10,12 +10,15 @@ on:
       - "functions/_lib/line-webhook.ts"
       - "functions/_lib/types.ts"
       - "workers/google-ads-uploader/**"
+      - "scripts/ads-search-hygiene-*"
+      - "scripts/google-ads-read-*"
       - "scripts/line1a-*"
       - "scripts/line1b1-*"
       - "scripts/line1b2a-*"
       - "scripts/line1b2b-*"
       - "scripts/c1b1-*"
       - "scripts/line4a-*"
+      - "scripts/line4b-*"
       - "scripts/line4c-*"
       - "scripts/line4d-*"
       - "scripts/v12-migration-reconstruction.test.mjs"
@@ -37,12 +40,14 @@ on:
       - "scripts/ads-cro-repair-static.test.mjs"
       - "scripts/ads-cro-repair-hero-static.test.mjs"
       - "scripts/ads-search-hygiene-*"
+      - "scripts/google-ads-read-*"
       - "scripts/line1a-*"
       - "scripts/line1b1-*"
       - "scripts/line1b2a-*"
       - "scripts/line1b2b-*"
       - "scripts/c1b1-*"
       - "scripts/line4a-*"
+      - "scripts/line4b-*"
       - "scripts/line4c-*"
       - "scripts/line4d-*"
       - "scripts/v12-migration-reconstruction.test.mjs"
@@ -79,6 +84,8 @@ jobs:
         run: node scripts/ads-cro-repair-hero-static.test.mjs
       - name: Verify Ads search-hygiene classification boundaries
         run: node --experimental-strip-types --test scripts/ads-search-hygiene-rules.test.ts
+      - name: Verify Google Ads read auth and audit log privacy
+        run: node scripts/google-ads-read-contract-static.test.mjs
       - name: Run canonical LINE webhook unit regression
         run: npm run test:line1a:unit
       - name: Run canonical LINE webhook HTTP regression
