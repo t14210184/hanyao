@@ -397,8 +397,8 @@ export const buildWp05RollbackTarget = (after: Wp05UiPoststate) => {
     preserveReportingHistory: true,
     restoreBiddingStrategyType: after.biddingStrategyType,
     restoreOptimizationSetFingerprint: after.optimizationSetFingerprint,
-    mutateCanonicalHy: false,
-    mutateBudget: false,
-    mutateKeywords: false,
+    canonicalHyChangeAllowed: false,
+    budgetChangeAllowed: false,
+    keywordChangeAllowed: false,
   } as const;
 };
