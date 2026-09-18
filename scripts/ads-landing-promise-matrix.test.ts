@@ -17,6 +17,11 @@ import {
   evaluateObservationReadiness,
   microsToCurrencyUnits,
 } from "./ads-landing-experiment-kpi.ts";
+import {
+  ADS_SMART_BIDDING_GATE_CONTRACT,
+  ADS_SMART_BIDDING_GATE_VERSION,
+  evaluateSmartBiddingGate,
+} from "./ads-landing-smart-bidding-gate.ts";
 
 const read = (relative: string): string =>
   fs.readFileSync(path.join(process.cwd(), relative), "utf8");
@@ -186,6 +191,217 @@ test("WP08 keeps Message Asset signals isolated from canonical HY conversion and
   assert.ok(ADS_EXPERIMENT_KPI_CONTRACT.frozenLeversUntilLaterGate.includes("AI Max"));
 
   const source = read("scripts/ads-landing-experiment-kpi.ts");
+  assert.doesNotMatch(source, /googleads\.googleapis\.com/i);
+  assert.doesNotMatch(source, /:mutate|mutate[A-Z]|mutate_/i);
+});
+
+
+test("WP09 blocks Smart Bidding when genuine canonical E2E proof is missing", () => {
+  assert.equal(ADS_SMART_BIDDING_GATE_VERSION, "hanyao-smart-bidding-gate-v1");
+  const result = evaluateSmartBiddingGate({
+    ...{
+    s0MaximizeClicksFamilyPreserved: true,
+    phraseExactControlPreserved: true,
+    canonicalConversionSecondary: true,
+    genuineAdsToHyToLineToDataManagerToAdsE2ePass: true,
+    duplicateCanonicalPathCount: 0,
+    funnelReproducible: true,
+    observedConversionCycles: 2,
+    verifiedVolumeObserved: true,
+    conversionLagObserved: true,
+    costDistributionObserved: true,
+    searchTermQualityObserved: true,
+    selectedExperimentCampaign: "冷氣維修" as const,
+    singleCampaignConversionBiddingExperimentPass: true,
+    searchTermDataSufficientForAiMax: true,
+    landingDataSufficientForAiMax: true,
+    isolatedAiMaxExperimentPlanReady: true,
+  },
+    genuineAdsToHyToLineToDataManagerToAdsE2ePass: false,
+    observedConversionCycles: 0,
+    verifiedVolumeObserved: false,
+    selectedExperimentCampaign: null,
+    singleCampaignConversionBiddingExperimentPass: false,
+    searchTermDataSufficientForAiMax: false,
+    landingDataSufficientForAiMax: false,
+    isolatedAiMaxExperimentPlanReady: false,
+  });
+  assert.equal(result.stage, "S1_TRACKING_PROOF_PENDING");
+  assert.equal(result.eligibleForStrategyMutation, false);
+  assert.ok(
+    result.missingEvidence.includes(
+      "genuine Ads -> HY -> LINE -> Data Manager -> Ads reporting E2E PASS"
+    )
+  );
+});
+
+test("WP09 duplicate canonical path blocks S1 even if provider E2E exists", () => {
+  const result = evaluateSmartBiddingGate({
+    ...{
+    s0MaximizeClicksFamilyPreserved: true,
+    phraseExactControlPreserved: true,
+    canonicalConversionSecondary: true,
+    genuineAdsToHyToLineToDataManagerToAdsE2ePass: true,
+    duplicateCanonicalPathCount: 0,
+    funnelReproducible: true,
+    observedConversionCycles: 2,
+    verifiedVolumeObserved: true,
+    conversionLagObserved: true,
+    costDistributionObserved: true,
+    searchTermQualityObserved: true,
+    selectedExperimentCampaign: "冷氣維修" as const,
+    singleCampaignConversionBiddingExperimentPass: true,
+    searchTermDataSufficientForAiMax: true,
+    landingDataSufficientForAiMax: true,
+    isolatedAiMaxExperimentPlanReady: true,
+  },
+    duplicateCanonicalPathCount: 1,
+  });
+  assert.equal(result.stage, "S1_TRACKING_PROOF_PENDING");
+  assert.equal(result.eligibleForStrategyMutation, false);
+});
+
+test("WP09 requires observation evidence without inventing a fixed Google conversion threshold", () => {
+  const result = evaluateSmartBiddingGate({
+    ...{
+    s0MaximizeClicksFamilyPreserved: true,
+    phraseExactControlPreserved: true,
+    canonicalConversionSecondary: true,
+    genuineAdsToHyToLineToDataManagerToAdsE2ePass: true,
+    duplicateCanonicalPathCount: 0,
+    funnelReproducible: true,
+    observedConversionCycles: 2,
+    verifiedVolumeObserved: true,
+    conversionLagObserved: true,
+    costDistributionObserved: true,
+    searchTermQualityObserved: true,
+    selectedExperimentCampaign: "冷氣維修" as const,
+    singleCampaignConversionBiddingExperimentPass: true,
+    searchTermDataSufficientForAiMax: true,
+    landingDataSufficientForAiMax: true,
+    isolatedAiMaxExperimentPlanReady: true,
+  },
+    observedConversionCycles: 0,
+    verifiedVolumeObserved: false,
+    conversionLagObserved: false,
+    costDistributionObserved: false,
+    searchTermQualityObserved: false,
+    selectedExperimentCampaign: null,
+    singleCampaignConversionBiddingExperimentPass: false,
+  });
+  assert.equal(result.stage, "S2_STABLE_OBSERVATION_PENDING");
+  assert.equal(result.eligibleForStrategyMutation, false);
+  assert.equal(ADS_SMART_BIDDING_GATE_CONTRACT.fixedGoogleMinimumConversionCount, null);
+  assert.equal(
+    ADS_SMART_BIDDING_GATE_CONTRACT.fixedMinimumConversionCountRule,
+    "DO_NOT_INVENT_PLATFORM_THRESHOLD"
+  );
+});
+
+test("WP09 only exposes a single-campaign strategy experiment after S1 and S2 pass", () => {
+  const noSelection = evaluateSmartBiddingGate({
+    ...{
+    s0MaximizeClicksFamilyPreserved: true,
+    phraseExactControlPreserved: true,
+    canonicalConversionSecondary: true,
+    genuineAdsToHyToLineToDataManagerToAdsE2ePass: true,
+    duplicateCanonicalPathCount: 0,
+    funnelReproducible: true,
+    observedConversionCycles: 2,
+    verifiedVolumeObserved: true,
+    conversionLagObserved: true,
+    costDistributionObserved: true,
+    searchTermQualityObserved: true,
+    selectedExperimentCampaign: "冷氣維修" as const,
+    singleCampaignConversionBiddingExperimentPass: true,
+    searchTermDataSufficientForAiMax: true,
+    landingDataSufficientForAiMax: true,
+    isolatedAiMaxExperimentPlanReady: true,
+  },
+    selectedExperimentCampaign: null,
+    singleCampaignConversionBiddingExperimentPass: false,
+  });
+  assert.equal(noSelection.stage, "S3_SINGLE_CAMPAIGN_SELECTION_REQUIRED");
+  assert.equal(noSelection.eligibleForStrategyMutation, false);
+
+  const selected = evaluateSmartBiddingGate({
+    ...{
+    s0MaximizeClicksFamilyPreserved: true,
+    phraseExactControlPreserved: true,
+    canonicalConversionSecondary: true,
+    genuineAdsToHyToLineToDataManagerToAdsE2ePass: true,
+    duplicateCanonicalPathCount: 0,
+    funnelReproducible: true,
+    observedConversionCycles: 2,
+    verifiedVolumeObserved: true,
+    conversionLagObserved: true,
+    costDistributionObserved: true,
+    searchTermQualityObserved: true,
+    selectedExperimentCampaign: "冷氣維修" as const,
+    singleCampaignConversionBiddingExperimentPass: true,
+    searchTermDataSufficientForAiMax: true,
+    landingDataSufficientForAiMax: true,
+    isolatedAiMaxExperimentPlanReady: true,
+  },
+    selectedExperimentCampaign: "冷氣維修",
+    singleCampaignConversionBiddingExperimentPass: false,
+  });
+  assert.equal(selected.stage, "S3_SINGLE_CAMPAIGN_EXPERIMENT_PENDING");
+  assert.equal(selected.eligibleForStrategyMutation, true);
+  assert.equal(selected.selectedExperimentCampaign, "冷氣維修");
+});
+
+test("WP09 keeps AI Max isolated and never auto-dispatches provider mutation", () => {
+  const notReady = evaluateSmartBiddingGate({
+    ...{
+    s0MaximizeClicksFamilyPreserved: true,
+    phraseExactControlPreserved: true,
+    canonicalConversionSecondary: true,
+    genuineAdsToHyToLineToDataManagerToAdsE2ePass: true,
+    duplicateCanonicalPathCount: 0,
+    funnelReproducible: true,
+    observedConversionCycles: 2,
+    verifiedVolumeObserved: true,
+    conversionLagObserved: true,
+    costDistributionObserved: true,
+    searchTermQualityObserved: true,
+    selectedExperimentCampaign: "冷氣維修" as const,
+    singleCampaignConversionBiddingExperimentPass: true,
+    searchTermDataSufficientForAiMax: true,
+    landingDataSufficientForAiMax: true,
+    isolatedAiMaxExperimentPlanReady: true,
+  },
+    searchTermDataSufficientForAiMax: false,
+  });
+  assert.equal(notReady.stage, "S4_AI_MAX_NOT_READY");
+  assert.equal(notReady.eligibleForStrategyMutation, false);
+
+  const eligible = evaluateSmartBiddingGate({
+    s0MaximizeClicksFamilyPreserved: true,
+    phraseExactControlPreserved: true,
+    canonicalConversionSecondary: true,
+    genuineAdsToHyToLineToDataManagerToAdsE2ePass: true,
+    duplicateCanonicalPathCount: 0,
+    funnelReproducible: true,
+    observedConversionCycles: 2,
+    verifiedVolumeObserved: true,
+    conversionLagObserved: true,
+    costDistributionObserved: true,
+    searchTermQualityObserved: true,
+    selectedExperimentCampaign: "冷氣維修" as const,
+    singleCampaignConversionBiddingExperimentPass: true,
+    searchTermDataSufficientForAiMax: true,
+    landingDataSufficientForAiMax: true,
+    isolatedAiMaxExperimentPlanReady: true,
+  });
+  assert.equal(eligible.stage, "S4_AI_MAX_EXPERIMENT_ELIGIBLE");
+  assert.equal(eligible.eligibleForStrategyMutation, false);
+  assert.equal(ADS_SMART_BIDDING_GATE_CONTRACT.googleAdsMutationApplied, false);
+  assert.equal(ADS_SMART_BIDDING_GATE_CONTRACT.automaticStrategyMutationAllowed, false);
+  assert.equal(ADS_SMART_BIDDING_GATE_CONTRACT.s3Scope, "ONE_HUMAN_SELECTED_CAMPAIGN_ONLY");
+  assert.equal(ADS_SMART_BIDDING_GATE_CONTRACT.s4Scope, "ISOLATED_AI_MAX_EXPERIMENT_WITH_CONTROL_LANE");
+
+  const source = read("scripts/ads-landing-smart-bidding-gate.ts");
   assert.doesNotMatch(source, /googleads\.googleapis\.com/i);
   assert.doesNotMatch(source, /:mutate|mutate[A-Z]|mutate_/i);
 });
