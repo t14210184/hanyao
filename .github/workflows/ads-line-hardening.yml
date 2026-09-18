@@ -16,6 +16,7 @@ on:
       - "scripts/ads-landing-*"
       - "scripts/ads-line-message-*"
       - "scripts/google-ads-read-*"
+      - "scripts/gtm-wp01-*"
       - "scripts/line1a-*"
       - "scripts/line1b1-*"
       - "scripts/line1b2a-*"
@@ -52,6 +53,7 @@ on:
       - "scripts/ads-landing-*"
       - "scripts/ads-line-message-*"
       - "scripts/google-ads-read-*"
+      - "scripts/gtm-wp01-*"
       - "scripts/line1a-*"
       - "scripts/line1b1-*"
       - "scripts/line1b2a-*"
@@ -105,6 +107,8 @@ jobs:
         run: node --experimental-strip-types --test scripts/ads-line-message-pilot.test.ts
       - name: Verify Google Ads read auth and audit log privacy
         run: node scripts/google-ads-read-contract-static.test.mjs
+      - name: Verify WP01 GTM funnel bridge contract
+        run: npm run test:wp01:gtm
       - name: Run canonical LINE webhook unit regression
         run: npm run test:line1a:unit
       - name: Run canonical LINE webhook HTTP regression
