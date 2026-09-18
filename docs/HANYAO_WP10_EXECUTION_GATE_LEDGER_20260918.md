@@ -4,7 +4,7 @@ Status: `CURRENT_STATE_CANDIDATE / PROVIDER_TRUTH_REQUIRES_FRESH_SAME_SOURCE_REA
 
 Baseline main:
 
-`066a9c2f3fabbf5b76c8b4e3d2ce5d9b834949e8`
+`272e7fc513fb4c76de9cf89b92abba42e15d2e4e`
 
 Scope:
 
@@ -38,6 +38,8 @@ Production website diagnostics now expose only bounded analytics dimensions:
 service_type
 prepare_status
 handoff_type
+landing_path
+campaign_id (only when existing utm_id is numeric)
 ```
 
 The website path never sends HY token, request ID, raw click IDs, session ID,
@@ -77,12 +79,14 @@ Production-source code now contains:
 Fresh authorization evidence:
 
 ```text
-Google Ads GitHub probe = 35308912502
+Google Ads GitHub probe = 35324074635
   GOOGLE_DATA_MANAGER_SERVICE_ACCOUNT_JSON = absent
+  GOOGLE_ADS_LOGIN_CUSTOMER_ID = absent
 
-Cloudflare provider-surface probe = 35309818381
+Cloudflare provider-surface probe = 35324102187
 Independent Hardening probe = 35309857197
   CLOUDFLARE_API_TOKEN / CF_API_TOKEN = absent
+  CLOUDFLARE_ACCOUNT_ID / CF_ACCOUNT_ID = absent
 ```
 
 Therefore:
@@ -167,7 +171,7 @@ control-flow narrowing. The bounded repair sequence completed and the final
 main readback is:
 
 ```text
-main = 066a9c2f3fabbf5b76c8b4e3d2ce5d9b834949e8
+main baseline before this ledger refresh = 272e7fc513fb4c76de9cf89b92abba42e15d2e4e
 readiness = PASS
 Cloudflare Pages Production = SUCCESS
 ```
