@@ -37,7 +37,8 @@
     "test:wp01:gtm": "node --test scripts/gtm-wp01-funnel-contract.test.mjs",
     "test:wp02:mutate": "node --experimental-strip-types --test scripts/ads-search-hygiene-mutate.test.ts && node scripts/ads-search-hygiene-mutate-static.test.mjs",
     "test:wp03:rsa": "node --experimental-strip-types --test scripts/ads-rsa-provider.test.ts && node scripts/ads-rsa-provider-static.test.mjs",
-    "test:wp05:ui": "node --experimental-strip-types --test scripts/ads-line-message-ui-execution-contract.test.ts && node scripts/ads-line-message-ui-execution-static.test.mjs"
+    "test:wp05:ui": "node --experimental-strip-types --test scripts/ads-line-message-ui-execution-contract.test.ts && node scripts/ads-line-message-ui-execution-static.test.mjs",
+    "test:wp10:ledger": "node --experimental-strip-types --test scripts/ads-optimization-gate-ledger.test.ts"
   },
   "dependencies": {
     "@next/third-parties": "^16.2.9",
