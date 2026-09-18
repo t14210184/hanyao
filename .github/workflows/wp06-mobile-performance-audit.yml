@@ -23,12 +23,12 @@ permissions:
 
 jobs:
   lighthouse-mobile:
-    if: github.event_name == 'workflow_dispatch' || startsWith(github.head_ref, 'feat/wp06-')
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.head_ref, 'feat/wp06-') || startsWith(github.head_ref, 'perf/wp06-')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
       WP06_RUNS: "3"
-      WP06_BASE_URL: "https://www.xusen.pro"
+      WP06_BASE_URL: "https://83adfe8e.hanyao.pages.dev"
     steps:
       - name: Checkout exact candidate
         uses: actions/checkout@v4
