@@ -28,7 +28,8 @@ jobs:
     timeout-minutes: 30
     env:
       WP06_RUNS: "3"
-      WP06_BASE_URL: "https://31bedf26.hanyao.pages.dev"
+      WP06_CANDIDATE_URL: "https://df8d03d3.hanyao.pages.dev"
+      WP06_CONTROL_URL: "https://31bedf26.hanyao.pages.dev"
     steps:
       - name: Checkout exact candidate
         uses: actions/checkout@v4
@@ -52,11 +53,11 @@ jobs:
           node --version
           npx --yes lighthouse@13.4.1 --version
 
-      - name: Run 3x Lighthouse mobile per production page
+      - name: Run paired candidate and control Lighthouse on one runner
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p .wp06-lighthouse
+          mkdir -p .wp06-ab/candidate .wp06-ab/control
           pages=(
             "home:/"
             "repair:/services/ac-repair/"
@@ -65,49 +66,72 @@ jobs:
             "commercial:/services/commercial-ac/"
           )
 
+          run_one() {
+            local label="$1"
+            local base_url="$2"
+            local slug="$3"
+            local page_path="$4"
+            local run="$5"
+            local url="${base_url}${page_path}"
+            local output=".wp06-ab/${label}/${slug}-${run}.json"
+            local success=0
+            for attempt in 1 2; do
+              echo "WP06_AB label=$label url=$url run=$run attempt=$attempt"
+              if npx --yes lighthouse@13.4.1 "$url" \
+                --only-categories=performance \
+                --form-factor=mobile \
+                --throttling-method=simulate \
+                --max-wait-for-load=60000 \
+                --chrome-flags="--headless --no-sandbox --disable-dev-shm-usage" \
+                --output=json \
+                --output-path="$output" \
+                --quiet; then
+                success=1
+                break
+              fi
+              sleep 5
+            done
+            if [[ "$success" -ne 1 || ! -s "$output" ]]; then
+              echo "WP06_AB_FAILED label=$label url=$url run=$run" >&2
+              exit 1
+            fi
+          }
+
           for page in "${pages[@]}"; do
             slug="${page%%:*}"
             page_path="${page#*:}"
-            url="${WP06_BASE_URL}${page_path}"
             for run in $(seq 1 "$WP06_RUNS"); do
-              output=".wp06-lighthouse/${slug}-${run}.json"
-              success=0
-              for attempt in 1 2; do
-                echo "WP06_LIGHTHOUSE url=$url run=$run attempt=$attempt"
-                if npx --yes lighthouse@13.4.1 "$url" \
-                  --only-categories=performance \
-                  --form-factor=mobile \
-                  --throttling-method=simulate \
-                  --max-wait-for-load=60000 \
-                  --chrome-flags="--headless --no-sandbox --disable-dev-shm-usage" \
-                  --output=json \
-                  --output-path="$output" \
-                  --quiet; then
-                  success=1
-                  break
-                fi
-                sleep 5
-              done
-              if [[ "$success" -ne 1 || ! -s "$output" ]]; then
-                echo "WP06_LIGHTHOUSE_FAILED url=$url run=$run" >&2
-                exit 1
+              if (( run % 2 == 1 )); then
+                run_one control "$WP06_CONTROL_URL" "$slug" "$page_path" "$run"
+                run_one candidate "$WP06_CANDIDATE_URL" "$slug" "$page_path" "$run"
+              else
+                run_one candidate "$WP06_CANDIDATE_URL" "$slug" "$page_path" "$run"
+                run_one control "$WP06_CONTROL_URL" "$slug" "$page_path" "$run"
               fi
             done
           done
 
-      - name: Summarize median mobile baseline
+      - name: Summarize paired mobile evidence
         shell: bash
         run: |
           set -euo pipefail
-          node scripts/wp06-lighthouse-summarize.mjs .wp06-lighthouse > /tmp/wp06-summary.stdout.json
-          cat .wp06-lighthouse/summary.md >> "$GITHUB_STEP_SUMMARY"
-          cat .wp06-lighthouse/summary.md
+          node scripts/wp06-lighthouse-summarize.mjs .wp06-ab/candidate > /tmp/wp06-candidate-summary.json
+          node scripts/wp06-lighthouse-summarize.mjs .wp06-ab/control > /tmp/wp06-control-summary.json
+          echo "## Candidate" >> "$GITHUB_STEP_SUMMARY"
+          cat .wp06-ab/candidate/summary.md >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "## Control" >> "$GITHUB_STEP_SUMMARY"
+          cat .wp06-ab/control/summary.md >> "$GITHUB_STEP_SUMMARY"
+          echo "=== CANDIDATE ==="
+          cat .wp06-ab/candidate/summary.md
+          echo "=== CONTROL ==="
+          cat .wp06-ab/control/summary.md
 
-      - name: Upload reproducible WP06 evidence
+      - name: Upload paired WP06 evidence
         uses: actions/upload-artifact@v4
         with:
-          name: wp06-lighthouse-mobile-${{ github.sha }}
-          path: .wp06-lighthouse/
+          name: wp06-lighthouse-ab-${{ github.sha }}
+          path: .wp06-ab/
           if-no-files-found: error
           include-hidden-files: true
           retention-days: 7
