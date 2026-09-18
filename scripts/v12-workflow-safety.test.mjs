@@ -39,6 +39,11 @@ for (const family of [
     true,
     `readiness watcher missing Ads optimization path family: ${family}`
   );
+  assert.equal(
+    preflight.includes(`- "${family}"`),
+    true,
+    `production preflight missing Ads optimization path family: ${family}`
+  );
 }
 assert.match(preflight, /wrangler deploy --dry-run --env production/);
 assert.match(hardening, /test:line1a:http/);
