@@ -104,6 +104,8 @@ jobs:
         run: npm run test:wp02:mutate
       - name: Verify RSA candidate limits and rollout boundary
         run: node --experimental-strip-types --test scripts/ads-rsa-candidates.test.ts
+      - name: Verify WP03 staged RSA provider contract
+        run: npm run test:wp03:rsa
       - name: Verify Ads-to-landing promise alignment
         run: node --experimental-strip-types --test scripts/ads-landing-promise-matrix.test.ts
       - name: Verify LINE Message Asset pilot isolation and fail-closed gates
