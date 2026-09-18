@@ -13,3 +13,36 @@ assert.match(source, /trackEventName="line_click"/, 'LINE observation event must
 assert.doesNotMatch(source, /HY - Verified LINE Contact/, 'browser UI must not create a verified conversion sender');
 
 console.log('ADS_CRO_REPAIR_STATIC_PASS');
+
+
+assert.match(
+  source,
+  /pathname\?\.includes\("\/services\/commercial-ac"\)/,
+  'commercial service route must be detected'
+);
+assert.match(
+  source,
+  /pathname\?\.includes\("\/services\/ac-cleaning"\)/,
+  'cleaning service route must be detected'
+);
+assert.match(
+  source,
+  /pathname\?\.includes\("\/services\/ac-installation"\)/,
+  'installation service route must be detected'
+);
+assert.match(source, /\? "commercial_ac"/, 'commercial sticky CTA must emit commercial_ac service_type');
+assert.match(source, /\? "ac_cleaning"/, 'cleaning sticky CTA must emit ac_cleaning service_type');
+assert.match(source, /\? "ac_installation"/, 'installation sticky CTA must emit ac_installation service_type');
+assert.match(source, /\? "傳平面圖"/, 'commercial LINE sticky copy must match the landing promise');
+assert.match(source, /\? "傳機型／台數"/, 'cleaning LINE sticky copy must match the landing promise');
+assert.match(source, /\? "傳現場照片"/, 'installation LINE sticky copy must match the landing promise');
+assert.match(
+  source,
+  /\{isPaidServiceLanding \? lineButton : phoneButton\}/,
+  'paid service landing pages must keep the LINE action first on mobile'
+);
+assert.match(
+  source,
+  /isPaidServiceLanding \? "flex-\[1\.35\]" : "flex-1"/,
+  'paid service landing pages must preserve LINE CTA visual priority'
+);
