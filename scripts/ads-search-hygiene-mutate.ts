@@ -1,6 +1,8 @@
-import { exchangeServiceAccountTokenForScopes } from "../workers/google-ads-uploader/src/auth.ts";
-import { GOOGLE_ADS_SCOPE } from "../workers/google-ads-uploader/src/types.ts";
 import { classifySearchTermForCampaign } from "./ads-search-hygiene-rules.ts";
+import {
+  hasGoogleAdsAuthInput,
+  resolveGoogleAdsAccessToken,
+} from "./google-ads-provider-auth.ts";
 import {
   WP02_CUSTOMER_ID,
   assertWp02ApplyGate,
@@ -19,7 +21,6 @@ const SEARCH_URL =
 const MUTATE_URL =
   `https://googleads.googleapis.com/${API_VERSION}/customers/${WP02_CUSTOMER_ID}/adGroupCriteria:mutate`;
 
-const credential = process.env.GOOGLE_DATA_MANAGER_SERVICE_ACCOUNT_JSON?.trim();
 const loginCustomerId = process.env.GOOGLE_ADS_LOGIN_CUSTOMER_ID?.replace(/-/g, "").trim();
 const expectedPlanHash = process.env.ADS_HYGIENE_EXPECTED_PLAN_HASH?.trim();
 const applyGate = process.env.ADS_HYGIENE_PRODUCTION_GATE?.trim();
@@ -29,8 +30,10 @@ const mode = process.argv.includes("--apply")
     ? "validate"
     : "dry-run";
 
-if (!credential) {
-  console.error("WP02_PROVIDER_AUTH_REQUIRED:GOOGLE_DATA_MANAGER_SERVICE_ACCOUNT_JSON");
+if (!hasGoogleAdsAuthInput()) {
+  console.error(
+    "WP02_PROVIDER_AUTH_REQUIRED:GOOGLE_ADS_ACCESS_TOKEN_OR_GOOGLE_DATA_MANAGER_SERVICE_ACCOUNT_JSON"
+  );
   process.exit(2);
 }
 
@@ -230,7 +233,7 @@ const readback = async (accessToken: string, plan: Awaited<ReturnType<typeof rea
 };
 
 try {
-  const auth = await exchangeServiceAccountTokenForScopes(credential, [GOOGLE_ADS_SCOPE]);
+  const auth = await resolveGoogleAdsAccessToken();
   const initialPlan = await readPlan(auth.accessToken);
   const initialSummary = summarizeWp02Plan(initialPlan);
 
@@ -244,6 +247,7 @@ try {
         mode,
         customerId: WP02_CUSTOMER_ID,
         apiVersion: API_VERSION,
+        authSource: auth.source,
         mutationApplied: false,
         ...initialSummary,
       })
@@ -257,6 +261,7 @@ try {
         result: "WP02_NO_MUTATION_REQUIRED",
         mode,
         customerId: WP02_CUSTOMER_ID,
+        authSource: auth.source,
         mutationApplied: false,
         ...initialSummary,
       })
@@ -315,6 +320,7 @@ try {
         result: "WP02_MUTATION_CONFIRMED",
         mode,
         customerId: WP02_CUSTOMER_ID,
+        authSource: auth.source,
         mutationApplied: true,
         providerAckObserved: dispatched.ok,
         dispatchReason: dispatched.reason,
