@@ -1,0 +1,41 @@
+name: WP02 live Google Ads provider probe
+
+on:
+  push:
+    branches:
+      - feat/wp02-live-provider-probe-20260918
+    paths:
+      - ".github/workflows/wp02-live-provider-probe.yml"
+      - "scripts/ads-search-hygiene-audit.ts"
+      - "scripts/ads-search-hygiene-rules.ts"
+      - "workers/google-ads-uploader/src/auth.ts"
+      - "workers/google-ads-uploader/src/types.ts"
+
+permissions:
+  contents: read
+
+jobs:
+  provider-probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact probe ref
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Fresh read-only Search Terms hygiene probe
+        env:
+          GOOGLE_DATA_MANAGER_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_DATA_MANAGER_SERVICE_ACCOUNT_JSON }}
+          GOOGLE_ADS_LOGIN_CUSTOMER_ID: ${{ secrets.GOOGLE_ADS_LOGIN_CUSTOMER_ID }}
+          ADS_HYGIENE_LIVE_REQUIRED: "1"
+        run: |
+          set -euo pipefail
+          node --experimental-strip-types scripts/ads-search-hygiene-audit.ts
