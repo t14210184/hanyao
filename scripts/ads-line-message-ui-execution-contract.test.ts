@@ -207,7 +207,7 @@ test("WP05 rollback target disassociates exact message asset without touching bu
   assert.equal(rollback.assetResourceName, "customers/4801404246/assets/999");
   assert.equal(rollback.preserveAssetHistory, true);
   assert.equal(rollback.preserveReportingHistory, true);
-  assert.equal(rollback.mutateCanonicalHy, false);
-  assert.equal(rollback.mutateBudget, false);
-  assert.equal(rollback.mutateKeywords, false);
+  assert.equal(rollback.canonicalHyChangeAllowed, false);
+  assert.equal(rollback.budgetChangeAllowed, false);
+  assert.equal(rollback.keywordChangeAllowed, false);
 });
