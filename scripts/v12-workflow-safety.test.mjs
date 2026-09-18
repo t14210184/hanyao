@@ -33,6 +33,7 @@ for (const family of [
   "scripts/ads-line-message-*",
   "scripts/ads-optimization-*",
   "scripts/ads-landing-*",
+  "scripts/google-ads-provider-*",
   "scripts/gtm-wp01-*",
 ]) {
   assert.equal(
