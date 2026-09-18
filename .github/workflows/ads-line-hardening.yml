@@ -99,6 +99,8 @@ jobs:
         run: node scripts/ads-cro-repair-hero-static.test.mjs
       - name: Verify Ads search-hygiene classification boundaries
         run: node --experimental-strip-types --test scripts/ads-search-hygiene-rules.test.ts
+      - name: Verify WP02 exact-negative provider contract
+        run: npm run test:wp02:mutate
       - name: Verify RSA candidate limits and rollout boundary
         run: node --experimental-strip-types --test scripts/ads-rsa-candidates.test.ts
       - name: Verify Ads-to-landing promise alignment
