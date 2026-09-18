@@ -27,6 +27,19 @@ assert.equal(auto.includes(githubSecretExpression), false, "readiness watcher mu
 assert.equal(preflight.includes(githubSecretExpression), false, "preflight must not consume GitHub secrets");
 assert.match(auto, /permissions:\s*\n\s*contents:\s*read/);
 assert.match(auto, /PRODUCTION_AUTO_ACTIVATION=DISABLED_BY_DESIGN/);
+for (const family of [
+  "scripts/ads-search-hygiene-*",
+  "scripts/ads-rsa-*",
+  "scripts/ads-line-message-*",
+  "scripts/ads-landing-*",
+  "scripts/gtm-wp01-*",
+]) {
+  assert.equal(
+    auto.includes(`- "${family}"`),
+    true,
+    `readiness watcher missing Ads optimization path family: ${family}`
+  );
+}
 assert.match(preflight, /wrangler deploy --dry-run --env production/);
 assert.match(hardening, /test:line1a:http/);
 assert.match(hardening, /v12-migration-reconstruction\.test\.mjs/);
