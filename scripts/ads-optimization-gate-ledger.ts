@@ -37,6 +37,9 @@ export const ADS_OPTIMIZATION_GATE_LEDGER = {
         state: "PRODUCTION_SOURCE_PASS",
         livePublishApplied: false,
         liveProviderReadback: false,
+        mutationGate: "FRESH_LIVE_AND_WORKSPACE_FINGERPRINT_BOUND",
+        applyGate: "HANYAO_WP01_GTM_APPLY_APPROVED_20260918",
+        publishGate: "HANYAO_WP01_GTM_PUBLISH_APPROVED_20260918",
         blocker:
           "GTM_AUTHENTICATED_PROVIDER_CONTROL_REQUIRES_FRESH_EXECUTION_SURFACE",
       },
