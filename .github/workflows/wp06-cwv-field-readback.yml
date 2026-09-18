@@ -107,6 +107,9 @@ jobs:
           const targets = {
             home: 'https://www.xusen.pro/',
             repair: 'https://www.xusen.pro/services/ac-repair/',
+            cleaning: 'https://www.xusen.pro/services/ac-cleaning/',
+            installation: 'https://www.xusen.pro/services/ac-installation/',
+            commercial: 'https://www.xusen.pro/services/commercial-ac/',
           };
           const sleep = ms => new Promise(r => setTimeout(r, ms));
           (async () => {
@@ -124,10 +127,10 @@ jobs:
                 try {
                   await page.goto(psi, {waitUntil:'domcontentloaded', timeout:120000});
                   let body = '';
-                  for (let i=0; i<24; i++) {
+                  for (let i=0; i<30; i++) {
                     await sleep(5000);
                     body = await page.evaluate(() => document.body?.innerText || '');
-                    if (/Core Web Vitals Assessment|Discover what your real users are experiencing|No Data|sufficient real-world speed data|not enough real-world/i.test(body)) break;
+                    if (/Core Web Vitals Assessment|No Data|does not have sufficient real-world speed data|not enough real-world speed data|insufficient real-world/i.test(body)) break;
                   }
                   fs.writeFileSync(`.wp06-cwv/${name}-psi-ui.txt`, body);
                   fs.writeFileSync(`.wp06-cwv/${name}-psi-ui.html`, await page.content());
