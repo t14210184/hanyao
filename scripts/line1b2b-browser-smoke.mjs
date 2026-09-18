@@ -295,7 +295,14 @@ try {
   );
 
   failPrepare = false;
+  const realPrepareBodiesBeforeForm = prepareBodies.length;
+  assert.equal(
+    realPrepareBodiesBeforeForm >= 2,
+    true,
+    "generic CTA stages must exercise the real local prepare endpoint before the ContactForm contract stage"
+  );
   trace("testing ContactForm QR");
+  let formPrepareStubResponses = 0;
   const formPage = await browser.newPage();
   await formPage.setViewport({ width: 1440, height: 1000, deviceScaleFactor: 1 });
   await formPage.setRequestInterception(true);
@@ -308,6 +315,18 @@ try {
       } catch {
         prepareBodies.push(null);
       }
+      formPrepareStubResponses += 1;
+      request
+        .respond({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            status: "prepared",
+            lead_token: "HY-ABCDEFG234",
+          }),
+        })
+        .catch(() => undefined);
+      return;
     }
     request.continue().catch(() => undefined);
   });
@@ -335,6 +354,11 @@ try {
   assert.equal(formQrValue.includes("冷氣漏水"), false);
   assert.equal(formDialogText.includes("表單完整內容沒有上傳追蹤伺服器"), true);
   const formPrepareBody = prepareBodies.at(-1);
+  assert.equal(
+    formPrepareStubResponses,
+    1,
+    "ContactForm contract stage must issue exactly one prepare request"
+  );
   assert.deepEqual(Object.keys(formPrepareBody).sort(), ["attribution", "request_id"]);
   assert.equal(JSON.stringify(formPrepareBody).includes("王先生"), false);
   assert.equal(JSON.stringify(formPrepareBody).includes("08-7552260"), false);
