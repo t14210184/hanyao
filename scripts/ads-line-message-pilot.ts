@@ -1,4 +1,4 @@
-export const MESSAGE_PILOT_VERSION = "hanyao-line-message-pilot-v1";
+export const MESSAGE_PILOT_VERSION = "hanyao-line-message-pilot-v2";
 
 export const MESSAGE_PILOT = {
   status: "CANDIDATE_ONLY",
@@ -9,9 +9,24 @@ export const MESSAGE_PILOT = {
     uiPlatform: "LINE",
     lineId: "@451vpomq",
     verificationLink: "https://line.me/R/ti/p/@451vpomq",
-    evidenceClass: "ACCOUNT_UI_SNAPSHOT_REQUIRES_FRESH_RECHECK",
+    evidenceClass:
+      "PUBLIC_API_RECHECKED_20260918_ACCOUNT_UI_STATE_REQUIRES_FRESH_RECHECK",
+    publicApiCheckedAt: "2026-09-18",
+    publicApiFamilyChecked: "v25/v25.1",
+    publicApiProviders: [
+      "WHATSAPP",
+      "FACEBOOK_MESSENGER",
+      "ZALO",
+    ],
     apiV25LineProviderSupported: false,
+    messageAssetsBetaConfirmed: true,
     mutationRoute: "GOOGLE_ADS_UI_ONLY_AFTER_HUMAN_GATE",
+    officialPartnerSupport: {
+      availableInTaiwan: true,
+      partner: "Crescendo Lab",
+      routeRole: "IMPLEMENTATION_SUPPORT_NOT_PROVIDER_STATE_AUTHORITY",
+      engaged: false,
+    },
   },
   starterMessageCandidates: [
     "您好，我的冷氣有問題，想先傳照片或症狀請協助判斷。",
@@ -37,6 +52,7 @@ export const MESSAGE_PILOT = {
     fallback: "ISOLATED_CAMPAIGN_OR_EXPERIMENT_REQUIRES_SEPARATE_BUDGET_AND_STRATEGY_APPROVAL",
   },
   servingCaveats: {
+    evidenceCheckedAt: "2026-09-18",
     android: "GLOBALLY_ELIGIBLE",
     iosTaiwan: "NOT_IN_CURRENT_ELIGIBLE_COUNTRY_LIST",
     otherAssetsCanServeWithMessageButtonAtSameTime: false,
