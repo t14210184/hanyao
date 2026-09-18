@@ -156,28 +156,36 @@ export const ADS_OPTIMIZATION_GATE_LEDGER = {
   googleAdsMutationAppliedByLedger: false,
 } as const;
 
+const isReadyWithoutProviderMutation = (state: GateState): boolean =>
+  state === "READY_NO_PROVIDER_MUTATION";
+
+const isPass = (state: GateState): boolean => state === "PASS";
+
 export const getExecutableProviderBlockers = (): readonly string[] => {
   const blockers = new Set<string>();
 
   if (
-    ADS_OPTIMIZATION_GATE_LEDGER.providerExecution.adsSearchHygiene.state !==
-    "READY_NO_PROVIDER_MUTATION"
+    !isReadyWithoutProviderMutation(
+      ADS_OPTIMIZATION_GATE_LEDGER.providerExecution.adsSearchHygiene.state
+    )
   ) {
     blockers.add("ADS_SEARCH_HYGIENE_FRESH_PROVIDER_PRESTATE");
   }
   if (
-    ADS_OPTIMIZATION_GATE_LEDGER.providerExecution.rsaRollout.state !==
-    "READY_NO_PROVIDER_MUTATION"
+    !isReadyWithoutProviderMutation(
+      ADS_OPTIMIZATION_GATE_LEDGER.providerExecution.rsaRollout.state
+    )
   ) {
     blockers.add("RSA_FRESH_PROVIDER_PRESTATE");
   }
   if (
-    ADS_OPTIMIZATION_GATE_LEDGER.providerExecution.lineMessageAssetPilot.state !==
-    "READY_NO_PROVIDER_MUTATION"
+    !isReadyWithoutProviderMutation(
+      ADS_OPTIMIZATION_GATE_LEDGER.providerExecution.lineMessageAssetPilot.state
+    )
   ) {
     blockers.add("LINE_MESSAGE_ASSET_FRESH_UI_PRESTATE");
   }
-  if (ADS_OPTIMIZATION_GATE_LEDGER.canonicalE2E.state !== "PASS") {
+  if (!isPass(ADS_OPTIMIZATION_GATE_LEDGER.canonicalE2E.state)) {
     blockers.add("GENUINE_CANONICAL_E2E_PROOF");
   }
 
