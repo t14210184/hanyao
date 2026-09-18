@@ -33,7 +33,8 @@
     "test:v13:p1m05": "node --experimental-strip-types --test scripts/v13-p1-m05-identity-rotation.test.ts",
     "test:v13:p1m06": "node --experimental-strip-types --test scripts/v13-p1-m06-attribution-integrity.test.ts",
     "test:v13:p1m06m11": "node --experimental-strip-types --test scripts/v13-p1-m06-m11-regression.test.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:wp01:gtm": "node --test scripts/gtm-wp01-funnel-contract.test.mjs"
   },
   "dependencies": {
     "@next/third-parties": "^16.2.9",
