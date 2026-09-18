@@ -50,6 +50,8 @@ jobs:
         run: npm run test:line4a:unit
       - name: Verify uploader static mutation boundary
         run: npm run test:line4a:static
+      - name: Verify HG09 single-writer config and topology invariant
+        run: npm run test:hg09:topology
       - name: Verify LINE token and webhook contracts
         run: |
           npm run test:line1a:unit
