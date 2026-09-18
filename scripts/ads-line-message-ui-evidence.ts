@@ -136,7 +136,7 @@ try {
     post.status === "WP05_MESSAGE_ASSET_ACTIVE_PASS" ? 0 : 5
   );
 } catch (error) {
-  return exitWith(
+  exitWith(
     "WP05_UI_EVIDENCE_FAIL:" +
       (error instanceof Error ? error.message : "UNKNOWN").replace(
         /[^A-Z0-9_:\-]/gi,
