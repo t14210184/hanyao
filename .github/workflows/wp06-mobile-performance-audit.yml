@@ -1,4 +1,5 @@
 name: WP06 mobile performance audit
+# WP06-LCP3 measurement trigger only; no acceptance logic change.
 
 on:
   workflow_dispatch:
