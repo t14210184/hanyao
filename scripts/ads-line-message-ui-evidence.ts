@@ -3,6 +3,8 @@ import {
   assertWp05UiDispatchGate,
   evaluateWp05UiPoststate,
   evaluateWp05UiPrestate,
+  type Wp05PoststateVerdict,
+  type Wp05PrestateVerdict,
   type Wp05UiPoststate,
   type Wp05UiPrestate,
 } from "./ads-line-message-ui-execution-contract.ts";
@@ -28,8 +30,36 @@ const requirePath = (
   errorCode: string,
   exitCode: number
 ): string => {
-  if (!value) exitWith(errorCode, exitCode);
-  return value;
+  if (value) return value;
+  return exitWith(errorCode, exitCode);
+};
+
+const requireReadyPrestate = (
+  pre: Wp05PrestateVerdict
+): Extract<Wp05PrestateVerdict, { status: "WP05_UI_PRESTATE_READY" }> => {
+  if (pre.status === "WP05_UI_PRESTATE_READY") return pre;
+  return exitWith(
+    {
+      result: pre.status,
+      blockers: pre.blockers,
+      mutationApplied: false,
+    },
+    3
+  );
+};
+
+const requireNonBlockedPoststate = (
+  post: Wp05PoststateVerdict
+): Exclude<Wp05PoststateVerdict, { status: "WP05_MESSAGE_ASSET_BLOCKED" }> => {
+  if (post.status !== "WP05_MESSAGE_ASSET_BLOCKED") return post;
+  return exitWith(
+    {
+      result: post.status,
+      blockers: post.blockers,
+      mutationApplied: false,
+    },
+    4
+  );
 };
 
 const prePath = requirePath(
@@ -59,18 +89,7 @@ const parseJsonFile = async <T>(path: string): Promise<T> => {
 
 try {
   const before = await parseJsonFile<Wp05UiPrestate>(prePath);
-  const pre = evaluateWp05UiPrestate(before);
-
-  if (pre.status === "WP05_UI_PRESTATE_BLOCKED") {
-    exitWith(
-      {
-        result: pre.status,
-        blockers: pre.blockers,
-        mutationApplied: false,
-      },
-      3
-    );
-  }
+  const pre = requireReadyPrestate(evaluateWp05UiPrestate(before));
 
   if (enforceDispatch) {
     assertWp05UiDispatchGate(
@@ -94,18 +113,9 @@ try {
   }
 
   const after = await parseJsonFile<Wp05UiPoststate>(postPath);
-  const post = evaluateWp05UiPoststate(before, after);
-
-  if (post.status === "WP05_MESSAGE_ASSET_BLOCKED") {
-    exitWith(
-      {
-        result: post.status,
-        blockers: post.blockers,
-        mutationApplied: false,
-      },
-      4
-    );
-  }
+  const post = requireNonBlockedPoststate(
+    evaluateWp05UiPoststate(before, after)
+  );
 
   console.log(
     JSON.stringify({
@@ -126,7 +136,7 @@ try {
     post.status === "WP05_MESSAGE_ASSET_ACTIVE_PASS" ? 0 : 5
   );
 } catch (error) {
-  exitWith(
+  return exitWith(
     "WP05_UI_EVIDENCE_FAIL:" +
       (error instanceof Error ? error.message : "UNKNOWN").replace(
         /[^A-Z0-9_:\-]/gi,
