@@ -1,6 +1,6 @@
 # HANYAO WP01 Funnel Observability Contract — 2026-09-18
 
-Status: `WEBSITE_CANDIDATE / GTM_PROVIDER_APPLY_PENDING / NO_CANONICAL_CONVERSION_MUTATION`
+Status: `WEBSITE_PRODUCTION_PASS / GTM_BRIDGE_CANDIDATE / GTM_PROVIDER_APPLY_PENDING / NO_CANONICAL_CONVERSION_MUTATION`
 
 Scope: `HANYAO_ADS_WEBSITE_OPTIMIZATION_CONSTRUCTION_SPEC_v1.0_20260917` WP01 only.
 
@@ -68,3 +68,38 @@ GOOGLE_ADS_CANONICAL_SENDER_CHANGE = 0
 ```
 
 No browser event may become `HY - Verified LINE Contact`.
+
+
+## GTM provider bridge
+
+Repository bridge:
+
+`scripts/gtm-wp01-funnel-bridge.mjs`
+
+`scripts/gtm-wp01-funnel-contract.mjs`
+
+The bridge is fail-closed and uses a dedicated workspace named:
+
+`HANYAO WP01 Funnel Observability 20260918`
+
+Modes:
+
+- default / dry-run: reads the live container version and reports the exact required delta; no mutation.
+- `--apply`: creates/reuses only the dedicated workspace, creates the three safe DLVs, updates only `GA4 Event - line_contact_attempt` with the tag fingerprint, then performs same-source readback.
+- `--publish`: requires the dedicated workspace to contain only WP01 changes and be fully converged, creates an exact container version, publishes it with version fingerprint, then verifies the live version.
+
+Desired GTM event parameters:
+
+- existing: `contact_channel`, `contact_method`, `page_path`, `event_source`, `event_timestamp`
+- add: `service_type`, `prepare_status`, `handoff_type`
+- remove obsolete mapping: `lead_id`
+
+No Google Ads conversion tag or canonical sender may be changed.
+
+Official GTM API references used by the bridge:
+
+- https://developers.google.com/tag-platform/tag-manager/api/reference/rest/v2/accounts.containers.versions/live
+- https://developers.google.com/tag-platform/tag-manager/api/reference/rest/v2/accounts.containers.workspaces/list
+- https://developers.google.com/tag-platform/tag-manager/api/reference/rest/v2/accounts.containers.workspaces/getStatus
+- https://developers.google.com/tag-platform/tag-manager/api/reference/rest/v2/accounts.containers.workspaces/create_version
+- https://developers.google.com/tag-platform/tag-manager/api/reference/rest/v2/accounts.containers.versions/publish
