@@ -1,6 +1,74 @@
-export const WP01_GTM_CONTRACT_VERSION = "hanyao-wp01-gtm-funnel-v2";
+export const WP01_GTM_CONTRACT_VERSION = "hanyao-wp01-gtm-funnel-v3";
 export const WP01_GTM_WORKSPACE_NAME = "HANYAO WP01 Funnel Observability 20260918";
 export const WP01_GTM_TARGET_TAG_NAME = "GA4 Event - line_contact_attempt";
+export const WP01_GTM_APPLY_GATE =
+  "HANYAO_WP01_GTM_APPLY_APPROVED_20260918";
+export const WP01_GTM_PUBLISH_GATE =
+  "HANYAO_WP01_GTM_PUBLISH_APPROVED_20260918";
+export const WP01_GTM_WORKSPACE_ABSENT = "ABSENT";
+
+const nonEmptyFingerprint = (value) =>
+  typeof value === "string" &&
+  value.length > 0 &&
+  value.length <= 256 &&
+  !/\s/.test(value);
+
+export const assertWp01GtmProviderGate = ({
+  mode,
+  gate,
+  expectedLiveFingerprint,
+  actualLiveFingerprint,
+  expectedWorkspaceFingerprint,
+  actualWorkspaceFingerprint,
+}) => {
+  const requiredGate =
+    mode === "apply"
+      ? WP01_GTM_APPLY_GATE
+      : mode === "publish"
+        ? WP01_GTM_PUBLISH_GATE
+        : null;
+  if (!requiredGate) throw new Error("WP01_GTM_GATE_MODE_INVALID");
+  if (gate !== requiredGate) throw new Error("WP01_GTM_PRODUCTION_GATE_INVALID");
+
+  if (
+    !nonEmptyFingerprint(expectedLiveFingerprint) ||
+    !nonEmptyFingerprint(actualLiveFingerprint)
+  ) {
+    throw new Error("WP01_GTM_LIVE_FINGERPRINT_REQUIRED");
+  }
+  if (expectedLiveFingerprint !== actualLiveFingerprint) {
+    throw new Error("WP01_GTM_LIVE_PRESTATE_DRIFT");
+  }
+
+  const actualWorkspace =
+    actualWorkspaceFingerprint === null ||
+    actualWorkspaceFingerprint === undefined
+      ? WP01_GTM_WORKSPACE_ABSENT
+      : actualWorkspaceFingerprint;
+  if (
+    expectedWorkspaceFingerprint !== WP01_GTM_WORKSPACE_ABSENT &&
+    !nonEmptyFingerprint(expectedWorkspaceFingerprint)
+  ) {
+    throw new Error("WP01_GTM_WORKSPACE_FINGERPRINT_REQUIRED");
+  }
+  if (
+    actualWorkspace !== WP01_GTM_WORKSPACE_ABSENT &&
+    !nonEmptyFingerprint(actualWorkspace)
+  ) {
+    throw new Error("WP01_GTM_WORKSPACE_FINGERPRINT_INVALID");
+  }
+  if (expectedWorkspaceFingerprint !== actualWorkspace) {
+    throw new Error("WP01_GTM_WORKSPACE_PRESTATE_DRIFT");
+  }
+  if (
+    mode === "publish" &&
+    expectedWorkspaceFingerprint === WP01_GTM_WORKSPACE_ABSENT
+  ) {
+    throw new Error("WP01_GTM_PUBLISH_WORKSPACE_REQUIRED");
+  }
+  return true;
+};
+
 
 export const WP01_GTM_VARIABLES = Object.freeze([
   { name: "DLV - service_type", key: "service_type" },

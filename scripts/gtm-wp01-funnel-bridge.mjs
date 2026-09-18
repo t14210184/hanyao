@@ -1,5 +1,9 @@
 import {
   WP01_GTM_WORKSPACE_NAME,
+  WP01_GTM_APPLY_GATE,
+  WP01_GTM_PUBLISH_GATE,
+  WP01_GTM_WORKSPACE_ABSENT,
+  assertWp01GtmProviderGate,
   inspectWp01Workspace,
   assertOnlyWp01WorkspaceChanges,
   assertPublishScope,
@@ -12,6 +16,11 @@ const ACCOUNT_ID = process.env.GTM_ACCOUNT_ID?.trim() || "6362127895";
 const CONTAINER_ID = process.env.GTM_CONTAINER_ID?.trim() || "256158171";
 const CONTAINER_PATH = `accounts/${ACCOUNT_ID}/containers/${CONTAINER_ID}`;
 const ACCESS_TOKEN = process.env.GTM_ACCESS_TOKEN?.trim();
+const EXPECTED_LIVE_FINGERPRINT =
+  process.env.GTM_WP01_EXPECTED_LIVE_FINGERPRINT?.trim();
+const EXPECTED_WORKSPACE_FINGERPRINT =
+  process.env.GTM_WP01_EXPECTED_WORKSPACE_FINGERPRINT?.trim();
+const PRODUCTION_GATE = process.env.GTM_WP01_PRODUCTION_GATE?.trim();
 const args = new Set(process.argv.slice(2));
 const mode = args.has("--publish") ? "publish" : args.has("--apply") ? "apply" : "dry-run";
 
@@ -114,25 +123,55 @@ const inspectLive = (live) =>
     tags: live.tag ?? [],
   });
 
-const ensureDedicatedWorkspace = async () => {
-  const existing = await findDedicatedWorkspace();
-  if (existing) return { workspace: existing, created: false };
-  const workspace = await request(CONTAINER_PATH + "/workspaces", {
-    method: "POST",
-    body: {
-      name: WP01_GTM_WORKSPACE_NAME,
-      description:
-        "Isolated workspace for HANYAO Ads/Website Optimization v1.0 WP01 funnel observability only.",
-    },
-  });
-  if (!workspace?.path || workspace?.name !== WP01_GTM_WORKSPACE_NAME) {
+const ensureDedicatedWorkspace = async (prestateWorkspace) => {
+  if (prestateWorkspace) {
+    return { workspace: prestateWorkspace, created: false };
+  }
+
+  let workspace;
+  try {
+    workspace = await request(CONTAINER_PATH + "/workspaces", {
+      method: "POST",
+      body: {
+        name: WP01_GTM_WORKSPACE_NAME,
+        description:
+          "Isolated workspace for HANYAO Ads/Website Optimization v1.0 WP01 funnel observability only.",
+      },
+    });
+  } catch (error) {
+    const afterUnknown = await findDedicatedWorkspace();
+    if (!afterUnknown) throw error;
+    workspace = afterUnknown;
+  }
+
+  const readback = await findDedicatedWorkspace();
+  if (
+    !workspace?.path ||
+    workspace?.name !== WP01_GTM_WORKSPACE_NAME ||
+    !readback?.path ||
+    readback.path !== workspace.path
+  ) {
     throw new Error("WP01_GTM_WORKSPACE_CREATE_READBACK_INVALID");
   }
-  return { workspace, created: true };
+  return { workspace: readback, created: true };
 };
 
 const apply = async () => {
-  const { workspace, created } = await ensureDedicatedWorkspace();
+  const [livePrestate, dedicatedPrestate] = await Promise.all([
+    readLive(),
+    findDedicatedWorkspace(),
+  ]);
+  assertWp01GtmProviderGate({
+    mode: "apply",
+    gate: PRODUCTION_GATE,
+    expectedLiveFingerprint: EXPECTED_LIVE_FINGERPRINT,
+    actualLiveFingerprint: livePrestate.fingerprint,
+    expectedWorkspaceFingerprint: EXPECTED_WORKSPACE_FINGERPRINT,
+    actualWorkspaceFingerprint: dedicatedPrestate?.fingerprint ?? null,
+  });
+
+  const { workspace, created } =
+    await ensureDedicatedWorkspace(dedicatedPrestate);
   let state = await readWorkspace(workspace);
   assertOnlyWp01WorkspaceChanges(state.status);
   let plan = inspectWp01Workspace(state);
@@ -178,13 +217,29 @@ const apply = async () => {
       canonicalAdsSenderTouched: 0,
       googleAdsTagsTouched: 0,
       publishApplied: false,
+      prestate: {
+        liveFingerprint: livePrestate.fingerprint,
+        workspaceFingerprint:
+          dedicatedPrestate?.fingerprint ?? WP01_GTM_WORKSPACE_ABSENT,
+      },
     })
   );
 };
 
 const publish = async () => {
-  const workspace = await findDedicatedWorkspace();
+  const [livePrestate, workspace] = await Promise.all([
+    readLive(),
+    findDedicatedWorkspace(),
+  ]);
   if (!workspace) throw new Error("WP01_GTM_PUBLISH_WORKSPACE_NOT_FOUND");
+  assertWp01GtmProviderGate({
+    mode: "publish",
+    gate: PRODUCTION_GATE,
+    expectedLiveFingerprint: EXPECTED_LIVE_FINGERPRINT,
+    actualLiveFingerprint: livePrestate.fingerprint,
+    expectedWorkspaceFingerprint: EXPECTED_WORKSPACE_FINGERPRINT,
+    actualWorkspaceFingerprint: workspace.fingerprint,
+  });
 
   const state = await readWorkspace(workspace);
   assertPublishScope(state);
@@ -256,6 +311,10 @@ const publish = async () => {
       newWorkspacePath: created?.newWorkspacePath ?? null,
       canonicalAdsSenderTouched: 0,
       googleAdsTagsTouched: 0,
+      prestate: {
+        liveFingerprint: livePrestate.fingerprint,
+        workspaceFingerprint: workspace.fingerprint,
+      },
     })
   );
 };
@@ -273,6 +332,7 @@ const dryRun = async () => {
     const workspacePlan = inspectWp01Workspace(state);
     dedicatedState = {
       path: dedicated.path,
+      fingerprint: dedicated.fingerprint,
       ready: workspacePlan.ready,
       workspaceChangeCount: workspacePlan.workspaceChangeCount,
       mergeConflictCount: workspacePlan.mergeConflictCount,
@@ -297,6 +357,13 @@ const dryRun = async () => {
       ),
       dedicatedWorkspace: dedicatedState,
       workspaceCreateRequired: !dedicated,
+      requiredMutationGates: {
+        apply: WP01_GTM_APPLY_GATE,
+        publish: WP01_GTM_PUBLISH_GATE,
+        expectedLiveFingerprint: live.fingerprint,
+        expectedWorkspaceFingerprint:
+          dedicated?.fingerprint ?? WP01_GTM_WORKSPACE_ABSENT,
+      },
       canonicalAdsSenderTouched: 0,
       googleAdsTagsTouched: 0,
       mutationApplied: false,

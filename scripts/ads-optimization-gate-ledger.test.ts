@@ -35,6 +35,18 @@ test("WP10 never promotes provider-ready engines into live provider completion",
     false
   );
   assert.equal(
+    ADS_OPTIMIZATION_GATE_LEDGER.workPackages.WP01.gtmBridge.mutationGate,
+    "FRESH_LIVE_AND_WORKSPACE_FINGERPRINT_BOUND"
+  );
+  assert.equal(
+    ADS_OPTIMIZATION_GATE_LEDGER.workPackages.WP01.gtmBridge.applyGate,
+    "HANYAO_WP01_GTM_APPLY_APPROVED_20260918"
+  );
+  assert.equal(
+    ADS_OPTIMIZATION_GATE_LEDGER.workPackages.WP01.gtmBridge.publishGate,
+    "HANYAO_WP01_GTM_PUBLISH_APPROVED_20260918"
+  );
+  assert.equal(
     ADS_OPTIMIZATION_GATE_LEDGER.workPackages.WP02.googleAdsMutationApplied,
     false
   );

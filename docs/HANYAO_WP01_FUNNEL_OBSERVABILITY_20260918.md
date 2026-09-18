@@ -1,6 +1,6 @@
 # HANYAO WP01 Funnel Observability Contract — 2026-09-18
 
-Status: `WEBSITE_PRODUCTION_PASS / GTM_BRIDGE_CANDIDATE / GTM_PROVIDER_APPLY_PENDING / NO_CANONICAL_CONVERSION_MUTATION`
+Status: `WEBSITE_PRODUCTION_PASS / GTM_BRIDGE_PRODUCTION_SOURCE_PASS / FRESH_PROVIDER_FINGERPRINT_GATE_REQUIRED / GTM_PROVIDER_APPLY_PENDING / NO_CANONICAL_CONVERSION_MUTATION`
 
 Scope: `HANYAO_ADS_WEBSITE_OPTIMIZATION_CONSTRUCTION_SPEC_v1.0_20260917` WP01 only.
 
@@ -86,9 +86,9 @@ The bridge is fail-closed and uses a dedicated workspace named:
 
 Modes:
 
-- default / dry-run: reads the live container version and reports the exact required delta; no mutation.
-- `--apply`: creates/reuses only the dedicated workspace, creates the bounded safe DLVs required by this contract, updates only `GA4 Event - line_contact_attempt` with the tag fingerprint, then performs same-source readback.
-- `--publish`: requires the dedicated workspace to contain only WP01 changes and be fully converged, creates an exact container version, publishes it with version fingerprint, then verifies the live version.
+- default / dry-run: reads the live container version and dedicated workspace state, reports the exact required delta, live fingerprint, workspace fingerprint (or `ABSENT`), and the exact mutation gates; no mutation.
+- `--apply`: requires the exact dry-run live fingerprint, exact workspace fingerprint (or `ABSENT`), and `HANYAO_WP01_GTM_APPLY_APPROVED_20260918`. Any provider drift fails closed before workspace mutation. It then creates/reuses only the dedicated workspace, creates the bounded safe DLVs required by this contract, updates only `GA4 Event - line_contact_attempt` using the target tag fingerprint, and performs same-source readback.
+- `--publish`: requires the exact fresh live fingerprint, an exact existing dedicated-workspace fingerprint, and `HANYAO_WP01_GTM_PUBLISH_APPROVED_20260918`. It rejects an absent workspace, unrelated workspace changes, merge conflicts, or non-converged state before creating/publishing a version, then verifies the exact live version.
 
 Desired GTM event parameters:
 
@@ -97,6 +97,20 @@ Desired GTM event parameters:
 - remove obsolete mapping: `lead_id`
 
 No Google Ads conversion tag or canonical sender may be changed.
+
+Provider mutation environment contract:
+
+```text
+GTM_ACCESS_TOKEN=<short-lived OAuth access token>
+GTM_WP01_EXPECTED_LIVE_FINGERPRINT=<exact dry-run live fingerprint>
+GTM_WP01_EXPECTED_WORKSPACE_FINGERPRINT=<exact workspace fingerprint or ABSENT>
+GTM_WP01_PRODUCTION_GATE=HANYAO_WP01_GTM_APPLY_APPROVED_20260918
+# or, for publish:
+GTM_WP01_PRODUCTION_GATE=HANYAO_WP01_GTM_PUBLISH_APPROVED_20260918
+```
+
+A repository PASS is not a GTM provider PASS. The provider token must be
+short-lived and must never be committed or printed in evidence.
 
 Official GTM API references used by the bridge:
 
