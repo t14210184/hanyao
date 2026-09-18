@@ -1,5 +1,8 @@
 # HANYAO WP10 — Current Execution / Provider Gate Ledger — 2026-09-18
 
+> Provider execution-surface status was refreshed after this ledger snapshot.
+> Read `docs/HANYAO_WP10_PROVIDER_SURFACE_REBASE_20260918.md` together with this file.
+
 Status: `CURRENT_STATE_CANDIDATE / PROVIDER_TRUTH_REQUIRES_FRESH_SAME_SOURCE_READBACK`
 
 Baseline main:

@@ -8,15 +8,15 @@ import {
   getWp10BlockingIds,
 } from "./ads-optimization-gate-ledger.ts";
 
-test("WP10 v3 ledger represents WP00 through WP10 and binds the current main", () => {
+test("WP10 v4 ledger represents WP00 through WP10 and binds the current main", () => {
   assert.equal(
     ADS_OPTIMIZATION_GATE_LEDGER_VERSION,
-    "hanyao-ads-optimization-gate-ledger-v3"
+    "hanyao-ads-optimization-gate-ledger-v4"
   );
   assert.equal(allWp10RepositoryWorkPackagesRepresented(), true);
   assert.equal(
     ADS_OPTIMIZATION_GATE_LEDGER.baselineMain,
-    "272e7fc513fb4c76de9cf89b92abba42e15d2e4e"
+    "5f03bdfd4728b46c25931972ac8a1bfdcbdb2488"
   );
   assert.equal(
     ADS_OPTIMIZATION_GATE_LEDGER.latestRepositoryVerification.mainReadiness,
@@ -84,6 +84,26 @@ test("WP10 preserves the exact current provider authorization blockers", () => {
     ADS_OPTIMIZATION_GATE_LEDGER.workPackages.WP02.providerEvidence
       .cloudflareControlCredentialInGitHubActions,
     false
+  );
+  assert.equal(
+    ADS_OPTIMIZATION_GATE_LEDGER.workPackages.WP02.providerEvidence
+      .factoryMcpHostPowerShellGovernanceState,
+    "AUTHORIZED_AND_DEPLOYED"
+  );
+  assert.equal(
+    ADS_OPTIMIZATION_GATE_LEDGER.workPackages.WP02.providerEvidence
+      .currentChatFactoryMcpHostPowerShellLoaded,
+    false
+  );
+  assert.equal(
+    ADS_OPTIMIZATION_GATE_LEDGER.workPackages.WP02.providerEvidence
+      .currentChatObservedAttemptEpochMinimum,
+    0
+  );
+  assert.equal(
+    ADS_OPTIMIZATION_GATE_LEDGER.workPackages.WP02.providerEvidence
+      .governanceRequiredAttemptEpochMinimum,
+    1
   );
   assert.deepEqual(
     ADS_OPTIMIZATION_GATE_LEDGER.workPackages.WP01.websiteDataLayer.safeDimensions,
