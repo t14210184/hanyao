@@ -1,5 +1,7 @@
-import { exchangeServiceAccountTokenForScopes } from "../workers/google-ads-uploader/src/auth.ts";
-import { GOOGLE_ADS_SCOPE } from "../workers/google-ads-uploader/src/types.ts";
+import {
+  hasGoogleAdsAuthInput,
+  resolveGoogleAdsAccessToken,
+} from "./google-ads-provider-auth.ts";
 import {
   WP03_CREATE_GATE,
   WP03_CUSTOMER_ID,
@@ -26,7 +28,6 @@ const SEARCH_URL =
 const MUTATE_URL =
   `https://googleads.googleapis.com/${API_VERSION}/customers/${WP03_CUSTOMER_ID}/adGroupAds:mutate`;
 
-const credential = process.env.GOOGLE_DATA_MANAGER_SERVICE_ACCOUNT_JSON?.trim();
 const loginCustomerId = process.env.GOOGLE_ADS_LOGIN_CUSTOMER_ID?.replace(/-/g, "").trim();
 const expectedPlanHash = process.env.ADS_RSA_EXPECTED_PLAN_HASH?.trim();
 const productionGate = process.env.ADS_RSA_PRODUCTION_GATE?.trim();
@@ -47,8 +48,10 @@ const mode = args.has("--apply-paused")
           ? "read-enable"
           : "dry-run-create";
 
-if (!credential) {
-  console.error("WP03_PROVIDER_AUTH_REQUIRED:GOOGLE_DATA_MANAGER_SERVICE_ACCOUNT_JSON");
+if (!hasGoogleAdsAuthInput()) {
+  console.error(
+    "WP03_PROVIDER_AUTH_REQUIRED:GOOGLE_ADS_ACCESS_TOKEN_OR_GOOGLE_DATA_MANAGER_SERVICE_ACCOUNT_JSON"
+  );
   process.exit(2);
 }
 
@@ -307,7 +310,7 @@ const summarizeState = (
 });
 
 try {
-  const auth = await exchangeServiceAccountTokenForScopes(credential, [GOOGLE_ADS_SCOPE]);
+  const auth = await resolveGoogleAdsAccessToken();
   const initialState = await readProviderState(auth.accessToken);
 
   if (mode === "read-enable") {
@@ -325,6 +328,7 @@ try {
           mode,
           customerId: WP03_CUSTOMER_ID,
           apiVersion: API_VERSION,
+          authSource: auth.source,
           mutationApplied: false,
           ...summarizeState(initialState),
           enableRows: enablePlan.length,
@@ -337,6 +341,7 @@ try {
           result: "WP03_RSA_ENABLE_BLOCKED",
           mode,
           customerId: WP03_CUSTOMER_ID,
+          authSource: auth.source,
           mutationApplied: false,
           ...summarizeState(initialState),
           blocker:
@@ -362,6 +367,7 @@ try {
           result: "WP03_RSA_ENABLE_NOT_REQUIRED",
           mode,
           customerId: WP03_CUSTOMER_ID,
+          authSource: auth.source,
           mutationApplied: false,
           ...summarizeState(initialState),
           planHash: initialHash,
@@ -383,6 +389,7 @@ try {
           result: "WP03_RSA_ENABLE_VALIDATE_ONLY_PASS",
           mode,
           customerId: WP03_CUSTOMER_ID,
+          authSource: auth.source,
           mutationApplied: false,
           enableRows: initialPlan.length,
           planHash: initialHash,
@@ -425,6 +432,7 @@ try {
           result: "WP03_RSA_ENABLE_CONFIRMED",
           mode,
           customerId: WP03_CUSTOMER_ID,
+          authSource: auth.source,
           mutationApplied: true,
           providerAckObserved: dispatched.ok,
           dispatchReason: dispatched.reason,
