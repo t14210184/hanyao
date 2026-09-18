@@ -1,0 +1,100 @@
+name: WP06 CrUX field readback
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/wp06-cwv-field-readback.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  field-readback:
+    if: startsWith(github.head_ref, 'diag/wp06-cwv-field-')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Query PageSpeed Insights real-world loading experience
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .wp06-cwv
+          api='https://www.googleapis.com/pagespeedonline/v5/runPagespeed'
+          query() {
+            name="$1"
+            url="$2"
+            code=$(curl -sS --retry 2 --retry-delay 3 --get \
+              --data-urlencode "url=$url" \
+              --data 'strategy=mobile' \
+              --data 'category=performance' \
+              -o ".wp06-cwv/$name.json" \
+              -w '%{http_code}' \
+              "$api" || true)
+            printf '%s\n' "$code" > ".wp06-cwv/$name.http"
+          }
+          query home 'https://www.xusen.pro/'
+          query repair 'https://www.xusen.pro/services/ac-repair/'
+      - name: Classify field-data evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE' | tee .wp06-cwv/summary.json
+          const fs = require('fs');
+          const targets = ['home','repair'];
+          const metricIds = [
+            'LARGEST_CONTENTFUL_PAINT_MS',
+            'INTERACTION_TO_NEXT_PAINT',
+            'CUMULATIVE_LAYOUT_SHIFT_SCORE',
+            'FIRST_CONTENTFUL_PAINT_MS',
+          ];
+          const result = {
+            schema_version: 1,
+            source: 'PageSpeed Insights API v5 loadingExperience/originLoadingExperience',
+            strategy: 'mobile',
+            targets: {},
+          };
+          let anyField = false;
+          for (const name of targets) {
+            const http = fs.readFileSync(`.wp06-cwv/${name}.http`, 'utf8').trim();
+            let body = {};
+            try { body = JSON.parse(fs.readFileSync(`.wp06-cwv/${name}.json`, 'utf8')); } catch {}
+            const take = (x) => {
+              if (!x || typeof x !== 'object') return null;
+              const metrics = {};
+              for (const id of metricIds) {
+                const m = x.metrics?.[id];
+                if (m) metrics[id] = {percentile:m.percentile ?? null, category:m.category ?? null, distributions:m.distributions ?? null};
+              }
+              return {
+                id: x.id ?? null,
+                initial_url: x.initial_url ?? null,
+                overall_category: x.overall_category ?? null,
+                origin_fallback: x.origin_fallback ?? null,
+                metrics,
+              };
+            };
+            const page = take(body.loadingExperience);
+            const origin = take(body.originLoadingExperience);
+            if ((page && Object.keys(page.metrics).length) || (origin && Object.keys(origin.metrics).length)) anyField = true;
+            result.targets[name] = {
+              http_status: http,
+              api_error: body.error ? {code:body.error.code ?? null,status:body.error.status ?? null,message:body.error.message ?? null} : null,
+              analysis_utc_timestamp: body.analysisUTCTimestamp ?? null,
+              page,
+              origin,
+            };
+          }
+          result.result = anyField ? 'FIELD_DATA_AVAILABLE' : 'FIELD_DATA_INSUFFICIENT_OR_API_UNAVAILABLE';
+          console.log(JSON.stringify(result, null, 2));
+          NODE
+          cat .wp06-cwv/summary.json >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload field evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: wp06-cwv-field-readback
+          path: .wp06-cwv/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 7
