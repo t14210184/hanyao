@@ -117,7 +117,12 @@ try {
     terminate(0);
   }
 
-  const after = await parseJsonFile<Wp05UiPoststate>(postPath);
+  const postPathForRead = requirePath(
+    postPath,
+    "WP05_UI_EVIDENCE_FAIL:POSTSTATE_PATH_REQUIRED",
+    2
+  );
+  const after = await parseJsonFile<Wp05UiPoststate>(postPathForRead);
   const post = requireNonBlockedPoststate(
     evaluateWp05UiPoststate(before, after)
   );
