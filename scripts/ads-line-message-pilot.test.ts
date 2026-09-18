@@ -100,3 +100,40 @@ test("candidate module contains no Google Ads mutation transport", () => {
   assert.doesNotMatch(source, /googleads\.googleapis\.com/i);
   assert.doesNotMatch(source, /:mutate|mutate[A-Z]|mutate_/i);
 });
+
+
+test("v2 API preflight is read-only and leaves LINE Beta/account verification to UI", async () => {
+  const contract = await import("./ads-line-message-preflight-contract.ts");
+  assert.equal(contract.MESSAGE_ASSET_PREFLIGHT_VERSION, "hanyao-line-message-preflight-v2");
+  assert.equal(contract.MESSAGE_ASSET_PUBLIC_PROVIDER_BASELINE.apiVersion, "v25");
+  assert.deepEqual(
+    [...contract.MESSAGE_ASSET_PUBLIC_PROVIDER_BASELINE.providers],
+    ["WHATSAPP", "FACEBOOK_MESSENGER", "ZALO"]
+  );
+  assert.equal(contract.MESSAGE_ASSET_PUBLIC_PROVIDER_BASELINE.lineExposedByPublicApi, false);
+  assert.equal(contract.MESSAGE_ASSET_PUBLIC_PROVIDER_BASELINE.lineExposedByPublicSetupHelp, false);
+  assert.ok(
+    contract.MESSAGE_ASSET_UI_ONLY_GATES.includes(
+      "fresh LINE platform + Line ID fields in UI"
+    )
+  );
+  assert.ok(
+    contract.MESSAGE_ASSET_UI_ONLY_GATES.includes(
+      "advertiser verification status"
+    )
+  );
+
+  const source = read("scripts/ads-line-message-live-preflight.ts");
+  assert.match(source, /googleAds:searchStream/);
+  assert.match(source, /campaign\.bidding_strategy_type/);
+  assert.match(source, /FROM conversion_goal_campaign_config/);
+  assert.match(source, /FROM campaign_conversion_goal/);
+  assert.match(source, /FROM campaign_asset/);
+  assert.match(source, /FROM customer_asset/);
+  assert.match(source, /FROM ad_group_asset/);
+  assert.match(source, /FROM asset/);
+  assert.match(source, /MESSAGE_ASSET_PREFLIGHT_LIVE_REQUIRED/);
+  assert.match(source, /mutationApplied:\s*false/);
+  assert.doesNotMatch(source, /googleAds:mutate/i);
+  assert.doesNotMatch(source, /:mutate|mutate[A-Z]|mutate_/);
+});
