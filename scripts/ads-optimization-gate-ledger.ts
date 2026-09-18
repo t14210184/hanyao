@@ -121,8 +121,17 @@ export const ADS_OPTIMIZATION_GATE_LEDGER = {
       messageAssetPilotActive: false,
       exactLineId: "@451vpomq",
       exactCampaign: "冷氣維修",
+      publicProviderEvidence: {
+        checkedAt: "2026-09-18",
+        apiFamily: "v25/v25.1",
+        publicProviders: ["WHATSAPP", "FACEBOOK_MESSENGER", "ZALO"],
+        lineExposedByPublicApi: false,
+        messageAssetsBeta: true,
+        taiwanOfficialPartner: "Crescendo Lab",
+        taiwanOfficialPartnerEngaged: false,
+      },
       blocker:
-        "AUTHENTICATED_GOOGLE_ADS_UI_NOT_AVAILABLE_IN_CURRENT_EXECUTION_SURFACE",
+        "AUTHENTICATED_GOOGLE_ADS_UI_PRESTATE_PENDING_FOR_ACCOUNT_SPECIFIC_LINE_BETA",
     },
 
     WP06: {

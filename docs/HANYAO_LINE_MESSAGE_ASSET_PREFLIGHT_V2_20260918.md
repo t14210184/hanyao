@@ -1,6 +1,6 @@
 # HANYAO LINE Message Asset API Preflight v2 — 2026-09-18
 
-Status: `READ_ONLY_CANDIDATE / NO_GOOGLE_ADS_MUTATION`
+Status: `READ_ONLY_PRODUCTION_SOURCE_PASS / PUBLIC_PROVIDER_RECHECKED_20260918 / NO_GOOGLE_ADS_MUTATION`
 
 Base Production main: `01b7f60b4bce362c38110c67928ae3f3e464c71e`
 
@@ -12,6 +12,20 @@ Base Production main: `01b7f60b4bce362c38110c67928ae3f3e464c71e`
 
 ## Fresh official delta checked on 2026-09-18
 
+A second same-day official recheck confirms:
+
+- Message assets are still documented as Beta for Search and Performance Max.
+- Google Ads API v25 `BusinessMessageProvider` currently exposes only
+  `WHATSAPP`, `FACEBOOK_MESSENGER`, and `ZALO`; LINE is not in the public
+  provider enum.
+- The current v25.1 release is the latest minor release in the v25 family. Its
+  release notes do not add LINE to the public Business Message provider surface.
+- Google lists Crescendo Lab as an official message-asset partner serving
+  Taiwan. This is an optional implementation-support route; it is not
+  authoritative provider state for the HANYAO account and no partner
+  engagement is claimed by this repository.
+
+
 Google Ads Help 仍把 Message Asset 標示為 Beta，Search 與 Performance Max 可使用。
 
 目前公開設定文件只明列 WhatsApp、SMS、Facebook Messenger、Zalo。Google Ads API v25 的 BusinessMessageProvider 公開 enum 為：
@@ -20,7 +34,7 @@ Google Ads Help 仍把 Message Asset 標示為 Beta，Search 與 Performance Max
 - FACEBOOK_MESSENGER
 - ZALO
 
-公開 API / setup Help 均未公開 LINE provider。HANYAO 於 2026-09-17 帳戶 UI 曾看見 `Line` / `Line ID`，因此仍把 LINE 視為帳戶級 Beta/UI evidence；每次 Production association 前必須 fresh UI recheck，禁止由 API payload偽造 LINE。
+公開 API provider enum 未公開 LINE。HANYAO 於 2026-09-17 帳戶 UI 曾看見 `Line` / `Line ID`，因此仍把 LINE 視為帳戶級 Beta/UI evidence；每次 Production association 前必須 fresh UI recheck，禁止由 API payload 偽造 LINE。官方合作夥伴可協助導入，但不能取代 HANYAO 帳戶內的 fresh UI prestate/poststate。
 
 Official references:
 
@@ -30,6 +44,8 @@ Official references:
 - https://support.google.com/google-ads/answer/16669591
 - https://support.google.com/adspolicy/answer/16471781
 - https://developers.google.com/google-ads/api/docs/assets/business-message-assets
+- https://developers.google.com/google-ads/api/docs/release-notes
+- https://support.google.com/google-ads/answer/16669190
 - https://developers.google.com/google-ads/api/fields/v25/asset
 - https://developers.google.com/google-ads/api/fields/v25/campaign_asset
 - https://developers.google.com/google-ads/api/fields/v25/campaign_conversion_goal

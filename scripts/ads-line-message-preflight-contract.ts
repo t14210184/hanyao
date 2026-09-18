@@ -1,11 +1,19 @@
-export const MESSAGE_ASSET_PREFLIGHT_VERSION = "hanyao-line-message-preflight-v2";
+export const MESSAGE_ASSET_PREFLIGHT_VERSION = "hanyao-line-message-preflight-v3";
 
 export const MESSAGE_ASSET_PUBLIC_PROVIDER_BASELINE = {
   verifiedAt: "2026-09-18",
   apiVersion: "v25",
+  currentMinorReleaseChecked: "v25.1",
   providers: ["WHATSAPP", "FACEBOOK_MESSENGER", "ZALO"],
   lineExposedByPublicApi: false,
   lineExposedByPublicSetupHelp: false,
+  messageAssetsBeta: true,
+  taiwanOfficialPartner: {
+    available: true,
+    partner: "Crescendo Lab",
+    engaged: false,
+    role: "IMPLEMENTATION_SUPPORT_NOT_PROVIDER_STATE_AUTHORITY",
+  },
 } as const;
 
 export const MESSAGE_ASSET_UI_ONLY_GATES = [

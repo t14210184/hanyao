@@ -50,6 +50,26 @@ test("WP10 never promotes provider-ready engines into live provider completion",
     ADS_OPTIMIZATION_GATE_LEDGER.workPackages.WP05.messageAssetMutationApplied,
     false
   );
+  assert.deepEqual(
+    ADS_OPTIMIZATION_GATE_LEDGER.workPackages.WP05.publicProviderEvidence
+      .publicProviders,
+    ["WHATSAPP", "FACEBOOK_MESSENGER", "ZALO"]
+  );
+  assert.equal(
+    ADS_OPTIMIZATION_GATE_LEDGER.workPackages.WP05.publicProviderEvidence
+      .lineExposedByPublicApi,
+    false
+  );
+  assert.equal(
+    ADS_OPTIMIZATION_GATE_LEDGER.workPackages.WP05.publicProviderEvidence
+      .taiwanOfficialPartner,
+    "Crescendo Lab"
+  );
+  assert.equal(
+    ADS_OPTIMIZATION_GATE_LEDGER.workPackages.WP05.publicProviderEvidence
+      .taiwanOfficialPartnerEngaged,
+    false
+  );
   assert.equal(
     ADS_OPTIMIZATION_GATE_LEDGER.providerMutationAppliedByLedger,
     false
