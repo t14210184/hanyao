@@ -4,10 +4,14 @@ import test from "node:test";
 
 test("WP02 provider engine is bounded to ad-group negative keyword mutation", async () => {
   const source = await readFile("scripts/ads-search-hygiene-mutate.ts", "utf8");
+  const contract = await readFile(
+    "scripts/ads-search-hygiene-mutate-contract.ts",
+    "utf8"
+  );
 
   assert.match(source, /adGroupCriteria:mutate/);
-  assert.match(source, /partialFailure:\s*false/);
-  assert.match(source, /validateOnly/);
+  assert.match(contract, /partialFailure:\s*false/);
+  assert.match(contract, /validateOnly/);
   assert.match(source, /ADS_HYGIENE_EXPECTED_PLAN_HASH/);
   assert.match(source, /ADS_HYGIENE_PRODUCTION_GATE/);
   assert.match(source, /WP02_MUTATION_PARTIAL_OR_AMBIGUOUS/);
