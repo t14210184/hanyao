@@ -60,5 +60,7 @@ jobs:
           npm run test:line1b2b:unit
       - name: Verify WP01 GTM funnel bridge contract
         run: npm run test:wp01:gtm
+      - name: Verify WP02 exact-negative provider contract
+        run: npm run test:wp02:mutate
       - name: Verify workflow mutation boundary
         run: node scripts/v12-workflow-safety.test.mjs
