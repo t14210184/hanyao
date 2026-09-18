@@ -22,6 +22,11 @@ import {
   ADS_SMART_BIDDING_GATE_VERSION,
   evaluateSmartBiddingGate,
 } from "./ads-landing-smart-bidding-gate.ts";
+import {
+  ADS_OPTIMIZATION_GATE_LEDGER,
+  ADS_OPTIMIZATION_GATE_LEDGER_VERSION,
+  getExecutableProviderBlockers,
+} from "./ads-optimization-gate-ledger.ts";
 
 const read = (relative: string): string =>
   fs.readFileSync(path.join(process.cwd(), relative), "utf8");
@@ -402,6 +407,69 @@ test("WP09 keeps AI Max isolated and never auto-dispatches provider mutation", (
   assert.equal(ADS_SMART_BIDDING_GATE_CONTRACT.s4Scope, "ISOLATED_AI_MAX_EXPERIMENT_WITH_CONTROL_LANE");
 
   const source = read("scripts/ads-landing-smart-bidding-gate.ts");
+  assert.doesNotMatch(source, /googleads\.googleapis\.com/i);
+  assert.doesNotMatch(source, /:mutate|mutate[A-Z]|mutate_/i);
+});
+
+
+test("WP10 ledger never promotes repository readiness into provider completion", () => {
+  assert.equal(
+    ADS_OPTIMIZATION_GATE_LEDGER_VERSION,
+    "hanyao-ads-optimization-gate-ledger-v1"
+  );
+  assert.equal(ADS_OPTIMIZATION_GATE_LEDGER.googleAdsMutationAppliedByLedger, false);
+  assert.equal(
+    ADS_OPTIMIZATION_GATE_LEDGER.providerExecution.adsSearchHygiene.mutationApplied,
+    false
+  );
+  assert.equal(ADS_OPTIMIZATION_GATE_LEDGER.providerExecution.rsaRollout.mutationApplied, false);
+  assert.equal(
+    ADS_OPTIMIZATION_GATE_LEDGER.providerExecution.lineMessageAssetPilot.mutationApplied,
+    false
+  );
+  assert.equal(
+    ADS_OPTIMIZATION_GATE_LEDGER.canonicalE2E.state,
+    "BLOCKED_GENUINE_E2E_PROOF"
+  );
+  assert.equal(
+    ADS_OPTIMIZATION_GATE_LEDGER.smartBiddingAndAiMax.gate,
+    "S1_TRACKING_PROOF_PENDING"
+  );
+  assert.equal(ADS_OPTIMIZATION_GATE_LEDGER.observation.state, "NOT_STARTED");
+  assert.equal(ADS_OPTIMIZATION_GATE_LEDGER.adjudication.state, "NOT_READY");
+});
+
+test("WP10 ledger keeps historical provider evidence explicitly non-current", () => {
+  assert.equal(
+    ADS_OPTIMIZATION_GATE_LEDGER.canonicalE2E.latestVerifiedHistoricalEvidence
+      .classification,
+    "HISTORICAL_PROVIDER_EVIDENCE_REQUIRES_FRESH_READBACK"
+  );
+  assert.equal(
+    ADS_OPTIMIZATION_GATE_LEDGER.evidencePolicy.providerTruthRequiresFreshSameSourceReadback,
+    true
+  );
+  assert.equal(
+    ADS_OPTIMIZATION_GATE_LEDGER.evidencePolicy.unknownSideEffectsMustBeReadBackBeforeRetry,
+    true
+  );
+  assert.equal(ADS_OPTIMIZATION_GATE_LEDGER.canonicalE2E.resendUnknownProviderEffectAllowed, false);
+});
+
+test("WP10 exposes the exact provider blockers and keeps high-risk levers frozen", () => {
+  assert.deepEqual(getExecutableProviderBlockers(), [
+    "ADS_SEARCH_HYGIENE_FRESH_PROVIDER_PRESTATE",
+    "RSA_FRESH_PROVIDER_PRESTATE",
+    "LINE_MESSAGE_ASSET_FRESH_UI_PRESTATE",
+    "GENUINE_CANONICAL_E2E_PROOF",
+  ]);
+
+  assert.equal(ADS_OPTIMIZATION_GATE_LEDGER.smartBiddingAndAiMax.maxConversionsAllowedNow, false);
+  assert.equal(ADS_OPTIMIZATION_GATE_LEDGER.smartBiddingAndAiMax.targetCpaAllowedNow, false);
+  assert.equal(ADS_OPTIMIZATION_GATE_LEDGER.smartBiddingAndAiMax.broadMatchExpansionAllowedNow, false);
+  assert.equal(ADS_OPTIMIZATION_GATE_LEDGER.smartBiddingAndAiMax.aiMaxAllowedNow, false);
+
+  const source = read("scripts/ads-optimization-gate-ledger.ts");
   assert.doesNotMatch(source, /googleads\.googleapis\.com/i);
   assert.doesNotMatch(source, /:mutate|mutate[A-Z]|mutate_/i);
 });
