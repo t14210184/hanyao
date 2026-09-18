@@ -1,9 +1,9 @@
 export const ADS_OPTIMIZATION_GATE_LEDGER_VERSION =
-  "hanyao-ads-optimization-gate-ledger-v4";
+  "hanyao-ads-optimization-gate-ledger-v5";
 
 export const ADS_OPTIMIZATION_GATE_LEDGER = {
   snapshotDate: "2026-09-18",
-  baselineMain: "5f03bdfd4728b46c25931972ac8a1bfdcbdb2488",
+  baselineMain: "87ebea57b164b22b6477907befa72b738cfa74be",
   authority: {
     providerTruthOverridesRepositorySnapshot: true,
     freshSameSourceReadbackRequiredForProviderClaims: true,
@@ -63,18 +63,25 @@ export const ADS_OPTIMIZATION_GATE_LEDGER = {
         googleCredentialInGitHubActions: false,
         cloudflareControlCredentialInGitHubActions: false,
         factoryMcpHostPowerShellGovernanceState: "AUTHORIZED_AND_DEPLOYED",
-        currentChatFactoryMcpHostPowerShellLoaded: false,
+        shortLivedAccessTokenAdapter: "PRODUCTION_SOURCE_PASS",
+        hostProviderRunner: "PRODUCTION_SOURCE_PASS",
+        hostProviderRunnerMain:
+          "87ebea57b164b22b6477907befa72b738cfa74be",
+        currentChatFactoryMcpHostPowerShellLoaded: true,
         currentChatObservedFactoryMcpTools: [
           "factory_status",
           "worker_prepare",
           "worker_start",
+          "host_powershell",
         ],
         currentChatObservedAttemptEpochMinimum: 0,
         governanceRequiredAttemptEpochMinimum: 1,
+        currentChatFactoryMcpTransport:
+          "TUNNEL_CLIENT_NOT_SEEN_FOR_300_SECONDS",
         executionSurfaceRefreshDate: "2026-09-18",
       },
       blocker:
-        "FRESH_CHAT_MCP_SCHEMA_REQUIRED_BEFORE_HOST_POWERSHELL_GOOGLE_ADS_READBACK",
+        "FRESH_GOVERNED_FACTORY_MCP_RUNTIME_TRANSPORT_REQUIRED_BEFORE_GOOGLE_ADS_READBACK",
     },
 
     WP03: {
@@ -93,7 +100,7 @@ export const ADS_OPTIMIZATION_GATE_LEDGER = {
       ],
       currentServingAdsMutatedByWp03Engine: false,
       blocker:
-        "FRESH_CHAT_MCP_SCHEMA_REQUIRED_BEFORE_HOST_POWERSHELL_GOOGLE_ADS_READBACK",
+        "FRESH_GOVERNED_FACTORY_MCP_RUNTIME_TRANSPORT_REQUIRED_BEFORE_GOOGLE_ADS_READBACK",
     },
 
     WP04: {
@@ -188,8 +195,8 @@ export const ADS_OPTIMIZATION_GATE_LEDGER = {
 
   currentLegalNextTransitions: [
     "WP01: authenticated GTM live dry-run -> isolated apply -> publish -> live readback; then GA4 Admin readback/config only with exact property identity",
-    "WP02: fresh Chat session reloads the governed Factory MCP schema (host_powershell, attemptEpoch >= 1) -> reuse existing gcloud service-account impersonation -> fresh Google Ads Search Term/existing-negative prestate -> validateOnly -> exact-negative dispatch once -> same-source readback",
-    "WP03: on the same governed host_powershell provider path -> fresh campaign/ad-group/RSA inventory -> PAUSED exact A/B create -> readback -> policy/Ad Strength gate -> exact enable",
+    "WP02: fresh governed Factory MCP runtime proves connected transport and uses attemptEpoch >= 1 -> exact Production HANYAO host runner -> existing gcloud service-account impersonation -> short-lived access token -> fresh Google Ads Search Term/existing-negative prestate -> validateOnly -> exact-negative dispatch once -> same-source readback",
+    "WP03: on the same governed HANYAO host runner path -> fresh campaign/ad-group/RSA inventory -> PAUSED exact A/B create -> readback -> policy/Ad Strength gate -> exact enable",
     "WP05: fresh authenticated UI prestate -> exact hash/gate -> one bounded 冷氣維修 LINE Message Asset association -> fresh UI poststate",
     "WP08/WP09: start observation only after a real provider pilot/canonical conversion cycle is active and baseline captured",
   ],
@@ -207,7 +214,7 @@ export const ADS_OPTIMIZATION_GATE_LEDGER = {
   ],
 
   latestRepositoryVerification: {
-    main: "5f03bdfd4728b46c25931972ac8a1bfdcbdb2488",
+    main: "87ebea57b164b22b6477907befa72b738cfa74be",
     mainReadiness: "PASS",
     cloudflarePagesProduction: "SUCCESS",
   },
