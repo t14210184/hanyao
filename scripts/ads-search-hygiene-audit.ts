@@ -1,14 +1,15 @@
 import { writeFile } from "node:fs/promises";
-import { exchangeServiceAccountTokenForScopes } from "../workers/google-ads-uploader/src/auth.ts";
-import { GOOGLE_ADS_SCOPE } from "../workers/google-ads-uploader/src/types.ts";
 import { classifySearchTermForCampaign } from "./ads-search-hygiene-rules.ts";
+import {
+  hasGoogleAdsAuthInput,
+  resolveGoogleAdsAccessToken,
+} from "./google-ads-provider-auth.ts";
 
 const CUSTOMER_ID = "4801404246";
 const API_VERSION = "v25";
 const API_URL = `https://googleads.googleapis.com/${API_VERSION}/customers/${CUSTOMER_ID}/googleAds:searchStream`;
 const CLASSIFICATION_VERSION = "hanyao-search-hygiene-v2";
 
-const credential = process.env.GOOGLE_DATA_MANAGER_SERVICE_ACCOUNT_JSON?.trim();
 const loginCustomerId = process.env.GOOGLE_ADS_LOGIN_CUSTOMER_ID?.replace(/-/g, "").trim();
 const outputPath = process.env.ADS_HYGIENE_OUTPUT_PATH?.trim();
 const liveRequired = process.env.ADS_HYGIENE_LIVE_REQUIRED === "1";
@@ -57,23 +58,24 @@ const rowsFrom = (payload: unknown): RecordLike[] => {
 
 const skipped = {
   schemaVersion: 1,
-  result: "SKIPPED_MISSING_GOOGLE_ADS_CLOUD_PROJECT_CREDENTIAL",
+  result: "SKIPPED_MISSING_GOOGLE_ADS_PROVIDER_AUTH",
   customerId: CUSTOMER_ID,
   apiVersion: API_VERSION,
   classificationVersion: CLASSIFICATION_VERSION,
   dateRange: { start: startDate, end: endDate },
-  missingRequirement: "GOOGLE_DATA_MANAGER_SERVICE_ACCOUNT_JSON",
+  missingRequirement:
+    "GOOGLE_ADS_ACCESS_TOKEN_OR_GOOGLE_DATA_MANAGER_SERVICE_ACCOUNT_JSON",
 };
 
-if (!credential) {
+if (!hasGoogleAdsAuthInput()) {
   if (liveRequired) {
-    throw new Error("GOOGLE_ADS_CLOUD_PROJECT_CREDENTIAL_REQUIRED");
+    throw new Error("GOOGLE_ADS_PROVIDER_AUTH_REQUIRED");
   }
   console.log(JSON.stringify(skipped));
   process.exit(0);
 }
 
-const auth = await exchangeServiceAccountTokenForScopes(credential, [GOOGLE_ADS_SCOPE]);
+const auth = await resolveGoogleAdsAccessToken();
 const headers: Record<string, string> = {
   authorization: `Bearer ${auth.accessToken}`,
   "content-type": "application/json",

@@ -60,6 +60,8 @@ jobs:
           npm run test:line1b2b:unit
       - name: Verify WP01 GTM funnel bridge contract
         run: npm run test:wp01:gtm
+      - name: Verify Google Ads short-lived provider auth
+        run: npm run test:google-ads:auth
       - name: Verify WP02 exact-negative provider contract
         run: npm run test:wp02:mutate
       - name: Verify WP03 staged RSA provider contract

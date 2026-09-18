@@ -18,6 +18,7 @@ on:
       - "scripts/ads-line-message-*"
       - "scripts/ads-optimization-*"
       - "scripts/ads-landing-*"
+      - "scripts/google-ads-provider-*"
       - "scripts/gtm-wp01-*"
       - "scripts/line4b-*"
       - "scripts/line4c-*"
@@ -44,6 +45,7 @@ on:
       - "scripts/ads-line-message-*"
       - "scripts/ads-optimization-*"
       - "scripts/ads-landing-*"
+      - "scripts/google-ads-provider-*"
       - "scripts/gtm-wp01-*"
       - "scripts/line4b-*"
       - "scripts/line4c-*"
@@ -80,6 +82,8 @@ jobs:
         run: npm run build
       - name: TypeScript typecheck
         run: npm run typecheck
+      - name: Verify Google Ads short-lived provider auth
+        run: npm run test:google-ads:auth
       - name: Verify canonical LINE webhook
         shell: bash
         run: |
