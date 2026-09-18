@@ -1,9 +1,9 @@
 export const ADS_OPTIMIZATION_GATE_LEDGER_VERSION =
-  "hanyao-ads-optimization-gate-ledger-v2";
+  "hanyao-ads-optimization-gate-ledger-v3";
 
 export const ADS_OPTIMIZATION_GATE_LEDGER = {
   snapshotDate: "2026-09-18",
-  baselineMain: "066a9c2f3fabbf5b76c8b4e3d2ce5d9b834949e8",
+  baselineMain: "272e7fc513fb4c76de9cf89b92abba42e15d2e4e",
   authority: {
     providerTruthOverridesRepositorySnapshot: true,
     freshSameSourceReadbackRequiredForProviderClaims: true,
@@ -22,7 +22,15 @@ export const ADS_OPTIMIZATION_GATE_LEDGER = {
       state: "PRODUCTION_SOURCE_PASS_PROVIDER_APPLY_PENDING",
       websiteDataLayer: {
         state: "PRODUCTION_PASS",
-        safeDimensions: ["service_type", "prepare_status", "handoff_type"],
+        safeDimensions: [
+          "service_type",
+          "prepare_status",
+          "handoff_type",
+          "landing_path",
+          "campaign_id",
+        ],
+        landingPathContainsQuery: false,
+        campaignIdSource: "numeric utm_id only; never inferred from Google click IDs",
         canonicalGoogleAdsSenderTouched: false,
       },
       gtmBridge: {
@@ -47,9 +55,10 @@ export const ADS_OPTIMIZATION_GATE_LEDGER = {
       boundedMutation:
         "paid-click evidence + Tier A/B + ad-group-scoped EXACT negatives only",
       providerEvidence: {
-        googleAdsGitHubProbeRun: "35308912502",
-        cloudflareSurfaceProbeRun: "35309818381",
+        googleAdsGitHubProbeRun: "35324074635",
+        cloudflareSurfaceProbeRun: "35324102187",
         independentHardeningProbeRun: "35309857197",
+        evidenceRefreshDate: "2026-09-18",
         googleCredentialInGitHubActions: false,
         cloudflareControlCredentialInGitHubActions: false,
       },
@@ -185,7 +194,7 @@ export const ADS_OPTIMIZATION_GATE_LEDGER = {
   ],
 
   latestRepositoryVerification: {
-    main: "066a9c2f3fabbf5b76c8b4e3d2ce5d9b834949e8",
+    main: "272e7fc513fb4c76de9cf89b92abba42e15d2e4e",
     mainReadiness: "PASS",
     cloudflarePagesProduction: "SUCCESS",
   },

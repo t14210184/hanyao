@@ -184,6 +184,65 @@ export const loadAttribution = (
   }
 };
 
+
+export interface AttributionAnalyticsDimensions {
+  landing_path?: string;
+  campaign_id?: string;
+}
+
+const safeAnalyticsLandingPath = (
+  value: string | null | undefined
+): string | undefined => {
+  const normalized = normalizeOptionalString(value);
+  if (!normalized) return undefined;
+  try {
+    const pathname = new URL(normalized).pathname || "/";
+    return pathname.startsWith("/") && pathname.length <= 512
+      ? pathname
+      : undefined;
+  } catch {
+    return undefined;
+  }
+};
+
+const safeAnalyticsCampaignId = (
+  value: string | null | undefined
+): string | undefined => {
+  const normalized = normalizeOptionalString(value);
+  return normalized && /^\d{1,20}$/.test(normalized)
+    ? normalized
+    : undefined;
+};
+
+/**
+ * Return only bounded, non-identifying attribution dimensions for diagnostic
+ * analytics. The browser attribution record may contain Google click IDs and a
+ * session ID; those fields are intentionally never returned here.
+ *
+ * campaign_id is opportunistic only: it is exposed when an existing numeric
+ * utm_id is present. It is never inferred from gclid/gbraid/wbraid.
+ */
+export const getSafeAttributionAnalyticsDimensions = (
+  record: AttributionV1 | null = loadAttribution()
+): AttributionAnalyticsDimensions => {
+  if (!record) return {};
+
+  const last = record.last_touch;
+  const first = record.first_touch;
+  const touch = hasAttributionValue(last)
+    ? last
+    : hasAttributionValue(first)
+      ? first
+      : last;
+
+  const landingPath = safeAnalyticsLandingPath(touch.landing_url);
+  const campaignId = safeAnalyticsCampaignId(touch.utm_id);
+  return {
+    ...(landingPath ? { landing_path: landingPath } : {}),
+    ...(campaignId ? { campaign_id: campaignId } : {}),
+  };
+};
+
 /** Save only a validated V1 record; returns false when browser storage is unavailable. */
 export const saveAttribution = (
   record: AttributionV1,

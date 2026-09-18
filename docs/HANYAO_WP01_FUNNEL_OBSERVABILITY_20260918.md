@@ -16,7 +16,9 @@ The existing `line_contact_attempt` event remains the only LINE intent analytics
 - `service_type`: bounded service identifier such as `ac_repair`, `ac_cleaning`, `ac_installation`, `commercial_ac`.
 - `prepare_status`: `success` or `fail`.
 - `handoff_type`: `oa_message`, `desktop_qr`, or `profile_fallback`.
-- `page_path`: existing first-party path.
+- `page_path`: current first-party path at the LINE intent.
+- `landing_path`: pathname only from the most recent stored attribution touch; query strings and click IDs are never copied.
+- `campaign_id`: optional and emitted only when the existing `utm_id` is a purely numeric 1–20 digit value. It is never inferred from `gclid`, `gbraid`, `wbraid`, campaign labels, or search terms.
 
 GA4 native device dimensions remain the source for device category; no custom fingerprinting is added.
 
@@ -53,7 +55,7 @@ Browser analytics is diagnostic only. D1 / signed LINE webhook / Data Manager / 
 - High `prepare_status=fail` => investigate prepare/browser/backend availability before changing landing copy.
 - High `prepare_status=success` + low token-bearing LINE messages => investigate post-prepare handoff/send friction.
 - Elevated `profile_fallback` => investigate prepare or desktop QR path failures.
-- Compare by `service_type`, `event_source`, `page_path`, and GA4 native device category.
+- Compare by `service_type`, `event_source`, `page_path`, `landing_path`, optional verified `campaign_id`, and GA4 native device category.
 
 ## GTM / GA4 boundary
 
@@ -85,13 +87,13 @@ The bridge is fail-closed and uses a dedicated workspace named:
 Modes:
 
 - default / dry-run: reads the live container version and reports the exact required delta; no mutation.
-- `--apply`: creates/reuses only the dedicated workspace, creates the three safe DLVs, updates only `GA4 Event - line_contact_attempt` with the tag fingerprint, then performs same-source readback.
+- `--apply`: creates/reuses only the dedicated workspace, creates the bounded safe DLVs required by this contract, updates only `GA4 Event - line_contact_attempt` with the tag fingerprint, then performs same-source readback.
 - `--publish`: requires the dedicated workspace to contain only WP01 changes and be fully converged, creates an exact container version, publishes it with version fingerprint, then verifies the live version.
 
 Desired GTM event parameters:
 
 - existing: `contact_channel`, `contact_method`, `page_path`, `event_source`, `event_timestamp`
-- add: `service_type`, `prepare_status`, `handoff_type`
+- add: `service_type`, `prepare_status`, `handoff_type`, `landing_path`, `campaign_id`
 - remove obsolete mapping: `lead_id`
 
 No Google Ads conversion tag or canonical sender may be changed.

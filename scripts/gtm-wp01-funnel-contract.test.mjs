@@ -96,7 +96,7 @@ const converged = () => {
   return { variables, tag };
 };
 
-test("WP01 plan adds only three safe DLVs and replaces legacy lead_id mapping", () => {
+test("WP01 plan adds only bounded safe DLVs and replaces legacy lead_id mapping", () => {
   const plan = inspectWp01Workspace({
     workspace,
     status: cleanStatus(),
@@ -106,7 +106,13 @@ test("WP01 plan adds only three safe DLVs and replaces legacy lead_id mapping", 
 
   assert.deepEqual(
     plan.variablesToCreate.map((item) => item.name),
-    ["DLV - service_type", "DLV - prepare_status", "DLV - handoff_type"]
+    [
+      "DLV - service_type",
+      "DLV - prepare_status",
+      "DLV - handoff_type",
+      "DLV - landing_path",
+      "DLV - campaign_id",
+    ]
   );
   assert.equal(plan.tagNeedsUpdate, true);
   assert.equal(plan.legacyLeadIdRemoved, true);
@@ -205,6 +211,8 @@ test("WP01 publish scope accepts only converged target tag and safe DLV changes"
       { variable: { name: "DLV - service_type" } },
       { variable: { name: "DLV - prepare_status" } },
       { variable: { name: "DLV - handoff_type" } },
+      { variable: { name: "DLV - landing_path" } },
+      { variable: { name: "DLV - campaign_id" } },
     ],
     mergeConflict: [],
   };

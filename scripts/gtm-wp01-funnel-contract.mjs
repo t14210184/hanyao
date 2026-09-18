@@ -1,4 +1,4 @@
-export const WP01_GTM_CONTRACT_VERSION = "hanyao-wp01-gtm-funnel-v1";
+export const WP01_GTM_CONTRACT_VERSION = "hanyao-wp01-gtm-funnel-v2";
 export const WP01_GTM_WORKSPACE_NAME = "HANYAO WP01 Funnel Observability 20260918";
 export const WP01_GTM_TARGET_TAG_NAME = "GA4 Event - line_contact_attempt";
 
@@ -6,6 +6,8 @@ export const WP01_GTM_VARIABLES = Object.freeze([
   { name: "DLV - service_type", key: "service_type" },
   { name: "DLV - prepare_status", key: "prepare_status" },
   { name: "DLV - handoff_type", key: "handoff_type" },
+  { name: "DLV - landing_path", key: "landing_path" },
+  { name: "DLV - campaign_id", key: "campaign_id" },
 ]);
 
 export const WP01_GTM_EVENT_PARAMETERS = Object.freeze([
@@ -17,6 +19,8 @@ export const WP01_GTM_EVENT_PARAMETERS = Object.freeze([
   { parameter: "service_type", value: "{{DLV - service_type}}" },
   { parameter: "prepare_status", value: "{{DLV - prepare_status}}" },
   { parameter: "handoff_type", value: "{{DLV - handoff_type}}" },
+  { parameter: "landing_path", value: "{{DLV - landing_path}}" },
+  { parameter: "campaign_id", value: "{{DLV - campaign_id}}" },
 ]);
 
 const clone = (value) => JSON.parse(JSON.stringify(value));
@@ -128,6 +132,8 @@ export const inspectWp01Workspace = ({ workspace, status, variables, tags }) => 
     "service_type",
     "prepare_status",
     "handoff_type",
+    "landing_path",
+    "campaign_id",
   ]);
   for (const pair of currentPairs) {
     if (!allowedBefore.has(pair.parameter)) {
