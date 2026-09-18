@@ -15,6 +15,11 @@ const option = (name: string): string | undefined => {
   return index >= 0 ? args[index + 1] : undefined;
 };
 
+const terminate = (code: number): never => {
+  process.exit(code);
+  throw new Error("UNREACHABLE_AFTER_PROCESS_EXIT");
+};
+
 const exitWith = (
   payload: string | Record<string, unknown>,
   code: number
@@ -22,7 +27,7 @@ const exitWith = (
   console.error(
     typeof payload === "string" ? payload : JSON.stringify(payload)
   );
-  process.exit(code);
+  return terminate(code);
 };
 
 const requirePath = (
@@ -109,7 +114,7 @@ try {
         mutationApplied: false,
       })
     );
-    process.exit(0);
+    terminate(0);
   }
 
   const after = await parseJsonFile<Wp05UiPoststate>(postPath);
@@ -132,9 +137,7 @@ try {
     })
   );
 
-  process.exit(
-    post.status === "WP05_MESSAGE_ASSET_ACTIVE_PASS" ? 0 : 5
-  );
+  terminate(post.status === "WP05_MESSAGE_ASSET_ACTIVE_PASS" ? 0 : 5);
 } catch (error) {
   exitWith(
     "WP05_UI_EVIDENCE_FAIL:" +
