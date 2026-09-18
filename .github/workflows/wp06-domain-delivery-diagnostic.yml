@@ -1,4 +1,4 @@
-name: WP06 custom-domain delivery diagnostic
+name: WP06 GTM critical-path diagnostic
 
 on:
   pull_request:
@@ -16,48 +16,41 @@ jobs:
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
-      - name: Compare DNS headers curl and Lighthouse
+      - name: Compare normal versus GTM-blocked Lighthouse
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p .wp06-domain
-          custom='https://www.xusen.pro'
-          control='https://31bedf26.hanyao.pages.dev'
-          path='/services/ac-repair/'
-          getent ahosts www.xusen.pro > .wp06-domain/custom-dns.txt || true
-          getent ahosts 31bedf26.hanyao.pages.dev > .wp06-domain/control-dns.txt || true
-          curl -sS "$control$path" -o .wp06-domain/control.html
-          asset=$(grep -oE '/_next/static/[^"[:space:]]+\.js' .wp06-domain/control.html | head -n 1)
-          echo "$asset" > .wp06-domain/asset.txt
-          curl -sS -o /dev/null -D .wp06-domain/custom-doc-headers.txt "$custom$path"
-          curl -sS -o /dev/null -D .wp06-domain/control-doc-headers.txt "$control$path"
-          curl -sS -o /dev/null -D .wp06-domain/custom-static-headers.txt "$custom$asset"
-          curl -sS -o /dev/null -D .wp06-domain/control-static-headers.txt "$control$asset"
-          printf 'target\tkind\trun\tcode\tdns\tconnect\ttls\tttfb\ttotal\tbytes\tspeed\n' > .wp06-domain/curl.tsv
-          measure() {
-            target="$1"; base="$2"; kind="$3"; req="$4"; run="$5"
-            printf '%s\t%s\t%s\t' "$target" "$kind" "$run" >> .wp06-domain/curl.tsv
-            curl -sS -o /dev/null -w '%{http_code}\t%{time_namelookup}\t%{time_connect}\t%{time_appconnect}\t%{time_starttransfer}\t%{time_total}\t%{size_download}\t%{speed_download}\n' "$base$req" >> .wp06-domain/curl.tsv
-          }
-          for i in $(seq 1 10); do
-            measure custom "$custom" document "$path" "$i"
-            measure control "$control" document "$path" "$i"
-            measure custom "$custom" static "$asset" "$i"
-            measure control "$control" static "$asset" "$i"
-          done
+          mkdir -p .wp06-gtm
+          url='https://www.xusen.pro/services/ac-repair/'
           chrome=$(command -v google-chrome || command -v chromium || command -v chromium-browser)
           "$chrome" --version
           npx --yes lighthouse@13.4.1 --version
           for i in 1 2 3; do
-            npx --yes lighthouse@13.4.1 "$custom$path" --only-categories=performance --form-factor=mobile --throttling-method=simulate --chrome-flags='--headless --no-sandbox --disable-dev-shm-usage' --output=json --output-path=".wp06-domain/custom-$i.json" --quiet
-            npx --yes lighthouse@13.4.1 "$control$path" --only-categories=performance --form-factor=mobile --throttling-method=simulate --chrome-flags='--headless --no-sandbox --disable-dev-shm-usage' --output=json --output-path=".wp06-domain/control-$i.json" --quiet
+            npx --yes lighthouse@13.4.1 "$url" --only-categories=performance --form-factor=mobile --throttling-method=simulate --chrome-flags='--headless --no-sandbox --disable-dev-shm-usage' --output=json --output-path=".wp06-gtm/normal-$i.json" --quiet
+            npx --yes lighthouse@13.4.1 "$url" --only-categories=performance --form-factor=mobile --throttling-method=simulate --blocked-url-patterns='*://www.googletagmanager.com/*' --chrome-flags='--headless --no-sandbox --disable-dev-shm-usage' --output=json --output-path=".wp06-gtm/blocked-$i.json" --quiet
           done
-          cat .wp06-domain/curl.tsv
+          python3 - <<'PY'
+          import glob,json,statistics,urllib.parse
+          for mode in ('normal','blocked'):
+            vals=[]
+            for fn in sorted(glob.glob('.wp06-gtm/'+mode+'-*.json')):
+              d=json.load(open(fn)); a=d['audits']
+              vals.append({
+                'perf':d['categories']['performance']['score']*100,
+                'fcp':a['first-contentful-paint']['numericValue'],
+                'lcp':a['largest-contentful-paint']['numericValue'],
+                'tbt':a['total-blocking-time']['numericValue'],
+                'main':a['mainthread-work-breakdown']['numericValue'],
+                'unused':(a.get('unused-javascript',{}).get('details') or {}).get('overallSavingsBytes') or 0,
+              })
+            med=lambda k: statistics.median(v[k] for v in vals)
+            print(mode,{k:round(med(k),1) for k in ('perf','fcp','lcp','tbt','main','unused')})
+          PY
       - name: Upload evidence
         uses: actions/upload-artifact@v4
         with:
-          name: wp06-domain-delivery
-          path: .wp06-domain/
+          name: wp06-gtm-critical-path
+          path: .wp06-gtm/
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 7
