@@ -8,7 +8,7 @@ const read = (relative: string): string =>
   fs.readFileSync(path.join(process.cwd(), relative), "utf8");
 
 test("WP05 stays candidate-only and bounded to 冷氣維修", () => {
-  assert.equal(MESSAGE_PILOT_VERSION, "hanyao-line-message-pilot-v1");
+  assert.equal(MESSAGE_PILOT_VERSION, "hanyao-line-message-pilot-v2");
   assert.equal(MESSAGE_PILOT.status, "CANDIDATE_ONLY");
   assert.equal(MESSAGE_PILOT.pilotCampaign, "冷氣維修");
   assert.equal(MESSAGE_PILOT.landingPath, "/services/ac-repair/");
@@ -20,8 +20,23 @@ test("LINE beta route is explicitly UI-gated because v25 API does not expose LIN
   assert.equal(MESSAGE_PILOT.provider.uiPlatform, "LINE");
   assert.equal(MESSAGE_PILOT.provider.lineId, "@451vpomq");
   assert.equal(MESSAGE_PILOT.provider.apiV25LineProviderSupported, false);
+  assert.equal(MESSAGE_PILOT.provider.publicApiCheckedAt, "2026-09-18");
+  assert.equal(MESSAGE_PILOT.provider.publicApiFamilyChecked, "v25/v25.1");
+  assert.deepEqual([...MESSAGE_PILOT.provider.publicApiProviders], [
+    "WHATSAPP",
+    "FACEBOOK_MESSENGER",
+    "ZALO",
+  ]);
+  assert.equal(MESSAGE_PILOT.provider.messageAssetsBetaConfirmed, true);
   assert.equal(MESSAGE_PILOT.provider.mutationRoute, "GOOGLE_ADS_UI_ONLY_AFTER_HUMAN_GATE");
+  assert.match(MESSAGE_PILOT.provider.evidenceClass, /PUBLIC_API_RECHECKED_20260918/);
   assert.match(MESSAGE_PILOT.provider.evidenceClass, /REQUIRES_FRESH_RECHECK/);
+  assert.deepEqual(MESSAGE_PILOT.provider.officialPartnerSupport, {
+    availableInTaiwan: true,
+    partner: "Crescendo Lab",
+    routeRole: "IMPLEMENTATION_SUPPORT_NOT_PROVIDER_STATE_AUTHORITY",
+    engaged: false,
+  });
 });
 
 test("site keeps an exact LINE verification link on the advertised domain", () => {
@@ -104,14 +119,25 @@ test("candidate module contains no Google Ads mutation transport", () => {
 
 test("v2 API preflight is read-only and leaves LINE Beta/account verification to UI", async () => {
   const contract = await import("./ads-line-message-preflight-contract.ts");
-  assert.equal(contract.MESSAGE_ASSET_PREFLIGHT_VERSION, "hanyao-line-message-preflight-v2");
+  assert.equal(contract.MESSAGE_ASSET_PREFLIGHT_VERSION, "hanyao-line-message-preflight-v3");
   assert.equal(contract.MESSAGE_ASSET_PUBLIC_PROVIDER_BASELINE.apiVersion, "v25");
+  assert.equal(
+    contract.MESSAGE_ASSET_PUBLIC_PROVIDER_BASELINE.currentMinorReleaseChecked,
+    "v25.1"
+  );
   assert.deepEqual(
     [...contract.MESSAGE_ASSET_PUBLIC_PROVIDER_BASELINE.providers],
     ["WHATSAPP", "FACEBOOK_MESSENGER", "ZALO"]
   );
   assert.equal(contract.MESSAGE_ASSET_PUBLIC_PROVIDER_BASELINE.lineExposedByPublicApi, false);
   assert.equal(contract.MESSAGE_ASSET_PUBLIC_PROVIDER_BASELINE.lineExposedByPublicSetupHelp, false);
+  assert.equal(contract.MESSAGE_ASSET_PUBLIC_PROVIDER_BASELINE.messageAssetsBeta, true);
+  assert.deepEqual(contract.MESSAGE_ASSET_PUBLIC_PROVIDER_BASELINE.taiwanOfficialPartner, {
+    available: true,
+    partner: "Crescendo Lab",
+    engaged: false,
+    role: "IMPLEMENTATION_SUPPORT_NOT_PROVIDER_STATE_AUTHORITY",
+  });
   assert.ok(
     contract.MESSAGE_ASSET_UI_ONLY_GATES.includes(
       "fresh LINE platform + Line ID fields in UI"
