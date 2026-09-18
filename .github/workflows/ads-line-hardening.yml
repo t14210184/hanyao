@@ -5,6 +5,7 @@ on:
     branches:
       - feat/ads-line-production-hardening
       - fix/ads-line-v1-2-repair
+      - feat/wp02-cloudflare-provider-surface-20260918
     paths:
       - "functions/api/line/**"
       - "functions/_lib/line-webhook.ts"
@@ -89,6 +90,54 @@ jobs:
           cache: npm
       - name: Install locked dependencies
         run: npm ci
+      - name: WP02 read Production Worker secret names only
+        if: github.ref_name == 'feat/wp02-cloudflare-provider-surface-20260918'
+        shell: bash
+        env:
+          CF_TOKEN_PRIMARY: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_TOKEN_LEGACY: ${{ secrets.CF_API_TOKEN }}
+          CF_ACCOUNT_VAR: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          CF_ACCOUNT_SECRET: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CF_ACCOUNT_LEGACY_VAR: ${{ vars.CF_ACCOUNT_ID }}
+          CF_ACCOUNT_LEGACY_SECRET: ${{ secrets.CF_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          token="${CF_TOKEN_PRIMARY:-}"
+          if [[ -z "$token" ]]; then token="${CF_TOKEN_LEGACY:-}"; fi
+          account="${CF_ACCOUNT_VAR:-}"
+          if [[ -z "$account" ]]; then account="${CF_ACCOUNT_SECRET:-}"; fi
+          if [[ -z "$account" ]]; then account="${CF_ACCOUNT_LEGACY_VAR:-}"; fi
+          if [[ -z "$account" ]]; then account="${CF_ACCOUNT_LEGACY_SECRET:-}"; fi
+          if [[ -z "$token" ]]; then
+            echo "WP02_CF_PROVIDER_SURFACE=FAIL:CLOUDFLARE_API_TOKEN_MISSING"
+            exit 2
+          fi
+          if [[ -z "$account" ]]; then
+            echo "WP02_CF_PROVIDER_SURFACE=FAIL:CLOUDFLARE_ACCOUNT_ID_MISSING"
+            exit 3
+          fi
+          export CLOUDFLARE_API_TOKEN="$token"
+          export CLOUDFLARE_ACCOUNT_ID="$account"
+          npx wrangler secret list             --config workers/google-ads-uploader/wrangler.jsonc             --env production             --format json > /tmp/wp02-secret-names.json
+          node <<'NODE'
+          const fs = require("node:fs");
+          const parsed = JSON.parse(fs.readFileSync("/tmp/wp02-secret-names.json", "utf8"));
+          const rows = Array.isArray(parsed) ? parsed : Array.isArray(parsed?.secrets) ? parsed.secrets : [];
+          const names = new Set(rows.map((row) => typeof row === "string" ? row : row?.name).filter(Boolean));
+          const required = ["GOOGLE_DATA_MANAGER_SERVICE_ACCOUNT_JSON","PRODUCTION_HUMAN_GATE"];
+          const missing = required.filter((name) => !names.has(name));
+          console.log(JSON.stringify({
+            result: missing.length === 0 ? "WP02_CF_PROVIDER_SURFACE_READY" : "WP02_CF_PROVIDER_SURFACE_BLOCKED",
+            worker: "google-ads-uploader-production",
+            secretNameCount: names.size,
+            requiredSecretsPresent: required.filter((name) => names.has(name)),
+            missingRequiredSecrets: missing,
+            secretValuesRead: false,
+            mutationApplied: false
+          }));
+          if (missing.length > 0) process.exit(5);
+          NODE
+          rm -f /tmp/wp02-secret-names.json
       - name: Build static export for Pages HTTP integration
         run: npm run build
       - name: TypeScript typecheck
