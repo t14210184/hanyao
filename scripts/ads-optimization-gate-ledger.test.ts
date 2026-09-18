@@ -11,12 +11,12 @@ import {
 test("WP10 v2 ledger represents WP00 through WP10 and binds the current main", () => {
   assert.equal(
     ADS_OPTIMIZATION_GATE_LEDGER_VERSION,
-    "hanyao-ads-optimization-gate-ledger-v2"
+    "hanyao-ads-optimization-gate-ledger-v3"
   );
   assert.equal(allWp10RepositoryWorkPackagesRepresented(), true);
   assert.equal(
     ADS_OPTIMIZATION_GATE_LEDGER.baselineMain,
-    "066a9c2f3fabbf5b76c8b4e3d2ce5d9b834949e8"
+    "272e7fc513fb4c76de9cf89b92abba42e15d2e4e"
   );
   assert.equal(
     ADS_OPTIMIZATION_GATE_LEDGER.latestRepositoryVerification.mainReadiness,
@@ -68,12 +68,12 @@ test("WP10 preserves the exact current provider authorization blockers", () => {
   assert.equal(
     ADS_OPTIMIZATION_GATE_LEDGER.workPackages.WP02.providerEvidence
       .googleAdsGitHubProbeRun,
-    "35308912502"
+    "35324074635"
   );
   assert.equal(
     ADS_OPTIMIZATION_GATE_LEDGER.workPackages.WP02.providerEvidence
       .cloudflareSurfaceProbeRun,
-    "35309818381"
+    "35324102187"
   );
   assert.equal(
     ADS_OPTIMIZATION_GATE_LEDGER.workPackages.WP02.providerEvidence
@@ -83,6 +83,21 @@ test("WP10 preserves the exact current provider authorization blockers", () => {
   assert.equal(
     ADS_OPTIMIZATION_GATE_LEDGER.workPackages.WP02.providerEvidence
       .cloudflareControlCredentialInGitHubActions,
+    false
+  );
+  assert.deepEqual(
+    ADS_OPTIMIZATION_GATE_LEDGER.workPackages.WP01.websiteDataLayer.safeDimensions,
+    [
+      "service_type",
+      "prepare_status",
+      "handoff_type",
+      "landing_path",
+      "campaign_id",
+    ]
+  );
+  assert.equal(
+    ADS_OPTIMIZATION_GATE_LEDGER.workPackages.WP01.websiteDataLayer
+      .landingPathContainsQuery,
     false
   );
 });
