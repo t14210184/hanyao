@@ -12,6 +12,7 @@ on:
       - "workers/google-ads-uploader/**"
       - "scripts/ads-search-hygiene-*"
       - "scripts/ads-rsa-*"
+      - "scripts/ads-landing-*"
       - "scripts/ads-line-message-*"
       - "scripts/google-ads-read-*"
       - "scripts/line1a-*"
@@ -39,12 +40,14 @@ on:
       - "workers/google-ads-uploader/**"
       - "src/components/MobileStickyCTA.tsx"
       - "src/app/services/ac-repair/AcRepairServiceClient.tsx"
+      - "src/app/services/ac-cleaning/AcCleaningServiceClient.tsx"
       - "src/app/layout.tsx"
       - "src/app/globals.css"
       - "scripts/ads-cro-repair-static.test.mjs"
       - "scripts/ads-cro-repair-hero-static.test.mjs"
       - "scripts/ads-search-hygiene-*"
       - "scripts/ads-rsa-*"
+      - "scripts/ads-landing-*"
       - "scripts/ads-line-message-*"
       - "scripts/google-ads-read-*"
       - "scripts/line1a-*"
@@ -94,6 +97,8 @@ jobs:
         run: node --experimental-strip-types --test scripts/ads-search-hygiene-rules.test.ts
       - name: Verify RSA candidate limits and rollout boundary
         run: node --experimental-strip-types --test scripts/ads-rsa-candidates.test.ts
+      - name: Verify Ads-to-landing promise alignment
+        run: node --experimental-strip-types --test scripts/ads-landing-promise-matrix.test.ts
       - name: Verify LINE Message Asset pilot isolation and fail-closed gates
         run: node --experimental-strip-types --test scripts/ads-line-message-pilot.test.ts
       - name: Verify Google Ads read auth and audit log privacy
