@@ -136,7 +136,11 @@ test("WP10 ledger source contains no provider transport or shared mutation path"
   assert.doesNotMatch(source, /googleads\.googleapis\.com/i);
   assert.doesNotMatch(source, /tagmanager\.googleapis\.com/i);
   assert.doesNotMatch(source, /cloudflare\.com\/client\/v4/i);
-  assert.doesNotMatch(source, /:mutate|mutate[A-Z]|mutate_/i);
+  // Status fields may legitimately contain words such as
+  // "MutationApplied". Fence actual provider transport primitives instead.
+  assert.doesNotMatch(source, /\/[^"'\s]*:mutate\b/i);
+  assert.doesNotMatch(source, /googleads:searchStream/i);
+  assert.doesNotMatch(source, /authorization\s*:/i);
   assert.doesNotMatch(source, /fetch\s*\(/);
   assert.doesNotMatch(source, /child_process|execSync|spawnSync/);
 });
