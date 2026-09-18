@@ -181,14 +181,23 @@ test("diagnostic line_contact_attempt emits once for one link intent", () => {
     trackLineContactAttempt({
       contact_method: "line_link_open",
       event_source: "service_page",
+      service_type: "ac_repair",
+      prepare_status: "success",
+      handoff_type: "oa_message",
     });
     trackLineContactAttempt({
       contact_method: "line_link_open",
       event_source: "service_page",
+      service_type: "ac_repair",
+      prepare_status: "success",
+      handoff_type: "oa_message",
     });
 
     assert.equal(dataLayer.length, 1);
     assert.equal(dataLayer[0].event, "line_contact_attempt");
+    assert.equal(dataLayer[0].service_type, "ac_repair");
+    assert.equal(dataLayer[0].prepare_status, "success");
+    assert.equal(dataLayer[0].handoff_type, "oa_message");
     assert.equal("lead_id" in dataLayer[0], false);
     assert.equal("phone" in dataLayer[0], false);
     assert.equal("message" in dataLayer[0], false);
@@ -209,6 +218,11 @@ test("source boundary removes the browser-generated LINE lead ID", () => {
   assert.match(contactForm, /【詢價編號】/);
   assert.match(contactForm, /window\.location\.assign/);
   assert.match(contactForm, /DESKTOP_QR_HANDOFF_READY_LINE1B2B/);
+  assert.match(contactForm, /prepare_status:\s*prepared \? "success" : "fail"/);
+  assert.match(contactForm, /handoff_type:\s*handoffType/);
+  assert.match(ctaButton, /prepare_status:\s*prepared\?\.lead_token \? "success" : "fail"/);
+  assert.match(ctaButton, /handoff_type:\s*message \? "oa_message" : "profile_fallback"/);
+  assert.match(ctaButton, /handoff_type:\s*handoff \? "desktop_qr" : "profile_fallback"/);
   assert.match(ctaButton, /e\.preventDefault\(\)/);
   assert.match(ctaButton, /window\.location\.assign/);
   assert.equal(ctaButton.includes("window.open"), false);
