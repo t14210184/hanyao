@@ -4,6 +4,10 @@ import {
   WP01_GTM_EVENT_PARAMETERS,
   WP01_GTM_VARIABLES,
   WP01_GTM_TARGET_TAG_NAME,
+  WP01_GTM_APPLY_GATE,
+  WP01_GTM_PUBLISH_GATE,
+  WP01_GTM_WORKSPACE_ABSENT,
+  assertWp01GtmProviderGate,
   inspectWp01Workspace,
   assertOnlyWp01WorkspaceChanges,
   assertPublishScope,
@@ -237,4 +241,96 @@ test("WP01 GTM request helpers preserve runtime semantics but strip read-only id
     stripped.parameter.find((item) => item.key === "measurementIdOverride")?.value,
     "G-L87XJM1TKZ"
   );
+});
+
+
+test("WP01 apply gate binds exact live and workspace prestate", () => {
+  assert.equal(
+    assertWp01GtmProviderGate({
+      mode: "apply",
+      gate: WP01_GTM_APPLY_GATE,
+      expectedLiveFingerprint: "live-fp-1",
+      actualLiveFingerprint: "live-fp-1",
+      expectedWorkspaceFingerprint: WP01_GTM_WORKSPACE_ABSENT,
+      actualWorkspaceFingerprint: null,
+    }),
+    true
+  );
+
+  assert.throws(
+    () =>
+      assertWp01GtmProviderGate({
+        mode: "apply",
+        gate: WP01_GTM_APPLY_GATE,
+        expectedLiveFingerprint: "live-fp-1",
+        actualLiveFingerprint: "live-fp-2",
+        expectedWorkspaceFingerprint: WP01_GTM_WORKSPACE_ABSENT,
+        actualWorkspaceFingerprint: null,
+      }),
+    /WP01_GTM_LIVE_PRESTATE_DRIFT/
+  );
+
+  assert.throws(
+    () =>
+      assertWp01GtmProviderGate({
+        mode: "apply",
+        gate: WP01_GTM_APPLY_GATE,
+        expectedLiveFingerprint: "live-fp-1",
+        actualLiveFingerprint: "live-fp-1",
+        expectedWorkspaceFingerprint: WP01_GTM_WORKSPACE_ABSENT,
+        actualWorkspaceFingerprint: "workspace-fp",
+      }),
+    /WP01_GTM_WORKSPACE_PRESTATE_DRIFT/
+  );
+});
+
+test("WP01 publish gate requires exact existing workspace fingerprint", () => {
+  assert.equal(
+    assertWp01GtmProviderGate({
+      mode: "publish",
+      gate: WP01_GTM_PUBLISH_GATE,
+      expectedLiveFingerprint: "live-fp-1",
+      actualLiveFingerprint: "live-fp-1",
+      expectedWorkspaceFingerprint: "workspace-fp-1",
+      actualWorkspaceFingerprint: "workspace-fp-1",
+    }),
+    true
+  );
+
+  assert.throws(
+    () =>
+      assertWp01GtmProviderGate({
+        mode: "publish",
+        gate: WP01_GTM_PUBLISH_GATE,
+        expectedLiveFingerprint: "live-fp-1",
+        actualLiveFingerprint: "live-fp-1",
+        expectedWorkspaceFingerprint: WP01_GTM_WORKSPACE_ABSENT,
+        actualWorkspaceFingerprint: null,
+      }),
+    /WP01_GTM_PUBLISH_WORKSPACE_REQUIRED/
+  );
+
+  assert.throws(
+    () =>
+      assertWp01GtmProviderGate({
+        mode: "publish",
+        gate: "WRONG_GATE",
+        expectedLiveFingerprint: "live-fp-1",
+        actualLiveFingerprint: "live-fp-1",
+        expectedWorkspaceFingerprint: "workspace-fp-1",
+        actualWorkspaceFingerprint: "workspace-fp-1",
+      }),
+    /WP01_GTM_PRODUCTION_GATE_INVALID/
+  );
+});
+
+test("WP01 bridge requires fresh prestate environment for shared mutations", async () => {
+  const source = await import("node:fs/promises").then(({ readFile }) =>
+    readFile("scripts/gtm-wp01-funnel-bridge.mjs", "utf8")
+  );
+  assert.match(source, /GTM_WP01_EXPECTED_LIVE_FINGERPRINT/);
+  assert.match(source, /GTM_WP01_EXPECTED_WORKSPACE_FINGERPRINT/);
+  assert.match(source, /GTM_WP01_PRODUCTION_GATE/);
+  assert.match(source, /assertWp01GtmProviderGate/);
+  assert.match(source, /requiredMutationGates/);
 });
