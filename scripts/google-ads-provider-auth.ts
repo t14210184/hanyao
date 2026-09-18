@@ -6,6 +6,7 @@ export type GoogleAdsProviderAuthSource =
   | "SERVICE_ACCOUNT_JSON";
 
 export type GoogleAdsAuthEnvironment = {
+  [key: string]: string | undefined;
   GOOGLE_ADS_ACCESS_TOKEN?: string;
   GOOGLE_DATA_MANAGER_SERVICE_ACCOUNT_JSON?: string;
 };
