@@ -247,10 +247,7 @@ export const assertPublishScope = ({ status, variables, tags }) => {
 export const buildDataLayerVariableBody = ({ name, key }) => ({
   name,
   type: "v",
-  parameter: [
-    { type: "template", key: "name", value: key },
-    { type: "template", key: "defaultValue", value: "" },
-  ],
+  parameter: [{ type: "template", key: "name", value: key }],
 });
 
 export const stripReadOnlyTagFields = (tag) => {
