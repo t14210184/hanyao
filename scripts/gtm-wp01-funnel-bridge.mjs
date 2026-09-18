@@ -136,6 +136,8 @@ const apply = async () => {
   let state = await readWorkspace(workspace);
   assertOnlyWp01WorkspaceChanges(state.status);
   let plan = inspectWp01Workspace(state);
+  const variablesCreated = plan.variablesToCreate.map((item) => item.name);
+  let tagUpdated = false;
 
   for (const spec of plan.variablesToCreate) {
     await request(workspace.path + "/variables", {
@@ -149,6 +151,7 @@ const apply = async () => {
   plan = inspectWp01Workspace(state);
 
   if (plan.tagNeedsUpdate) {
+    tagUpdated = true;
     await request(plan.targetTag.path, {
       method: "PUT",
       query: { fingerprint: plan.targetTag.fingerprint },
@@ -166,10 +169,11 @@ const apply = async () => {
   console.log(
     JSON.stringify({
       result: "WP01_GTM_APPLY_CONFIRMED",
-      mutationApplied: true,
+      mutationApplied: created || variablesCreated.length > 0 || tagUpdated,
       workspaceCreated: created,
       workspacePath: workspace.path,
-      variablesCreated: plan.mutationScope.createVariables.length,
+      variablesCreated,
+      targetTagUpdated: tagUpdated,
       targetTag: "GA4 Event - line_contact_attempt",
       canonicalAdsSenderTouched: 0,
       googleAdsTagsTouched: 0,
