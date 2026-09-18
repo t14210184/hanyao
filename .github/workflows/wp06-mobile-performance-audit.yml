@@ -28,7 +28,7 @@ jobs:
     timeout-minutes: 30
     env:
       WP06_RUNS: "3"
-      WP06_BASE_URL: "https://83adfe8e.hanyao.pages.dev"
+      WP06_BASE_URL: "https://31bedf26.hanyao.pages.dev"
     steps:
       - name: Checkout exact candidate
         uses: actions/checkout@v4
