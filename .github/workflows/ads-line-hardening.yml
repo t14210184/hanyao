@@ -102,6 +102,8 @@ jobs:
         run: node scripts/ads-cro-repair-static.test.mjs
       - name: Verify repair hero CRO invariants
         run: node scripts/ads-cro-repair-hero-static.test.mjs
+      - name: Verify Google Ads short-lived provider auth
+        run: npm run test:google-ads:auth
       - name: Verify Ads search-hygiene classification boundaries
         run: node --experimental-strip-types --test scripts/ads-search-hygiene-rules.test.ts
       - name: Verify WP02 exact-negative provider contract
