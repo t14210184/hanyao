@@ -1,10 +1,18 @@
 # HANYAO WP05 LINE Message Asset UI Execution Contract — 2026-09-18
 
-Status: `UI_EXECUTION_CONTRACT_CANDIDATE / PROVIDER_UI_AUTH_PENDING / MESSAGE_ASSET_NOT_APPLIED`
+Status: `UI_EXECUTION_CONTRACT_PRODUCTION_SOURCE_PASS / PUBLIC_API_RECHECKED_20260918 / PROVIDER_UI_AUTH_PENDING / MESSAGE_ASSET_NOT_APPLIED`
 
 Scope: `HANYAO_ADS_WEBSITE_OPTIMIZATION_CONSTRUCTION_SPEC_v1.0_20260917` WP05 only.
 
 ## 1. Why this contract exists
+
+Fresh official recheck on 2026-09-18 confirms that the public Google Ads API
+provider enum still does not include LINE. The v25 public provider surface is
+`WHATSAPP / FACEBOOK_MESSENGER / ZALO`; the current v25.1 release does not add
+a LINE provider. Google also lists Crescendo Lab as an official message-asset
+partner serving Taiwan. That partner route may assist implementation, but it
+does not replace account-specific authenticated UI evidence or the same-source
+post-save readback required by this contract.
 
 Google Ads API v25 does not expose LINE in the public Business Message provider
 enum, while the HANYAO account UI has historically exposed `Line` and
@@ -251,7 +259,9 @@ Lane B Message Asset reporting remains separate from Lane A
 ```text
 WP05_CANDIDATE = PRODUCTION_SOURCE_PASS
 WP05_API_READONLY_PREFLIGHT = PRODUCTION_SOURCE_PASS
-WP05_UI_EXECUTION_CONTRACT = CANDIDATE
+WP05_UI_EXECUTION_CONTRACT = PRODUCTION_SOURCE_PASS
+WP05_PUBLIC_API_PROVIDER_RECHECK = PASS_20260918
+WP05_TAIWAN_OFFICIAL_PARTNER_ROUTE = AVAILABLE_NOT_ENGAGED
 WP05_AUTHENTICATED_UI_PRESTATE = NOT_AVAILABLE_IN_CURRENT_CHAT
 WP05_MESSAGE_ASSET_MUTATION = NOT_APPLIED
 WP05_MESSAGE_ASSET_PILOT_ACTIVE = NOT_YET
