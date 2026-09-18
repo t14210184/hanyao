@@ -68,7 +68,7 @@ export const ADS_LANDING_PROMISE_MATRIX: readonly AdsLandingPromiseLane[] = [
       "空間照片",
       "LINE 傳照片諮詢",
     ],
-    requiredPageTokens: ["現場確認後報價", "日後維修孔與保養動線"],
+    requiredPageTokens: ["說明安裝方式與報價", "日後維修孔與保養動線"],
     requiredRsaTokens: ["傳現場照片先判斷", "配管排水逐項說明"],
   },
   {
