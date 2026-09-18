@@ -2,6 +2,7 @@
  * Safe client-side GTM dataLayer tracking helper.
  * Only runs in the browser; no-op on the server (SSR / Static Export).
  */
+import { getSafeAttributionAnalyticsDimensions } from "./attribution.ts";
 
 // 30 秒防重複觸發機制
 const DEDUPE_WINDOW_MS = 30000; // 30 seconds
@@ -68,6 +69,8 @@ export const pushSafeDataLayerEvent = (
       service_type: payload.service_type,
       prepare_status: payload.prepare_status,
       handoff_type: payload.handoff_type,
+      landing_path: payload.landing_path,
+      campaign_id: payload.campaign_id,
       timestamp: Date.now(),
     };
 
@@ -120,6 +123,8 @@ export const trackLineContactAttempt = (options: LineContactOptions) => {
   // already fence in-flight double taps before /api/line/prepare. Once a new
   // prepare attempt is accepted, it must produce its own diagnostic event so
   // WP01 ratios do not undercount legitimate retries/returns.
+  const attributionDimensions = getSafeAttributionAnalyticsDimensions();
+
   pushSafeDataLayerEvent("line_contact_attempt", {
     contact_channel: "line",
     contact_method: options.contact_method,
@@ -132,6 +137,8 @@ export const trackLineContactAttempt = (options: LineContactOptions) => {
         : undefined,
     prepare_status: options.prepare_status,
     handoff_type: options.handoff_type,
+    landing_path: attributionDimensions.landing_path,
+    campaign_id: attributionDimensions.campaign_id,
   });
 };
 
