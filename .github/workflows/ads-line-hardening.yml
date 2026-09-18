@@ -15,6 +15,7 @@ on:
       - "scripts/ads-rsa-*"
       - "scripts/ads-landing-*"
       - "scripts/ads-line-message-*"
+      - "scripts/ads-optimization-*"
       - "scripts/google-ads-read-*"
       - "scripts/gtm-wp01-*"
       - "scripts/line1a-*"
@@ -52,6 +53,7 @@ on:
       - "scripts/ads-rsa-*"
       - "scripts/ads-landing-*"
       - "scripts/ads-line-message-*"
+      - "scripts/ads-optimization-*"
       - "scripts/google-ads-read-*"
       - "scripts/gtm-wp01-*"
       - "scripts/line1a-*"
@@ -112,6 +114,8 @@ jobs:
         run: node --experimental-strip-types --test scripts/ads-line-message-pilot.test.ts
       - name: Verify WP05 LINE UI evidence contract
         run: npm run test:wp05:ui
+      - name: Verify WP10 current execution gate ledger
+        run: npm run test:wp10:ledger
       - name: Verify Google Ads read auth and audit log privacy
         run: node scripts/google-ads-read-contract-static.test.mjs
       - name: Verify WP01 GTM funnel bridge contract
