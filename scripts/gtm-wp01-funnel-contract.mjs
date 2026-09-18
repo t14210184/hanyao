@@ -207,20 +207,33 @@ export const inspectWp01Workspace = ({ workspace, status, variables, tags }) => 
   };
 };
 
+export const assertOnlyWp01WorkspaceChanges = (status) => {
+  if ((status?.mergeConflict ?? []).length > 0) {
+    throw new Error("WP01_GTM_WORKSPACE_HAS_MERGE_CONFLICT");
+  }
+  for (const change of status?.workspaceChange ?? []) {
+    const tagName = change?.tag?.name;
+    const variableName = change?.variable?.name;
+    const isTargetTag = tagName === WP01_GTM_TARGET_TAG_NAME;
+    const isTargetVariable = WP01_GTM_VARIABLES.some(
+      (item) => item.name === variableName
+    );
+    if (!isTargetTag && !isTargetVariable) {
+      throw new Error(
+        "WP01_GTM_UNRELATED_WORKSPACE_CHANGE_" +
+          String(tagName ?? variableName ?? "UNKNOWN")
+      );
+    }
+  }
+  return true;
+};
+
 export const assertPublishScope = ({ status, variables, tags }) => {
   if ((status?.mergeConflict ?? []).length > 0) {
     throw new Error("WP01_GTM_PUBLISH_BLOCKED_MERGE_CONFLICT");
   }
   const changes = status?.workspaceChange ?? [];
-  for (const change of changes) {
-    const entity = change?.tag ?? change?.variable ?? change?.trigger ?? change?.folder;
-    const name = entity?.name;
-    const isTargetTag = change?.tag?.name === WP01_GTM_TARGET_TAG_NAME;
-    const isTargetVariable = WP01_GTM_VARIABLES.some((item) => item.name === change?.variable?.name);
-    if (!isTargetTag && !isTargetVariable) {
-      throw new Error("WP01_GTM_PUBLISH_BLOCKED_UNRELATED_CHANGE_" + String(name ?? "UNKNOWN"));
-    }
-  }
+  assertOnlyWp01WorkspaceChanges(status);
   const plan = inspectWp01Workspace({
     workspace: { path: "publish-check", fingerprint: "publish-check" },
     status: { workspaceChange: changes, mergeConflict: [] },
