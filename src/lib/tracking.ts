@@ -65,6 +65,9 @@ export const pushSafeDataLayerEvent = (
       contact_method: payload.contact_method,
       page_path: payload.page_path || window.location.pathname,
       event_source: payload.event_source || "unknown",
+      service_type: payload.service_type,
+      prepare_status: payload.prepare_status,
+      handoff_type: payload.handoff_type,
       timestamp: Date.now(),
     };
 
@@ -93,6 +96,9 @@ export interface LineContactOptions {
     | "contact_form"
     | "unknown";
   page_path?: string;
+  service_type?: string;
+  prepare_status?: "success" | "fail";
+  handoff_type?: "oa_message" | "desktop_qr" | "profile_fallback";
 }
 
 export const trackLineContactAttempt = (options: LineContactOptions) => {
@@ -110,21 +116,22 @@ export const trackLineContactAttempt = (options: LineContactOptions) => {
     ? options.event_source
     : "unknown";
 
-  // Use separate dedupe keys for link opens and form submissions to prevent cross-blocking
-  const dedupeKey = options.contact_method === "form_copy_open_line"
-    ? "hy_tracking_last_form_copy_open_line"
-    : "hy_tracking_last_line_link_open";
-
-  // Dedupe logic
-  if (!checkAndSetDedupe(dedupeKey, `line_contact_attempt (${options.contact_method})`)) {
-    return;
-  }
-
+  // Do not time-window dedupe LINE intents here. CTAButton and ContactForm
+  // already fence in-flight double taps before /api/line/prepare. Once a new
+  // prepare attempt is accepted, it must produce its own diagnostic event so
+  // WP01 ratios do not undercount legitimate retries/returns.
   pushSafeDataLayerEvent("line_contact_attempt", {
     contact_channel: "line",
     contact_method: options.contact_method,
     page_path: options.page_path,
     event_source: event_source,
+    service_type:
+      typeof options.service_type === "string" &&
+      /^[a-z0-9_]{1,64}$/.test(options.service_type)
+        ? options.service_type
+        : undefined,
+    prepare_status: options.prepare_status,
+    handoff_type: options.handoff_type,
   });
 };
 
@@ -214,6 +221,8 @@ export const trackEvent = (
     trackLineContactAttempt({
       contact_method: "line_link_open",
       event_source: resolveSource(pos),
+      service_type:
+        typeof params.service_type === "string" ? params.service_type : undefined,
     });
   } 
   // 當舊程式碼調用 phone_click 時，自動轉發至 trackPhoneClickAttempt

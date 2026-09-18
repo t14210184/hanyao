@@ -163,7 +163,7 @@ test("malformed or unavailable prepare responses fail open without a fake token"
   assert.equal(timedOut, null);
 });
 
-test("diagnostic line_contact_attempt emits once for one link intent", () => {
+test("diagnostic line_contact_attempt records each accepted LINE intent without leaking PII", () => {
   const previousWindow = (globalThis as unknown as { window?: unknown }).window;
   const values = new Map<string, string>();
   const dataLayer: Array<Record<string, unknown>> = [];
@@ -181,17 +181,28 @@ test("diagnostic line_contact_attempt emits once for one link intent", () => {
     trackLineContactAttempt({
       contact_method: "line_link_open",
       event_source: "service_page",
+      service_type: "ac_repair",
+      prepare_status: "success",
+      handoff_type: "oa_message",
     });
     trackLineContactAttempt({
       contact_method: "line_link_open",
       event_source: "service_page",
+      service_type: "ac_repair",
+      prepare_status: "success",
+      handoff_type: "oa_message",
     });
 
-    assert.equal(dataLayer.length, 1);
-    assert.equal(dataLayer[0].event, "line_contact_attempt");
-    assert.equal("lead_id" in dataLayer[0], false);
-    assert.equal("phone" in dataLayer[0], false);
-    assert.equal("message" in dataLayer[0], false);
+    assert.equal(dataLayer.length, 2);
+    for (const event of dataLayer) {
+      assert.equal(event.event, "line_contact_attempt");
+      assert.equal(event.service_type, "ac_repair");
+      assert.equal(event.prepare_status, "success");
+      assert.equal(event.handoff_type, "oa_message");
+      assert.equal("lead_id" in event, false);
+      assert.equal("phone" in event, false);
+      assert.equal("message" in event, false);
+    }
   } finally {
     if (previousWindow === undefined) {
       delete (globalThis as unknown as { window?: unknown }).window;
@@ -209,6 +220,11 @@ test("source boundary removes the browser-generated LINE lead ID", () => {
   assert.match(contactForm, /【詢價編號】/);
   assert.match(contactForm, /window\.location\.assign/);
   assert.match(contactForm, /DESKTOP_QR_HANDOFF_READY_LINE1B2B/);
+  assert.match(contactForm, /prepare_status:\s*prepared \? "success" : "fail"/);
+  assert.match(contactForm, /handoff_type:\s*handoffType/);
+  assert.match(ctaButton, /prepare_status:\s*prepared\?\.lead_token \? "success" : "fail"/);
+  assert.match(ctaButton, /handoff_type:\s*message \? "oa_message" : "profile_fallback"/);
+  assert.match(ctaButton, /handoff_type:\s*handoff \? "desktop_qr" : "profile_fallback"/);
   assert.match(ctaButton, /e\.preventDefault\(\)/);
   assert.match(ctaButton, /window\.location\.assign/);
   assert.equal(ctaButton.includes("window.open"), false);

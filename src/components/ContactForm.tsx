@@ -220,10 +220,23 @@ export default function ContactForm({
       setCopyFallbackText(lineText);
     }
 
-    // Emit only safe diagnostic data; form PII never enters this payload.
+    const handoffType = isMobile
+      ? prepared
+        ? "oa_message"
+        : "profile_fallback"
+      : desktopHandoff
+        ? "desktop_qr"
+        : "profile_fallback";
+
+    // Emit only safe diagnostic data; form PII and the HY token never enter
+    // analytics. These dimensions let WP01 separate prepare failures from
+    // post-prepare LINE handoff drop-off.
     trackLineContactAttempt({
       contact_method: "form_copy_open_line",
       event_source: "contact_form",
+      service_type: formData.service,
+      prepare_status: prepared ? "success" : "fail",
+      handoff_type: handoffType,
     });
 
     setLineLeadToken(serverLeadToken);

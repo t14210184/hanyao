@@ -105,6 +105,12 @@ export default function CTAButton({
       trackLineContactAttempt({
         contact_method: "line_link_open",
         event_source: eventSource,
+        service_type:
+          typeof trackParams?.service_type === "string"
+            ? trackParams.service_type
+            : undefined,
+        prepare_status: prepared?.lead_token ? "success" : "fail",
+        handoff_type: message ? "oa_message" : "profile_fallback",
       });
 
       const destination = message
@@ -135,6 +141,12 @@ export default function CTAButton({
       trackLineContactAttempt({
         contact_method: "line_link_open",
         event_source: eventSource,
+        service_type:
+          typeof trackParams?.service_type === "string"
+            ? trackParams.service_type
+            : undefined,
+        prepare_status: prepared?.lead_token ? "success" : "fail",
+        handoff_type: handoff ? "desktop_qr" : "profile_fallback",
       });
 
       if (handoff) {
@@ -156,6 +168,10 @@ export default function CTAButton({
         trackLineContactAttempt({
           contact_method: "line_link_open",
           event_source: source,
+          service_type:
+            typeof trackParams?.service_type === "string"
+              ? trackParams.service_type
+              : undefined,
         });
       } else if (trackEventName === "phone_click") {
         if (isTel) {
