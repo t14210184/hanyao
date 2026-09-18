@@ -58,7 +58,7 @@ const rowsFrom = (payload: unknown): RecordLike[] => {
 
 const skipped = {
   schemaVersion: 1,
-  result: "SKIPPED_MISSING_GOOGLE_ADS_CLOUD_PROJECT_CREDENTIAL",
+  result: "SKIPPED_MISSING_GOOGLE_ADS_PROVIDER_AUTH",
   customerId: CUSTOMER_ID,
   apiVersion: API_VERSION,
   classificationVersion: CLASSIFICATION_VERSION,
