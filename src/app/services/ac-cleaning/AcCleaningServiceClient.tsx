@@ -186,7 +186,7 @@ export default function AcCleaningServiceClient() {
             高雄屏東冷氣清洗保養<br className="sm:hidden" />｜分離式、窗型、吊隱式到府清潔
           </h1>
           <p className="text-sm sm:text-base text-slate-400 mt-4 leading-relaxed max-w-3xl mx-auto">
-            冷氣有霉味、風量變小、滴水或越吹越不冷？焓耀空調工程提供高雄、屏東冷氣清洗保養，依現場機型與髒污狀況評估清潔方式，協助改善空氣品質與冷房效率。
+            冷氣有霉味、風量變小、滴水或越吹越不冷？可先提供機型銘牌照片、清洗台數與所在地區，依機型與髒污狀況評估清潔方式與排程，再安排高雄、屏東到府清洗保養。
           </p>
 
           {/* Hero CTA Side-by-Side */}
@@ -201,7 +201,7 @@ export default function AcCleaningServiceClient() {
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
               </svg>
-              <span>立即 LINE 諮詢</span>
+              <span>傳機型照片／台數先確認</span>
             </CTAButton>
 
             <CTAButton
@@ -216,6 +216,9 @@ export default function AcCleaningServiceClient() {
               <span>電話詢問清洗保養</span>
             </CTAButton>
           </div>
+          <p className="mt-3 text-xs text-slate-500">
+            建議先準備：機型銘牌照片・清洗台數・所在地區；送出後再依現場條件確認清洗方式與排程。
+          </p>
 
           {/* Trust Points */}
           <div className="mt-10 grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto pt-8 border-t border-slate-900">
