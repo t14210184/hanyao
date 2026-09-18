@@ -70,6 +70,7 @@ on:
       - "package.json"
       - "package-lock.json"
       - ".github/workflows/ads-line-hardening.yml"
+      - ".github/workflows/wp02-cloudflare-provider-surface.yml"
       - ".github/workflows/wp06-mobile-performance-audit.yml"
 
 permissions:
