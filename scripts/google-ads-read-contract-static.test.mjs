@@ -23,6 +23,39 @@ for (const name of adsReadScripts) {
   );
 }
 
+const auth = await read("google-ads-provider-auth.ts");
+assert.match(auth, /GOOGLE_ADS_ACCESS_TOKEN/);
+assert.match(auth, /GOOGLE_DATA_MANAGER_SERVICE_ACCOUNT_JSON/);
+assert.match(auth, /resolveGoogleAdsAccessToken/);
+assert.doesNotMatch(
+  auth,
+  /console\.(?:log|error|warn)\s*\(/,
+  "provider auth adapter must never print access-token or service-account material"
+);
+assert.doesNotMatch(
+  auth,
+  /child_process|execSync|spawnSync|gcloud/i,
+  "provider auth adapter must consume an injected token, not invoke host CLIs"
+);
+
+for (const name of [
+  "ads-search-hygiene-audit.ts",
+  "ads-search-hygiene-mutate.ts",
+  "ads-rsa-provider.ts",
+]) {
+  const source = await read(name);
+  assert.match(
+    source,
+    /resolveGoogleAdsAccessToken/,
+    `${name} must use the shared provider auth adapter`
+  );
+  assert.doesNotMatch(
+    source,
+    /exchangeServiceAccountTokenForScopes/,
+    `${name} must not bypass the shared provider auth adapter`
+  );
+}
+
 const hygiene = await read("ads-search-hygiene-audit.ts");
 assert.match(
   hygiene,
