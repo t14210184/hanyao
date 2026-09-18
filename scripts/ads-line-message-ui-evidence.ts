@@ -13,16 +13,35 @@ const option = (name: string): string | undefined => {
   return index >= 0 ? args[index + 1] : undefined;
 };
 
-const prePath = option("--pre");
+const exitWith = (
+  payload: string | Record<string, unknown>,
+  code: number
+): never => {
+  console.error(
+    typeof payload === "string" ? payload : JSON.stringify(payload)
+  );
+  process.exit(code);
+};
+
+const requirePath = (
+  value: string | undefined,
+  errorCode: string,
+  exitCode: number
+): string => {
+  if (!value) exitWith(errorCode, exitCode);
+  return value;
+};
+
+const prePath = requirePath(
+  option("--pre"),
+  "WP05_UI_EVIDENCE_FAIL:PRESTATE_PATH_REQUIRED",
+  2
+);
 const postPath = option("--post");
 const enforceDispatch = args.includes("--assert-dispatch");
-const expectedPrestateHash = process.env.ADS_MESSAGE_UI_EXPECTED_PRESTATE_HASH?.trim();
+const expectedPrestateHash =
+  process.env.ADS_MESSAGE_UI_EXPECTED_PRESTATE_HASH?.trim();
 const dispatchGate = process.env.ADS_MESSAGE_UI_PRODUCTION_GATE?.trim();
-
-if (!prePath) {
-  console.error("WP05_UI_EVIDENCE_FAIL:PRESTATE_PATH_REQUIRED");
-  process.exit(2);
-}
 
 const parseJsonFile = async <T>(path: string): Promise<T> => {
   let text: string;
@@ -42,15 +61,15 @@ try {
   const before = await parseJsonFile<Wp05UiPrestate>(prePath);
   const pre = evaluateWp05UiPrestate(before);
 
-  if (pre.status !== "WP05_UI_PRESTATE_READY") {
-    console.error(
-      JSON.stringify({
+  if (pre.status === "WP05_UI_PRESTATE_BLOCKED") {
+    exitWith(
+      {
         result: pre.status,
         blockers: pre.blockers,
         mutationApplied: false,
-      })
+      },
+      3
     );
-    process.exit(3);
   }
 
   if (enforceDispatch) {
@@ -78,14 +97,14 @@ try {
   const post = evaluateWp05UiPoststate(before, after);
 
   if (post.status === "WP05_MESSAGE_ASSET_BLOCKED") {
-    console.error(
-      JSON.stringify({
+    exitWith(
+      {
         result: post.status,
         blockers: post.blockers,
         mutationApplied: false,
-      })
+      },
+      4
     );
-    process.exit(4);
   }
 
   console.log(
@@ -107,12 +126,12 @@ try {
     post.status === "WP05_MESSAGE_ASSET_ACTIVE_PASS" ? 0 : 5
   );
 } catch (error) {
-  console.error(
+  exitWith(
     "WP05_UI_EVIDENCE_FAIL:" +
       (error instanceof Error ? error.message : "UNKNOWN").replace(
         /[^A-Z0-9_:\-]/gi,
         "_"
-      )
+      ),
+    1
   );
-  process.exit(1);
 }
