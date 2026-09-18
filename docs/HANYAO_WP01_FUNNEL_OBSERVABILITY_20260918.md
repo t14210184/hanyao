@@ -20,6 +20,8 @@ The existing `line_contact_attempt` event remains the only LINE intent analytics
 
 GA4 native device dimensions remain the source for device category; no custom fingerprinting is added.
 
+Each accepted LINE intent emits one diagnostic event. Fast double taps remain blocked before prepare by the existing CTA/Form in-flight fences; there is no additional 30-second LINE analytics dedupe because that would make `line_contact_attempts / lead_tokens_issued` inconsistent after a legitimate return/retry. Phone-click dedupe remains unchanged.
+
 Forbidden analytics fields remain:
 
 - HY lead token
