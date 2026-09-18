@@ -116,16 +116,10 @@ export const trackLineContactAttempt = (options: LineContactOptions) => {
     ? options.event_source
     : "unknown";
 
-  // Use separate dedupe keys for link opens and form submissions to prevent cross-blocking
-  const dedupeKey = options.contact_method === "form_copy_open_line"
-    ? "hy_tracking_last_form_copy_open_line"
-    : "hy_tracking_last_line_link_open";
-
-  // Dedupe logic
-  if (!checkAndSetDedupe(dedupeKey, `line_contact_attempt (${options.contact_method})`)) {
-    return;
-  }
-
+  // Do not time-window dedupe LINE intents here. CTAButton and ContactForm
+  // already fence in-flight double taps before /api/line/prepare. Once a new
+  // prepare attempt is accepted, it must produce its own diagnostic event so
+  // WP01 ratios do not undercount legitimate retries/returns.
   pushSafeDataLayerEvent("line_contact_attempt", {
     contact_channel: "line",
     contact_method: options.contact_method,
