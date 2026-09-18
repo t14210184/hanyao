@@ -8,7 +8,7 @@ import {
   getWp10BlockingIds,
 } from "./ads-optimization-gate-ledger.ts";
 
-test("WP10 v2 ledger represents WP00 through WP10 and binds the current main", () => {
+test("WP10 v3 ledger represents WP00 through WP10 and binds the current main", () => {
   assert.equal(
     ADS_OPTIMIZATION_GATE_LEDGER_VERSION,
     "hanyao-ads-optimization-gate-ledger-v3"
