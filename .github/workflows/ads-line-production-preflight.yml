@@ -84,6 +84,23 @@ jobs:
         run: npm run typecheck
       - name: Verify Google Ads short-lived provider auth
         run: npm run test:google-ads:auth
+      - name: Verify governed Google Ads host provider runner
+        run: npm run test:google-ads:host-runner
+      - name: Parse Google Ads host provider PowerShell
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $errors = $null
+          [Management.Automation.Language.Parser]::ParseFile(
+            (Resolve-Path 'scripts/google-ads-provider-host-runner.ps1'),
+            [ref]$tokens,
+            [ref]$errors
+          ) | Out-Null
+          if ($errors.Count -ne 0) {
+            $errors | ForEach-Object { Write-Error $_.Message }
+            throw 'HANYAO_GOOGLE_ADS_HOST_RUNNER_PARSE_FAILED'
+          }
+          Write-Host 'HANYAO_GOOGLE_ADS_HOST_RUNNER_PARSE=PASS'
       - name: Verify canonical LINE webhook
         shell: bash
         run: |
