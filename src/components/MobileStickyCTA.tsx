@@ -8,15 +8,44 @@ import { trackEvent } from "@/lib/tracking";
 
 export default function MobileStickyCTA() {
   const pathname = usePathname();
-  const isCommercial = pathname?.includes("/lp/commercial-ac/");
-  const isRepair = pathname?.includes("/services/ac-repair") || pathname?.includes("/lp/ac-repair");
+  const isCommercial =
+    pathname?.includes("/services/commercial-ac") || pathname?.includes("/lp/commercial-ac");
+  const isRepair =
+    pathname?.includes("/services/ac-repair") || pathname?.includes("/lp/ac-repair");
+  const isCleaning = pathname?.includes("/services/ac-cleaning");
+  const isInstallation = pathname?.includes("/services/ac-installation");
+  const isPaidServiceLanding = isCommercial || isRepair || isCleaning || isInstallation;
   const [hasContactSection, setHasContactSection] = useState(false);
 
-  // Dynamic values based on current page. Repair traffic is intentionally
-  // optimized for the lowest-friction LINE handoff while preserving phone/form fallbacks.
-  const serviceType = isCommercial ? "commercial_ac" : isRepair ? "ac_repair" : "general";
-  const phoneText = isCommercial ? "商用電話" : isRepair ? "電話詢問" : "電話聯絡";
-  const lineText = isCommercial ? "LINE傳圖" : isRepair ? "傳照片／症狀" : "LINE諮詢";
+  // Keep the mobile sticky bar aligned with each Search landing page's primary
+  // promise while preserving phone/form fallbacks and the existing LINE handoff.
+  const serviceType = isCommercial
+    ? "commercial_ac"
+    : isRepair
+      ? "ac_repair"
+      : isCleaning
+        ? "ac_cleaning"
+        : isInstallation
+          ? "ac_installation"
+          : "general";
+  const phoneText = isCommercial
+    ? "商用電話"
+    : isRepair
+      ? "電話詢問"
+      : isCleaning
+        ? "清洗電話"
+        : isInstallation
+          ? "安裝電話"
+          : "電話聯絡";
+  const lineText = isCommercial
+    ? "傳平面圖"
+    : isRepair
+      ? "傳照片／症狀"
+      : isCleaning
+        ? "傳機型／台數"
+        : isInstallation
+          ? "傳現場照片"
+          : "LINE諮詢";
 
   useEffect(() => {
     const contactSectionExists = !!document.getElementById("contact-section");
@@ -29,7 +58,11 @@ export default function MobileStickyCTA() {
       ? "預約場勘"
       : isRepair
         ? "完整估價"
-        : "預約估價"
+        : isCleaning
+          ? "完整預約"
+          : isInstallation
+            ? "安裝估價"
+            : "預約估價"
     : "聯絡表單";
 
   const handleAppointmentClick = (e: React.MouseEvent) => {
@@ -69,7 +102,7 @@ export default function MobileStickyCTA() {
       external
       trackEventName="line_click"
       trackParams={{ service_type: serviceType, cta_position: "mobile_sticky_bar" }}
-      className={`${isRepair ? "flex-[1.35]" : "flex-1"} flex flex-col items-center justify-center bg-green-600 hover:bg-green-500 text-white py-3 rounded-xl font-extrabold text-sm sm:text-lg min-h-[64px] gap-1 shadow-md shadow-green-950/20 transition-colors`}
+      className={`${isPaidServiceLanding ? "flex-[1.35]" : "flex-1"} flex flex-col items-center justify-center bg-green-600 hover:bg-green-500 text-white py-3 rounded-xl font-extrabold text-sm sm:text-lg min-h-[64px] gap-1 shadow-md shadow-green-950/20 transition-colors`}
     >
       <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
@@ -93,8 +126,8 @@ export default function MobileStickyCTA() {
 
   return (
     <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-900/95 backdrop-blur-md border-t border-slate-850 shadow-2xl py-3 px-4 flex items-center justify-between gap-2 safe-bottom">
-      {isRepair ? lineButton : phoneButton}
-      {isRepair ? phoneButton : lineButton}
+      {isPaidServiceLanding ? lineButton : phoneButton}
+      {isPaidServiceLanding ? phoneButton : lineButton}
       {appointmentButton}
     </div>
   );
