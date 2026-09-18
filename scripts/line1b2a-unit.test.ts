@@ -163,7 +163,7 @@ test("malformed or unavailable prepare responses fail open without a fake token"
   assert.equal(timedOut, null);
 });
 
-test("diagnostic line_contact_attempt emits once for one link intent", () => {
+test("diagnostic line_contact_attempt records each accepted LINE intent without leaking PII", () => {
   const previousWindow = (globalThis as unknown as { window?: unknown }).window;
   const values = new Map<string, string>();
   const dataLayer: Array<Record<string, unknown>> = [];
@@ -193,14 +193,16 @@ test("diagnostic line_contact_attempt emits once for one link intent", () => {
       handoff_type: "oa_message",
     });
 
-    assert.equal(dataLayer.length, 1);
-    assert.equal(dataLayer[0].event, "line_contact_attempt");
-    assert.equal(dataLayer[0].service_type, "ac_repair");
-    assert.equal(dataLayer[0].prepare_status, "success");
-    assert.equal(dataLayer[0].handoff_type, "oa_message");
-    assert.equal("lead_id" in dataLayer[0], false);
-    assert.equal("phone" in dataLayer[0], false);
-    assert.equal("message" in dataLayer[0], false);
+    assert.equal(dataLayer.length, 2);
+    for (const event of dataLayer) {
+      assert.equal(event.event, "line_contact_attempt");
+      assert.equal(event.service_type, "ac_repair");
+      assert.equal(event.prepare_status, "success");
+      assert.equal(event.handoff_type, "oa_message");
+      assert.equal("lead_id" in event, false);
+      assert.equal("phone" in event, false);
+      assert.equal("message" in event, false);
+    }
   } finally {
     if (previousWindow === undefined) {
       delete (globalThis as unknown as { window?: unknown }).window;
