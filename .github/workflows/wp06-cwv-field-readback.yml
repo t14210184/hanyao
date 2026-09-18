@@ -90,6 +90,68 @@ jobs:
           console.log(JSON.stringify(result, null, 2));
           NODE
           cat .wp06-cwv/summary.json >> "$GITHUB_STEP_SUMMARY"
+      - name: Browser fallback through public PageSpeed Insights UI
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci --ignore-scripts
+          chrome=$(command -v google-chrome || command -v chromium || command -v chromium-browser || true)
+          if [[ -z "$chrome" ]]; then
+            echo 'CHROME_NOT_FOUND' | tee .wp06-cwv/ui-status.txt
+            exit 0
+          fi
+          export CHROME_PATH="$chrome"
+          node <<'NODE' | tee .wp06-cwv/ui-status.txt
+          const fs = require('fs');
+          const puppeteer = require('puppeteer-core');
+          const targets = {
+            home: 'https://www.xusen.pro/',
+            repair: 'https://www.xusen.pro/services/ac-repair/',
+          };
+          const sleep = ms => new Promise(r => setTimeout(r, ms));
+          (async () => {
+            const browser = await puppeteer.launch({
+              executablePath: process.env.CHROME_PATH,
+              headless: true,
+              args: ['--no-sandbox','--disable-dev-shm-usage'],
+            });
+            try {
+              for (const [name,target] of Object.entries(targets)) {
+                const page = await browser.newPage();
+                await page.setViewport({width: 1365, height: 900});
+                const psi = 'https://pagespeed.web.dev/analysis?url=' + encodeURIComponent(target) + '&form_factor=mobile&hl=en';
+                let status = 'UI_UNKNOWN';
+                try {
+                  await page.goto(psi, {waitUntil:'domcontentloaded', timeout:120000});
+                  let body = '';
+                  for (let i=0; i<24; i++) {
+                    await sleep(5000);
+                    body = await page.evaluate(() => document.body?.innerText || '');
+                    if (/Core Web Vitals Assessment|Discover what your real users are experiencing|No Data|sufficient real-world speed data|not enough real-world/i.test(body)) break;
+                  }
+                  fs.writeFileSync(`.wp06-cwv/${name}-psi-ui.txt`, body);
+                  fs.writeFileSync(`.wp06-cwv/${name}-psi-ui.html`, await page.content());
+                  await page.screenshot({path:`.wp06-cwv/${name}-psi-ui.png`, fullPage:true});
+                  if (/No Data|does not have sufficient real-world speed data|not enough real-world speed data|insufficient real-world/i.test(body)) {
+                    status = 'FIELD_DATA_INSUFFICIENT';
+                  } else if (/Discover what your real users are experiencing/i.test(body) && /Largest Contentful Paint/i.test(body)) {
+                    status = 'FIELD_DATA_UI_AVAILABLE';
+                  } else if (/captcha|unusual traffic/i.test(body)) {
+                    status = 'UI_BLOCKED_BY_CAPTCHA';
+                  }
+                } catch (e) {
+                  fs.writeFileSync(`.wp06-cwv/${name}-psi-ui-error.txt`, String(e));
+                  status = 'UI_ERROR';
+                } finally {
+                  await page.close();
+                }
+                console.log(`${name}=${status}`);
+              }
+            } finally {
+              await browser.close();
+            }
+          })().catch(e => { console.error(e); process.exitCode = 1; });
+          NODE
       - name: Upload field evidence
         uses: actions/upload-artifact@v4
         with:
