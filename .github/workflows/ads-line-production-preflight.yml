@@ -12,6 +12,7 @@ on:
       - "workers/google-ads-uploader/**"
       - "scripts/line1a-*"
       - "scripts/line4a-*"
+      - "scripts/hg09-*"
       - "scripts/line4b-*"
       - "scripts/line4c-*"
       - "scripts/v12-migration-reconstruction.test.mjs"
@@ -31,6 +32,7 @@ on:
       - "workers/google-ads-uploader/**"
       - "scripts/line1a-*"
       - "scripts/line4a-*"
+      - "scripts/hg09-*"
       - "scripts/line4b-*"
       - "scripts/line4c-*"
       - "scripts/v12-migration-reconstruction.test.mjs"
@@ -78,6 +80,8 @@ jobs:
         run: node scripts/v12-migration-reconstruction.test.mjs
       - name: Verify Production configuration remains fail closed
         run: node scripts/line4b-production-config.test.mjs
+      - name: Verify HG09 single-writer config and topology invariant
+        run: npm run test:hg09:topology
       - name: Verify workflow mutation boundary
         run: node scripts/v12-workflow-safety.test.mjs
       - name: Verify reporting evidence is baseline-delta only
