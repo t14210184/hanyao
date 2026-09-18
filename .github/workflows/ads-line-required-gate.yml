@@ -58,5 +58,7 @@ jobs:
           npm run test:line1b1:unit
           npm run test:line1b2a:unit
           npm run test:line1b2b:unit
+      - name: Verify WP01 GTM funnel bridge contract
+        run: npm run test:wp01:gtm
       - name: Verify workflow mutation boundary
         run: node scripts/v12-workflow-safety.test.mjs
