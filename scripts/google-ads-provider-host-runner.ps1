@@ -51,10 +51,9 @@ if ($Mode -in $applyModes -and -not $ExpectedPlanHash) {
 
 if ($TargetAdGroupsJson) {
   try {
-    $targetManifest = $TargetAdGroupsJson | ConvertFrom-Json -ErrorAction Stop
-    if ($null -eq $targetManifest -or $targetManifest -isnot [Array]) {
-      throw 'invalid'
-    }
+    if (-not $TargetAdGroupsJson.Trim().StartsWith('[')) { throw 'invalid' }
+    $targetManifest = @($TargetAdGroupsJson | ConvertFrom-Json -ErrorAction Stop)
+    if ($targetManifest.Count -lt 1) { throw 'invalid' }
   } catch {
     throw 'HANYAO_HOST_RUNNER_TARGET_MANIFEST_INVALID'
   }
