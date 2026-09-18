@@ -24,19 +24,16 @@ export default function HomeClient() {
     <main className="flex-1 flex flex-col">
       {/* 1. Hero Section */}
       <section className="relative pt-24 pb-16 sm:pt-32 sm:pb-24 lg:pt-40 lg:pb-32 overflow-hidden flex items-center justify-center min-h-[90vh] lg:min-h-screen">
-        {/* Decorative background gradients */}
-        <div className="absolute inset-0 z-0">
-          <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-sky-950/20 blur-[100px] pointer-events-none"></div>
-          <div className="absolute bottom-[10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-blue-950/20 blur-[100px] pointer-events-none"></div>
-        </div>
+        {/* Lightweight background tint: avoid large filter blur on the LCP viewport */}
+        <div className="absolute inset-0 z-0 bg-slate-950/10 pointer-events-none"></div>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
             {/* Left Column: Text & CTAs */}
-            <div className="lg:col-span-7 flex flex-col items-center lg:items-start text-center lg:text-left space-y-6 sm:space-y-8 animate-fadeIn">
+            <div className="lg:col-span-7 flex flex-col items-center lg:items-start text-center lg:text-left space-y-6 sm:space-y-8">
               {/* Region Badge */}
               <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-slate-900/80 border border-slate-850 rounded-full text-xs font-bold text-sky-400 tracking-wider shadow-sm">
-                <span className="w-2 h-2 bg-emerald-500 rounded-full animate-ping"></span>
+                <span className="w-2 h-2 bg-emerald-500 rounded-full"></span>
                 <span>高雄市 • 屏東縣 在地專業空調服務</span>
               </div>
 
@@ -100,9 +97,9 @@ export default function HomeClient() {
 
             {/* Right Column: Premium Glassmorphism Card */}
             <div className="lg:col-span-5 flex justify-center lg:justify-end">
-              <div className="bg-slate-900/40 backdrop-blur-md border border-slate-850 p-8 rounded-3xl w-full max-w-sm shadow-2xl relative overflow-hidden group">
+              <div className="bg-slate-900/70 border border-slate-850 p-8 rounded-3xl w-full max-w-sm shadow-2xl relative overflow-hidden group">
                 {/* Card glow effect */}
-                <div className="absolute top-0 right-0 w-24 h-24 bg-sky-500/10 rounded-full blur-2xl group-hover:bg-sky-500/25 transition-all duration-500"></div>
+                <div className="absolute top-0 right-0 w-24 h-24 bg-sky-500/10 rounded-full group-hover:bg-sky-500/20 transition-colors duration-300"></div>
                 
                 <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
                   <span className="w-2.5 h-2.5 bg-sky-500 rounded-full shrink-0"></span>
