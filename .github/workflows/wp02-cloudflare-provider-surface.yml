@@ -1,0 +1,129 @@
+name: WP02 Cloudflare provider surface probe
+
+on:
+  push:
+    branches:
+      - feat/wp02-cloudflare-provider-surface-20260918
+    paths:
+      - ".github/workflows/wp02-cloudflare-provider-surface.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: wp02-cloudflare-provider-surface
+  cancel-in-progress: true
+
+jobs:
+  provider-surface:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      CF_TOKEN_PRIMARY: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CF_TOKEN_LEGACY: ${{ secrets.CF_API_TOKEN }}
+      CF_ACCOUNT_VAR: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+      CF_ACCOUNT_SECRET: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CF_ACCOUNT_LEGACY_VAR: ${{ vars.CF_ACCOUNT_ID }}
+      CF_ACCOUNT_LEGACY_SECRET: ${{ secrets.CF_ACCOUNT_ID }}
+    steps:
+      - name: Checkout exact probe ref
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Resolve bounded Cloudflare auth surface
+        id: auth
+        shell: bash
+        run: |
+          set -euo pipefail
+          token="${CF_TOKEN_PRIMARY:-}"
+          if [[ -z "$token" ]]; then token="${CF_TOKEN_LEGACY:-}"; fi
+
+          account="${CF_ACCOUNT_VAR:-}"
+          if [[ -z "$account" ]]; then account="${CF_ACCOUNT_SECRET:-}"; fi
+          if [[ -z "$account" ]]; then account="${CF_ACCOUNT_LEGACY_VAR:-}"; fi
+          if [[ -z "$account" ]]; then account="${CF_ACCOUNT_LEGACY_SECRET:-}"; fi
+
+          if [[ -z "$token" ]]; then
+            echo "WP02_CF_PROVIDER_SURFACE=FAIL:CLOUDFLARE_API_TOKEN_MISSING"
+            exit 2
+          fi
+          if [[ -z "$account" ]]; then
+            echo "WP02_CF_PROVIDER_SURFACE=FAIL:CLOUDFLARE_ACCOUNT_ID_MISSING"
+            exit 3
+          fi
+
+          echo "::add-mask::$account"
+          {
+            echo "CLOUDFLARE_API_TOKEN=$token"
+            echo "CLOUDFLARE_ACCOUNT_ID=$account"
+          } >> "$GITHUB_ENV"
+
+          echo "WP02_CF_PROVIDER_SURFACE=AUTH_MATERIAL_PRESENT"
+
+      - name: Read Production Worker secret names only
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx wrangler secret list             --config workers/google-ads-uploader/wrangler.jsonc             --env production             --format json > /tmp/wp02-secret-names.json
+
+          node <<'NODE'
+          const fs = require("node:fs");
+          const raw = fs.readFileSync("/tmp/wp02-secret-names.json", "utf8");
+          let parsed;
+          try {
+            parsed = JSON.parse(raw);
+          } catch {
+            console.error("WP02_CF_PROVIDER_SURFACE=FAIL:SECRET_LIST_NOT_JSON");
+            process.exit(4);
+          }
+
+          const rows = Array.isArray(parsed)
+            ? parsed
+            : Array.isArray(parsed?.secrets)
+              ? parsed.secrets
+              : [];
+          const names = new Set(
+            rows
+              .map((row) =>
+                typeof row === "string"
+                  ? row
+                  : typeof row?.name === "string"
+                    ? row.name
+                    : null
+              )
+              .filter(Boolean)
+          );
+
+          const required = [
+            "GOOGLE_DATA_MANAGER_SERVICE_ACCOUNT_JSON",
+            "PRODUCTION_HUMAN_GATE",
+          ];
+          const missing = required.filter((name) => !names.has(name));
+
+          console.log(
+            JSON.stringify({
+              result:
+                missing.length === 0
+                  ? "WP02_CF_PROVIDER_SURFACE_READY"
+                  : "WP02_CF_PROVIDER_SURFACE_BLOCKED",
+              worker: "google-ads-uploader-production",
+              secretNameCount: names.size,
+              requiredSecretsPresent: required.filter((name) => names.has(name)),
+              missingRequiredSecrets: missing,
+              secretValuesRead: false,
+              mutationApplied: false,
+            })
+          );
+
+          if (missing.length > 0) process.exit(5);
+          NODE
+
+          rm -f /tmp/wp02-secret-names.json
