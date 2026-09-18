@@ -59,6 +59,19 @@ test("WP02 preserves brand+fault and commercial research traffic", () => {
   );
 });
 
+test("WP02 ignores malformed non-mutation review terms", () => {
+  const plan = buildWp02Plan(
+    [
+      observed(
+        "one two three four five six seven eight nine ten eleven"
+      ),
+    ],
+    []
+  );
+
+  assert.deepEqual(plan, []);
+});
+
 test("WP02 collapses repeated evidence and skips an already-present exact negative", () => {
   const plan = buildWp02Plan(
     [

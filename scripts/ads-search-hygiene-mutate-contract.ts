@@ -110,6 +110,17 @@ export const buildWp02Plan = (
 
   const planned = new Map<string, Wp02PlannedNegative>();
   for (const row of observed) {
+    // Review/keep rows are never mutation candidates. Skip them before the
+    // mutation-only shape checks so malformed observational terms cannot block
+    // unrelated high-confidence exact candidates.
+    if (
+      row.decision.action !== "NEGATIVE_EXACT" ||
+      row.decision.recommendedMatchType !== "EXACT" ||
+      !["A", "B"].includes(row.decision.tier)
+    ) {
+      continue;
+    }
+
     let item: Wp02PlannedNegative;
     try {
       item = assertSafeWp02Candidate(row);
