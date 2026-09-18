@@ -1,15 +1,7 @@
 name: WP02 live Google Ads provider probe
 
 on:
-  push:
-    branches:
-      - feat/wp02-live-provider-probe-20260918
-    paths:
-      - ".github/workflows/wp02-live-provider-probe.yml"
-      - "scripts/ads-search-hygiene-audit.ts"
-      - "scripts/ads-search-hygiene-rules.ts"
-      - "workers/google-ads-uploader/src/auth.ts"
-      - "workers/google-ads-uploader/src/types.ts"
+  workflow_dispatch:
 
 permissions:
   contents: read
