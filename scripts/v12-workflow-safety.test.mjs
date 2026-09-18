@@ -31,6 +31,7 @@ for (const family of [
   "scripts/ads-search-hygiene-*",
   "scripts/ads-rsa-*",
   "scripts/ads-line-message-*",
+  "scripts/ads-optimization-*",
   "scripts/ads-landing-*",
   "scripts/gtm-wp01-*",
 ]) {
@@ -43,6 +44,11 @@ for (const family of [
     preflight.includes(`- "${family}"`),
     true,
     `production preflight missing Ads optimization path family: ${family}`
+  );
+  assert.equal(
+    hardening.includes(`- "${family}"`),
+    true,
+    `hardening missing Ads optimization path family: ${family}`
   );
 }
 assert.match(preflight, /wrangler deploy --dry-run --env production/);

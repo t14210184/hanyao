@@ -66,5 +66,7 @@ jobs:
         run: npm run test:wp03:rsa
       - name: Verify WP05 LINE UI evidence contract
         run: npm run test:wp05:ui
+      - name: Verify WP10 current execution gate ledger
+        run: npm run test:wp10:ledger
       - name: Verify workflow mutation boundary
         run: node scripts/v12-workflow-safety.test.mjs
