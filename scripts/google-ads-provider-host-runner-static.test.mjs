@@ -18,6 +18,7 @@ test("host runner is a SYSTEM-only immutable-source wrapper around existing engi
     "WP03_READ_ENABLE",
     "WP03_VALIDATE_ENABLE",
     "WP03_ENABLE",
+    "HG10_E10_READBACK",
   ]) {
     assert.match(source, new RegExp("'" + mode + "'"));
   }
@@ -115,4 +116,17 @@ test("host runner does not disclose gcloud config paths", async () => {
   assert.match(source, /selected_config_index = \[int\]\$tokenResult\.config_index/);
   assert.doesNotMatch(source, /config_path\s*=/i);
   assert.doesNotMatch(source, /selected_config_path/i);
+});
+
+
+test("HG10 E10 mode is date-scoped and read-only", async () => {
+  const source = await readFile(RUNNER, "utf8");
+  assert.match(source, /HG10_E10_READBACK/);
+  assert.match(source, /HANYAO_HOST_RUNNER_TARGET_DATE_REQUIRED/);
+  assert.match(source, /GOOGLE_ADS_REPORTING_TARGET_DATE/);
+  assert.match(source, /line4d-google-ads-reporting-monitor\.ts/);
+  assert.doesNotMatch(
+    source,
+    /HG10_E10_READBACK[\s\S]{0,500}HANYAO_WP0[23]_APPROVED_20260918/
+  );
 });
