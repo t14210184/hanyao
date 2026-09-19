@@ -65,9 +65,11 @@ if ($TargetAdGroupsJson) {
 
 function Resolve-GcloudCommand {
   $commands = @(
-    (Get-Command gcloud.cmd -ErrorAction SilentlyContinue),
-    (Get-Command gcloud.exe -ErrorAction SilentlyContinue)
-  ) | Where-Object { $null -ne $_ }
+    @(
+      (Get-Command gcloud.cmd -ErrorAction SilentlyContinue),
+      (Get-Command gcloud.exe -ErrorAction SilentlyContinue)
+    ) | Where-Object { $null -ne $_ }
+  )
   if ($commands.Count -gt 0) {
     return [string]$commands[0].Source
   }
