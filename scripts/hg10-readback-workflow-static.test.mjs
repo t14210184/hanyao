@@ -7,9 +7,9 @@ const source = await readFile(
 );
 
 assert.match(source, /workflow_dispatch:/);
-assert.match(source, /push:/);
-assert.match(source, /\.github\/hg10-readback-trigger\.json/);
+assert.doesNotMatch(source, /\npush:/);
 assert.doesNotMatch(source, /pull_request:/);
+assert.doesNotMatch(source, /hg10-readback-trigger\.json/);
 assert.match(source, /permissions:\s*\n\s*contents:\s*read/);
 assert.match(source, /hg10-e17-d1-readback\.mjs/);
 assert.match(source, /line4d-google-ads-reporting-monitor\.ts/);
