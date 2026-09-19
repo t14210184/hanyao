@@ -1,6 +1,11 @@
 name: HG10 conversion closure readback
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/hg10-readback-trigger.json"
   workflow_dispatch:
     inputs:
       target_date:
@@ -21,7 +26,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
-      TARGET_DATE: ${{ inputs.target_date }}
+      TARGET_DATE: ${{ inputs.target_date || '' }}
       CF_TOKEN_PRIMARY: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CF_TOKEN_LEGACY: ${{ secrets.CF_API_TOKEN }}
       CF_ACCOUNT_VAR: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
@@ -41,11 +46,17 @@ jobs:
           node-version: "22"
 
       - name: Validate date and resolve read-only provider auth
+        id: auth
         shell: bash
         run: |
           set -euo pipefail
 
-          if [[ ! "$TARGET_DATE" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
+          target_date="${TARGET_DATE:-}"
+          if [[ -z "$target_date" ]]; then
+            target_date="$(node -e 'const x=require("./.github/hg10-readback-trigger.json"); process.stdout.write(String(x.target_date || ""))')"
+          fi
+
+          if [[ ! "$target_date" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
             echo "HG10_READBACK=FAIL:TARGET_DATE_INVALID"
             exit 2
           fi
@@ -75,8 +86,10 @@ jobs:
           {
             echo "CLOUDFLARE_API_TOKEN=$token"
             echo "CLOUDFLARE_ACCOUNT_ID=$account"
-            echo "GOOGLE_ADS_REPORTING_TARGET_DATE=$TARGET_DATE"
+            echo "TARGET_DATE=$target_date"
+            echo "GOOGLE_ADS_REPORTING_TARGET_DATE=$target_date"
           } >> "$GITHUB_ENV"
+          echo "target_date=$target_date" >> "$GITHUB_OUTPUT"
 
       - name: Read Production D1 conversion lineage
         shell: bash
@@ -114,7 +127,7 @@ jobs:
       - name: Upload sanitized readback evidence
         uses: actions/upload-artifact@v4
         with:
-          name: hg10-conversion-readback-${{ inputs.target_date }}
+          name: hg10-conversion-readback-${{ steps.auth.outputs.target_date }}
           retention-days: 14
           path: |
             /tmp/hg10-d1.json
