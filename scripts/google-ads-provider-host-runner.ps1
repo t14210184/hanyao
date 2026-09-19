@@ -65,9 +65,11 @@ if ($TargetAdGroupsJson) {
 
 function Resolve-GcloudCommand {
   $commands = @(
-    (Get-Command gcloud.cmd -ErrorAction SilentlyContinue),
-    (Get-Command gcloud.exe -ErrorAction SilentlyContinue)
-  ) | Where-Object { $null -ne $_ }
+    @(
+      (Get-Command gcloud.cmd -ErrorAction SilentlyContinue),
+      (Get-Command gcloud.exe -ErrorAction SilentlyContinue)
+    ) | Where-Object { $null -ne $_ }
+  )
   if ($commands.Count -gt 0) {
     return [string]$commands[0].Source
   }
@@ -116,13 +118,31 @@ function Get-ImpersonatedAdsToken {
     $env:CLOUDSDK_CORE_DISABLE_PROMPTS = '1'
     for ($index = 0; $index -lt $ConfigCandidates.Count; $index += 1) {
       $env:CLOUDSDK_CONFIG = $ConfigCandidates[$index]
-      $stderrPath = Join-Path $TempRoot ("gcloud-$index.stderr")
-      Remove-Item -LiteralPath $stderrPath -Force -ErrorAction SilentlyContinue
+      $psi = New-Object Diagnostics.ProcessStartInfo
+      $psi.FileName = $Gcloud
+      $psi.Arguments = "auth print-access-token --impersonate-service-account=$SERVICE_ACCOUNT --scopes=$ADS_SCOPE --quiet"
+      $psi.UseShellExecute = $false
+      $psi.CreateNoWindow = $true
+      $psi.RedirectStandardOutput = $true
+      $psi.RedirectStandardError = $true
 
-      $raw = @(& $Gcloud auth print-access-token "--impersonate-service-account=$SERVICE_ACCOUNT" "--scopes=$ADS_SCOPE" --quiet 2>$stderrPath)
-      $exitCode = $LASTEXITCODE
-      $candidate = ($raw -join '').Trim()
-      Remove-Item -LiteralPath $stderrPath -Force -ErrorAction SilentlyContinue
+      $process = New-Object Diagnostics.Process
+      $process.StartInfo = $psi
+      try {
+        if (-not $process.Start()) { throw 'HANYAO_HOST_RUNNER_GCLOUD_START_FAILED' }
+        $stdoutTask = $process.StandardOutput.ReadToEndAsync()
+        $stderrTask = $process.StandardError.ReadToEndAsync()
+        $process.WaitForExit()
+        $stdout = [string]$stdoutTask.GetAwaiter().GetResult()
+        $stderr = [string]$stderrTask.GetAwaiter().GetResult()
+        if ($stdout.Length -gt 8192 -or $stderr.Length -gt 8192) {
+          throw 'HANYAO_HOST_RUNNER_GCLOUD_OUTPUT_TOO_LARGE'
+        }
+        $exitCode = [int]$process.ExitCode
+        $candidate = $stdout.Trim()
+      } finally {
+        try { $process.Dispose() } catch {}
+      }
 
       if (
         $exitCode -eq 0 -and

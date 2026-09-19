@@ -128,6 +128,21 @@ jobs:
             throw 'HANYAO_GOOGLE_ADS_HOST_RUNNER_PARSE_FAILED'
           }
           Write-Host 'HANYAO_GOOGLE_ADS_HOST_RUNNER_PARSE=PASS'
+      - name: Parse HG10 SYSTEM readback PowerShell
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $errors = $null
+          [Management.Automation.Language.Parser]::ParseFile(
+            (Resolve-Path 'scripts/hg10-system-readback-runner.ps1'),
+            [ref]$tokens,
+            [ref]$errors
+          ) | Out-Null
+          if ($errors.Count -ne 0) {
+            $errors | ForEach-Object { Write-Error $_.Message }
+            throw 'HANYAO_HG10_SYSTEM_RUNNER_PARSE_FAILED'
+          }
+          Write-Host 'HANYAO_HG10_SYSTEM_RUNNER_PARSE=PASS'
       - name: Verify Ads search-hygiene classification boundaries
         run: node --experimental-strip-types --test scripts/ads-search-hygiene-rules.test.ts
       - name: Verify WP02 exact-negative provider contract
