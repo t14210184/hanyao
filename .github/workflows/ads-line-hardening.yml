@@ -46,6 +46,7 @@ on:
       - "src/components/MobileStickyCTA.tsx"
       - "src/app/services/ac-repair/AcRepairServiceClient.tsx"
       - "src/app/services/ac-cleaning/AcCleaningServiceClient.tsx"
+      - "src/app/services/page.tsx"
       - "src/app/layout.tsx"
       - "src/app/globals.css"
       - "scripts/ads-cro-repair-static.test.mjs"
