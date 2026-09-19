@@ -41,7 +41,7 @@
     "test:wp10:ledger": "node --experimental-strip-types --test scripts/ads-optimization-gate-ledger.test.ts",
     "test:google-ads:auth": "node --experimental-strip-types --test scripts/google-ads-provider-auth.test.ts",
     "test:google-ads:host-runner": "node scripts/google-ads-provider-host-runner-static.test.mjs",
-    "test:hg10:readback": "node --test scripts/cloudflare-d1-readonly.test.mjs scripts/conversion-closure-classifier.test.mjs && node scripts/google-ads-read-contract-static.test.mjs && npm run test:google-ads:host-runner"
+    "test:hg10:readback": "node --test scripts/cloudflare-d1-readonly.test.mjs scripts/conversion-closure-classifier.test.mjs && node scripts/hg10-e17-inspector.test.mjs && node scripts/google-ads-read-contract-static.test.mjs && npm run test:google-ads:host-runner"
   },
   "dependencies": {
     "@next/third-parties": "^16.2.9",
