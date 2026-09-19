@@ -139,3 +139,13 @@ test("gcloud command discovery stays array-valued under StrictMode", async () =>
     /\$commands = @\(\s*@\([\s\S]*?Get-Command gcloud\.cmd[\s\S]*?Where-Object[\s\S]*?\)\s*\)/
   );
 });
+
+
+test("gcloud impersonation warning is captured outside PowerShell native stderr semantics", async () => {
+  const source = await readFile(RUNNER, "utf8");
+  assert.match(source, /Diagnostics\.ProcessStartInfo/);
+  assert.match(source, /RedirectStandardOutput = \$true/);
+  assert.match(source, /RedirectStandardError = \$true/);
+  assert.doesNotMatch(source, /2>\$stderrPath/);
+  assert.doesNotMatch(source, /gcloud-\$index\.stderr/);
+});
