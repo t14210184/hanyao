@@ -42,6 +42,7 @@ for (const name of [
   "ads-search-hygiene-audit.ts",
   "ads-search-hygiene-mutate.ts",
   "ads-rsa-provider.ts",
+  "line4d-google-ads-reporting-monitor.ts",
 ]) {
   const source = await read(name);
   assert.match(
@@ -87,3 +88,10 @@ for (const sensitiveField of [
 assert.match(stdoutBlock, /detailOutputWritten: Boolean\(outputPath\)/);
 
 console.log("GOOGLE_ADS_READ_CONTRACT_STATIC_PASS");
+
+
+const reportingMonitor = await read("line4d-google-ads-reporting-monitor.ts");
+assert.match(reportingMonitor, /GOOGLE_ADS_REPORTING_TARGET_DATE/);
+assert.match(reportingMonitor, /metrics\.all_conversions_by_conversion_date/);
+assert.match(reportingMonitor, /targetDateEvidence/);
+assert.match(reportingMonitor, /accessTokenPrinted:\s*false/);
