@@ -1,5 +1,6 @@
 import React from "react";
 import { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import FinalCTA from "@/components/FinalCTA";
 import JsonLd from "@/components/JsonLd";
@@ -677,11 +678,12 @@ export default function ServicesOverviewPage() {
               <div className="bg-slate-900/35 border border-slate-850 p-6 rounded-2xl flex flex-col justify-between hover:border-slate-800 transition-all duration-300 shadow-md">
                 <div>
                   <div className="relative aspect-[3/4] w-full rounded-lg overflow-hidden border border-slate-800 bg-slate-950 mb-4 flex items-center justify-center">
-                    <img 
+                    <Image
                       src="/images/credentials/company-registration-redacted.webp"
                       alt="焓耀空調工程冷凍空調業登記資料公開版"
-                      loading="lazy"
-                      decoding="async"
+                      width={1200}
+                      height={1652}
+                      sizes="(max-width: 768px) 100vw, 33vw"
                       className="max-h-full max-w-full object-contain"
                     />
                   </div>
@@ -696,11 +698,12 @@ export default function ServicesOverviewPage() {
               <div className="bg-slate-900/35 border border-slate-850 p-6 rounded-2xl flex flex-col justify-between hover:border-slate-800 transition-all duration-300 shadow-md">
                 <div>
                   <div className="relative aspect-[4/3] w-full rounded-lg overflow-hidden border border-slate-800 bg-slate-950 mb-4 flex items-center justify-center">
-                    <img 
+                    <Image
                       src="/images/credentials/technician-certificate-redacted.webp"
                       alt="冷凍空調技術能力佐證文件公開版"
-                      loading="lazy"
-                      decoding="async"
+                      width={500}
+                      height={310}
+                      sizes="(max-width: 768px) 100vw, 33vw"
                       className="max-h-full max-w-full object-contain"
                     />
                   </div>
@@ -715,11 +718,12 @@ export default function ServicesOverviewPage() {
               <div className="bg-slate-900/35 border border-slate-850 p-6 rounded-2xl flex flex-col justify-between hover:border-slate-800 transition-all duration-300 shadow-md">
                 <div>
                   <div className="relative aspect-[3/4] w-full rounded-lg overflow-hidden border border-slate-800 bg-slate-950 mb-4 flex items-center justify-center">
-                    <img 
+                    <Image
                       src="/images/credentials/association-membership-redacted.webp"
                       alt="焓耀空調工程冷凍空調產業公會會員資料公開版"
-                      loading="lazy"
-                      decoding="async"
+                      width={300}
+                      height={412}
+                      sizes="(max-width: 768px) 100vw, 33vw"
                       className="max-h-full max-w-full object-contain"
                     />
                   </div>
