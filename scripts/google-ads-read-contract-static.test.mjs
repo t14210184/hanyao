@@ -95,3 +95,6 @@ assert.match(reportingMonitor, /GOOGLE_ADS_REPORTING_TARGET_DATE/);
 assert.match(reportingMonitor, /metrics\.all_conversions_by_conversion_date/);
 assert.match(reportingMonitor, /targetDateEvidence/);
 assert.match(reportingMonitor, /accessTokenPrinted:\s*false/);
+
+assert.match(reportingMonitor, /FROM customer/);
+assert.match(reportingMonitor, /segments\.conversion_action/);
