@@ -130,3 +130,12 @@ test("HG10 E10 mode is date-scoped and read-only", async () => {
     /HG10_E10_READBACK[\s\S]{0,500}HANYAO_WP0[23]_APPROVED_20260918/
   );
 });
+
+
+test("gcloud command discovery stays array-valued under StrictMode", async () => {
+  const source = await readFile(RUNNER, "utf8");
+  assert.match(
+    source,
+    /\$commands = @\(\s*@\([\s\S]*?Get-Command gcloud\.cmd[\s\S]*?Where-Object[\s\S]*?\)\s*\)/
+  );
+});
