@@ -155,24 +155,20 @@ try {
       auth.accessToken,
       `SELECT
         segments.date,
-        conversion_action.id,
+        segments.conversion_action,
         metrics.all_conversions_by_conversion_date
-      FROM conversion_action
-      WHERE conversion_action.id = ${CONVERSION_ACTION_ID}
-        AND segments.date = '${targetDate}'`
+      FROM customer
+      WHERE segments.date = '${targetDate}'
+        AND segments.conversion_action =
+          'customers/${CUSTOMER_ID}/conversionActions/${CONVERSION_ACTION_ID}'`
     );
-    if (dateRows.length > 1) {
-      throw new Error("TARGET_DATE_REPORTING_MULTIPLE_ROWS");
-    }
-    const dateMetrics =
-      dateRows.length === 1 ? asRecord(dateRows[0].metrics) ?? {} : {};
     targetDateEvidence = {
       targetDate,
-      rowReturned: dateRows.length === 1,
-      allConversionsByConversionDate:
-        dateRows.length === 1
-          ? (asNumber(dateMetrics.allConversionsByConversionDate) ?? 0)
-          : 0,
+      rowReturned: dateRows.length > 0,
+      allConversionsByConversionDate: dateRows.reduce((sum, row) => {
+        const dateMetrics = asRecord(row.metrics) ?? {};
+        return sum + (asNumber(dateMetrics.allConversionsByConversionDate) ?? 0);
+      }, 0),
     };
   }
 
