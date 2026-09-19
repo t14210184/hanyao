@@ -11,6 +11,9 @@ on:
       - "functions/_lib/types.ts"
       - "workers/google-ads-uploader/**"
       - "scripts/hg09-*"
+      - "scripts/hg10-*"
+      - "scripts/cloudflare-d1-*"
+      - "scripts/conversion-closure-*"
       - "scripts/ads-search-hygiene-*"
       - "scripts/ads-rsa-*"
       - "scripts/ads-landing-*"
@@ -43,6 +46,9 @@ on:
       - "functions/_lib/types.ts"
       - "workers/google-ads-uploader/**"
       - "scripts/hg09-*"
+      - "scripts/hg10-*"
+      - "scripts/cloudflare-d1-*"
+      - "scripts/conversion-closure-*"
       - "src/components/MobileStickyCTA.tsx"
       - "src/app/services/ac-repair/AcRepairServiceClient.tsx"
       - "src/app/services/ac-cleaning/AcCleaningServiceClient.tsx"
@@ -140,6 +146,8 @@ jobs:
         run: npm run test:wp10:ledger
       - name: Verify Google Ads read auth and audit log privacy
         run: node scripts/google-ads-read-contract-static.test.mjs
+      - name: Verify HG10 conversion readback closure contracts
+        run: npm run test:hg10:readback
       - name: Verify WP01 GTM funnel bridge contract
         run: npm run test:wp01:gtm
       - name: Run canonical LINE webhook unit regression

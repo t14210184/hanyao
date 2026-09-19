@@ -11,7 +11,8 @@ param(
     'WP03_APPLY_PAUSED',
     'WP03_READ_ENABLE',
     'WP03_VALIDATE_ENABLE',
-    'WP03_ENABLE'
+    'WP03_ENABLE',
+    'HG10_E10_READBACK'
   )]
   [string]$Mode,
 
@@ -26,6 +27,9 @@ param(
   [string]$LoginCustomerId,
 
   [string]$TargetAdGroupsJson,
+
+  [ValidatePattern('^\d{4}-\d{2}-\d{2}$')]
+  [string]$TargetDate,
 
   [ValidateRange(30,300)]
   [int]$EngineTimeoutSeconds = 180
@@ -203,6 +207,10 @@ function Invoke-HanyaoNodeEngine {
       $psi.EnvironmentVariables['ADS_RSA_EXPECTED_PLAN_HASH'] = $ExpectedPlanHash
       $psi.EnvironmentVariables['ADS_RSA_PRODUCTION_GATE'] = 'HANYAO_WP03_ENABLE_APPROVED_20260918'
     }
+    'HG10_E10_READBACK' {
+      if (-not $TargetDate) { throw 'HANYAO_HOST_RUNNER_TARGET_DATE_REQUIRED' }
+      $psi.EnvironmentVariables['GOOGLE_ADS_REPORTING_TARGET_DATE'] = $TargetDate
+    }
   }
 
   if ($TargetAdGroupsJson) {
@@ -308,6 +316,9 @@ try {
     'WP03_ENABLE' {
       $script = 'scripts\ads-rsa-provider.ts'
       $engineArgs = @('--enable')
+    }
+    'HG10_E10_READBACK' {
+      $script = 'scripts\line4d-google-ads-reporting-monitor.ts'
     }
   }
 

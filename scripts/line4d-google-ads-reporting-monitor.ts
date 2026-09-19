@@ -1,5 +1,7 @@
-import { exchangeServiceAccountTokenForScopes } from "../workers/google-ads-uploader/src/auth.ts";
-import { GOOGLE_ADS_SCOPE } from "../workers/google-ads-uploader/src/types.ts";
+import {
+  hasGoogleAdsAuthInput,
+  resolveGoogleAdsAccessToken,
+} from "./google-ads-provider-auth.ts";
 import {
   evaluateReportingEvidence,
   type ReportingSnapshot,
@@ -10,12 +12,17 @@ const CONVERSION_ACTION_ID = "7674301565";
 const API_VERSION = "v25";
 const API_URL = `https://googleads.googleapis.com/${API_VERSION}/customers/${CUSTOMER_ID}/googleAds:searchStream`;
 
-const credential = process.env.GOOGLE_DATA_MANAGER_SERVICE_ACCOUNT_JSON?.trim();
 const loginCustomerId = process.env.GOOGLE_ADS_LOGIN_CUSTOMER_ID?.replace(/-/g, "").trim();
 const reportingBaselineJson = process.env.GOOGLE_ADS_REPORTING_BASELINE_JSON?.trim();
+const targetDate = process.env.GOOGLE_ADS_REPORTING_TARGET_DATE?.trim() ?? null;
 
-if (!credential) {
-  console.log("GOOGLE_ADS_REPORTING_MONITOR=SKIPPED_NO_CLOUD_PROJECT_CREDENTIAL");
+if (targetDate && !/^\d{4}-\d{2}-\d{2}$/.test(targetDate)) {
+  console.error("GOOGLE_ADS_REPORTING_MONITOR=FAIL:TARGET_DATE_INVALID");
+  process.exit(1);
+}
+
+if (!hasGoogleAdsAuthInput(process.env)) {
+  console.log("GOOGLE_ADS_REPORTING_MONITOR=SKIPPED_NO_PROVIDER_AUTH");
   process.exit(0);
 }
 
@@ -68,22 +75,15 @@ const baselineFromEnv = (): ReportingSnapshot | null => {
   };
 };
 
-try {
-  const auth = await exchangeServiceAccountTokenForScopes(credential, [GOOGLE_ADS_SCOPE]);
+const queryRows = async (
+  accessToken: string,
+  query: string
+): Promise<RecordLike[]> => {
   const headers: Record<string, string> = {
-    authorization: `Bearer ${auth.accessToken}`,
+    authorization: `Bearer ${accessToken}`,
     "content-type": "application/json",
   };
   if (loginCustomerId) headers["login-customer-id"] = loginCustomerId;
-
-  const query = `SELECT
-    conversion_action.id,
-    metrics.all_conversions,
-    metrics.conversion_last_conversion_date,
-    metrics.conversion_last_received_request_date_time
-  FROM conversion_action
-  WHERE conversion_action.id = ${CONVERSION_ACTION_ID}
-  LIMIT 1`;
 
   const response = await fetch(API_URL, {
     method: "POST",
@@ -99,21 +99,78 @@ try {
     } catch {
       // Never echo the provider response body.
     }
-    throw new Error(`GOOGLE_ADS_HTTP_${response.status}_${status.replace(/[^A-Z0-9_]/gi, "_")}`);
+    throw new Error(
+      `GOOGLE_ADS_HTTP_${response.status}_${status.replace(/[^A-Z0-9_]/gi, "_")}`
+    );
   }
+  let payload: unknown;
+  try {
+    payload = JSON.parse(text);
+  } catch {
+    throw new Error("GOOGLE_ADS_RESPONSE_MALFORMED");
+  }
+  return rowsFrom(payload);
+};
 
-  const rows = rowsFrom(JSON.parse(text));
-  if (rows.length !== 1) throw new Error("CONVERSION_ACTION_REPORTING_ROW_NOT_FOUND");
-  const metrics = asRecord(rows[0].metrics) ?? {};
+try {
+  const auth = await resolveGoogleAdsAccessToken(process.env);
+  const currentRows = await queryRows(
+    auth.accessToken,
+    `SELECT
+      conversion_action.id,
+      metrics.all_conversions,
+      metrics.conversion_last_conversion_date,
+      metrics.conversion_last_received_request_date_time
+    FROM conversion_action
+    WHERE conversion_action.id = ${CONVERSION_ACTION_ID}
+    LIMIT 1`
+  );
+
+  if (currentRows.length !== 1) {
+    throw new Error("CONVERSION_ACTION_REPORTING_ROW_NOT_FOUND");
+  }
+  const metrics = asRecord(currentRows[0].metrics) ?? {};
   const currentSnapshot: ReportingSnapshot = {
     customerId: CUSTOMER_ID,
     conversionActionId: CONVERSION_ACTION_ID,
     allConversions: asNumber(metrics.allConversions) ?? 0,
     lastConversionDate: asString(metrics.conversionLastConversionDate),
-    lastReceivedRequestDateTime: asString(metrics.conversionLastReceivedRequestDateTime),
+    lastReceivedRequestDateTime: asString(
+      metrics.conversionLastReceivedRequestDateTime
+    ),
   };
   const baseline = baselineFromEnv();
   const evidence = evaluateReportingEvidence(currentSnapshot, baseline);
+
+  let targetDateEvidence:
+    | {
+        targetDate: string;
+        rowReturned: boolean;
+        allConversionsByConversionDate: number;
+      }
+    | null = null;
+
+  if (targetDate) {
+    const dateRows = await queryRows(
+      auth.accessToken,
+      `SELECT
+        segments.date,
+        segments.conversion_action,
+        metrics.all_conversions_by_conversion_date
+      FROM customer
+      WHERE segments.date = '${targetDate}'
+        AND segments.conversion_action =
+          'customers/${CUSTOMER_ID}/conversionActions/${CONVERSION_ACTION_ID}'`
+    );
+    targetDateEvidence = {
+      targetDate,
+      rowReturned: dateRows.length > 0,
+      allConversionsByConversionDate: dateRows.reduce((sum, row) => {
+        const dateMetrics = asRecord(row.metrics) ?? {};
+        return sum + (asNumber(dateMetrics.allConversionsByConversionDate) ?? 0);
+      }, 0),
+    };
+  }
 
   console.log(
     JSON.stringify({
@@ -121,13 +178,18 @@ try {
         ? "GOOGLE_ADS_REPORTING_DELTA_CONFIRMED"
         : "GOOGLE_ADS_REPORTING_UNVERIFIED",
       ...currentSnapshot,
+      authSource: auth.source,
+      accessTokenPrinted: false,
       baselineProvided: baseline !== null,
       ...evidence,
+      targetDateEvidence,
       baselineSnapshot: baseline === null ? currentSnapshot : undefined,
     })
   );
 } catch (error) {
   const message = error instanceof Error ? error.message : "UNKNOWN";
-  console.error(`GOOGLE_ADS_REPORTING_MONITOR=FAIL:${message.replace(/[^A-Z0-9_:-]/gi, "_")}`);
+  console.error(
+    `GOOGLE_ADS_REPORTING_MONITOR=FAIL:${message.replace(/[^A-Z0-9_:-]/gi, "_")}`
+  );
   process.exitCode = 1;
 }

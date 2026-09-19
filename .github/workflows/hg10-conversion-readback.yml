@@ -1,0 +1,122 @@
+name: HG10 conversion closure readback
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_date:
+        description: Asia/Taipei conversion date (YYYY-MM-DD)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hg10-conversion-readback
+  cancel-in-progress: false
+
+jobs:
+  readback:
+    name: HG10 conversion readback
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      TARGET_DATE: ${{ inputs.target_date }}
+      CF_TOKEN_PRIMARY: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CF_TOKEN_LEGACY: ${{ secrets.CF_API_TOKEN }}
+      CF_ACCOUNT_VAR: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+      CF_ACCOUNT_SECRET: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CF_ACCOUNT_LEGACY_VAR: ${{ vars.CF_ACCOUNT_ID }}
+      CF_ACCOUNT_LEGACY_SECRET: ${{ secrets.CF_ACCOUNT_ID }}
+      GOOGLE_DATA_MANAGER_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_DATA_MANAGER_SERVICE_ACCOUNT_JSON }}
+      GOOGLE_ADS_LOGIN_CUSTOMER_ID: ${{ secrets.GOOGLE_ADS_LOGIN_CUSTOMER_ID }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Validate date and resolve read-only provider auth
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ ! "$TARGET_DATE" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
+            echo "HG10_READBACK=FAIL:TARGET_DATE_INVALID"
+            exit 2
+          fi
+
+          token="${CF_TOKEN_PRIMARY:-}"
+          if [[ -z "$token" ]]; then token="${CF_TOKEN_LEGACY:-}"; fi
+
+          account="${CF_ACCOUNT_VAR:-}"
+          if [[ -z "$account" ]]; then account="${CF_ACCOUNT_SECRET:-}"; fi
+          if [[ -z "$account" ]]; then account="${CF_ACCOUNT_LEGACY_VAR:-}"; fi
+          if [[ -z "$account" ]]; then account="${CF_ACCOUNT_LEGACY_SECRET:-}"; fi
+
+          if [[ -z "$token" ]]; then
+            echo "HG10_READBACK=FAIL:CLOUDFLARE_API_TOKEN_MISSING"
+            exit 3
+          fi
+          if [[ -z "$account" ]]; then
+            echo "HG10_READBACK=FAIL:CLOUDFLARE_ACCOUNT_ID_MISSING"
+            exit 4
+          fi
+          if [[ -z "${GOOGLE_DATA_MANAGER_SERVICE_ACCOUNT_JSON:-}" ]]; then
+            echo "HG10_READBACK=FAIL:GOOGLE_PROVIDER_CREDENTIAL_MISSING"
+            exit 5
+          fi
+
+          echo "::add-mask::$account"
+          {
+            echo "CLOUDFLARE_API_TOKEN=$token"
+            echo "CLOUDFLARE_ACCOUNT_ID=$account"
+            echo "GOOGLE_ADS_REPORTING_TARGET_DATE=$TARGET_DATE"
+          } >> "$GITHUB_ENV"
+
+      - name: Read Production D1 conversion lineage
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/hg10-e17-d1-readback.mjs --date "$TARGET_DATE" > /tmp/hg10-d1.json
+
+      - name: Read Google Ads conversion reporting
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --experimental-strip-types scripts/line4d-google-ads-reporting-monitor.ts > /tmp/hg10-ads.json
+
+      - name: Classify conversion closure
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/hg10-e17-inspector.mjs \
+            --d1-json /tmp/hg10-d1.json \
+            --ads-json /tmp/hg10-ads.json \
+            | tee /tmp/hg10-verdict.json
+
+          node <<'NODE' >> "$GITHUB_STEP_SUMMARY"
+          const fs = require("node:fs");
+          const verdict = JSON.parse(fs.readFileSync("/tmp/hg10-verdict.json", "utf8"));
+          console.log("## HG10 conversion closure readback");
+          console.log("");
+          console.log("- Target date: " + verdict.targetDate);
+          console.log("- State: " + verdict.state);
+          console.log("- D1 read-only guard: " + verdict.d1ReadOnlyGuard);
+          console.log("- Ads date row returned: " + verdict.adsDateRowReturned);
+          console.log("- Ads date conversions: " + verdict.adsDateConversions);
+          NODE
+
+      - name: Upload sanitized readback evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: hg10-conversion-readback-${{ inputs.target_date }}
+          retention-days: 14
+          path: |
+            /tmp/hg10-d1.json
+            /tmp/hg10-ads.json
+            /tmp/hg10-verdict.json
