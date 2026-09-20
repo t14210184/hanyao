@@ -8,9 +8,46 @@ import {
   normalizeEmailForGoogle,
   normalizeTaiwanMobileForGoogle,
 } from "../functions/_lib/high-intent-signal.ts";
-import { persistHighIntentShadowSafely } from "../functions/_lib/high-intent-shadow.ts";
+import {
+  ensureHighIntentShadowSchema,
+  persistHighIntentShadowSafely,
+} from "../functions/_lib/high-intent-shadow.ts";
 
 const migrationPath = "migrations/0013_high_intent_signal_shadow.sql";
+
+class SqliteD1Statement {
+  constructor(db, sql) {
+    this.db = db;
+    this.sql = sql;
+    this.args = [];
+  }
+  bind(...args) {
+    this.args = args;
+    return this;
+  }
+  async first() {
+    return this.db.prepare(this.sql).get(...this.args) ?? null;
+  }
+  async run() {
+    const result = this.db.prepare(this.sql).run(...this.args);
+    return {
+      success: true,
+      meta: { changes: Number(result.changes ?? 0) },
+      results: [],
+    };
+  }
+}
+
+const sqliteD1 = (db) => ({
+  prepare(sql) {
+    return new SqliteD1Statement(db, sql);
+  },
+  async batch(statements) {
+    const results = [];
+    for (const statement of statements) results.push(await statement.run());
+    return results;
+  },
+});
 
 const sha = async (value) => {
   const bytes = new Uint8Array(
@@ -142,13 +179,65 @@ test("HQ02 migration replays idempotently and enforces shadow constraints", asyn
   }, /CHECK/);
 });
 
+test("HQ02 lazy bootstrap creates only additive shadow schema and is idempotent", async () => {
+  const db = new DatabaseSync(":memory:");
+  db.exec(`
+    PRAGMA foreign_keys = ON;
+    CREATE TABLE lead_tokens (lead_token TEXT PRIMARY KEY);
+    CREATE TABLE line_events (line_event_id TEXT PRIMARY KEY);
+    INSERT INTO lead_tokens(lead_token) VALUES ('HY-KEEP');
+    INSERT INTO line_events(line_event_id) VALUES ('LE-KEEP');
+  `);
+  const d1 = sqliteD1(db);
+
+  await ensureHighIntentShadowSchema(d1);
+  await ensureHighIntentShadowSchema(d1);
+
+  for (const table of [
+    "lead_signal_observations",
+    "lead_user_identifiers",
+    "message_asset_metrics_daily",
+  ]) {
+    const row = db
+      .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name=?")
+      .get(table);
+    assert.equal(row?.name, table);
+  }
+  assert.equal(
+    db.prepare("SELECT COUNT(*) AS c FROM lead_tokens").get().c,
+    1
+  );
+  assert.equal(
+    db.prepare("SELECT COUNT(*) AS c FROM line_events").get().c,
+    1
+  );
+  assert.equal(
+    db.prepare("SELECT COUNT(*) AS c FROM lead_signal_observations").get().c,
+    0
+  );
+  assert.equal(
+    db.prepare("SELECT COUNT(*) AS c FROM lead_user_identifiers").get().c,
+    0
+  );
+  assert.equal(
+    db.prepare("SELECT COUNT(*) AS c FROM message_asset_metrics_daily").get().c,
+    0
+  );
+});
+
 test("C03 shadow classifier failure is observable and never throws into canonical caller", async () => {
   const warnings = [];
   const originalWarn = console.warn;
   console.warn = (...args) => warnings.push(args);
   try {
+    const db = new DatabaseSync(":memory:");
+    db.exec(`
+      PRAGMA foreign_keys = ON;
+      CREATE TABLE lead_tokens (lead_token TEXT PRIMARY KEY);
+      CREATE TABLE line_events (line_event_id TEXT PRIMARY KEY);
+    `);
     const result = await persistHighIntentShadowSafely(
-      {},
+      sqliteD1(db),
       {
         lineEventId: "le-failure",
         lineUserKey: "lu_v1_shadow",
