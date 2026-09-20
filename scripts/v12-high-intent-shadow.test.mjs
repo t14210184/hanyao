@@ -8,6 +8,7 @@ import {
   normalizeEmailForGoogle,
   normalizeTaiwanMobileForGoogle,
 } from "../functions/_lib/high-intent-signal.ts";
+import { persistHighIntentShadowSafely } from "../functions/_lib/high-intent-shadow.ts";
 
 const migrationPath = "migrations/0013_high_intent_signal_shadow.sql";
 
@@ -139,4 +140,34 @@ test("HQ02 migration replays idempotently and enforces shadow constraints", asyn
       "2026-09-20T00:00:00.000Z","2026-09-20T00:00:00.000Z"
     );
   }, /CHECK/);
+});
+
+test("C03 shadow classifier failure is observable and never throws into canonical caller", async () => {
+  const warnings = [];
+  const originalWarn = console.warn;
+  console.warn = (...args) => warnings.push(args);
+  try {
+    const result = await persistHighIntentShadowSafely(
+      {},
+      {
+        lineEventId: "le-failure",
+        lineUserKey: "lu_v1_shadow",
+        leadToken: null,
+        matchStatus: "UNMATCHED",
+        exactAdsAttribution: false,
+        messageText: "冷氣不冷，明天下午可以來鳳山估價嗎？",
+        observedAt: "2026-09-20T00:00:00.000Z",
+      },
+      async () => {
+        throw new Error("INJECTED_CLASSIFIER_FAILURE");
+      }
+    );
+    assert.equal(result, "FAILED");
+    assert.equal(warnings.length, 1);
+    const serialized = JSON.stringify(warnings);
+    assert.match(serialized, /HANYAO_HIGH_INTENT_SHADOW_FAILED/);
+    assert.doesNotMatch(serialized, /冷氣不冷|INJECTED_CLASSIFIER_FAILURE/);
+  } finally {
+    console.warn = originalWarn;
+  }
 });
