@@ -90,6 +90,7 @@ test("HQ04 exact SearchStream request never mutates provider state", async () =>
   };
 
   const rows = await readMessageAssetMetrics(
+    "4801404246",
     "token-test",
     "9401096633",
     "2026-09-20",
@@ -136,6 +137,7 @@ test("HQ04 provider errors are bounded and never echo response body", async () =
   await assert.rejects(
     () =>
       readMessageAssetMetrics(
+        "4801404246",
         "token-test",
         null,
         "2026-09-20",
