@@ -1,6 +1,7 @@
 import type { D1Database } from "@cloudflare/workers-types";
 import type { GoogleAdsAttributionSelection } from "./attribution.ts";
 import { extractLeadTokens } from "./lead-token.ts";
+import { persistHighIntentShadowSafely } from "./high-intent-shadow.ts";
 import {
   readVerifiedLeadAttributionSnapshot,
   type LeadAttributionSnapshot,
@@ -448,6 +449,15 @@ export const processLineWebhookEvent = async (
     if (existing.canonical_fingerprint !== canonicalFingerprint) {
       throw new Error("LINE_EVENT_CANONICAL_FINGERPRINT_MISMATCH");
     }
+    await persistHighIntentShadowSafely(database, {
+      lineEventId: existing.line_event_id,
+      lineUserKey,
+      leadToken: decision.leadToken,
+      matchStatus: decision.matchStatus,
+      exactAdsAttribution: decision.matchStatus === "MATCHED_ADS" && Boolean(decision.attribution),
+      messageText: isTextMessage ? event.messageText : null,
+      observedAt: receivedAt,
+    });
     return "duplicate";
   }
   const lineEventId = existing?.line_event_id ?? crypto.randomUUID();
@@ -667,6 +677,15 @@ export const processLineWebhookEvent = async (
     .bind(event.webhookEventId)
     .first<{ line_event_id: string }>();
   if (!stored) return "duplicate";
+  await persistHighIntentShadowSafely(database, {
+    lineEventId: stored.line_event_id,
+    lineUserKey,
+    leadToken: decision.leadToken,
+    matchStatus: decision.matchStatus,
+    exactAdsAttribution: decision.matchStatus === "MATCHED_ADS" && Boolean(decision.attribution),
+    messageText: isTextMessage ? event.messageText : null,
+    observedAt: receivedAt,
+  });
   if (!eventInserted || existing) return "duplicate";
 
   if (canonicalEligible && lineUserKey && decision.leadToken) {

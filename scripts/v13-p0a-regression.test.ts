@@ -30,7 +30,8 @@ interface FakeState {
   lead: Record<string, unknown>;
   existing: { line_event_id: string; canonical_fingerprint: string } | null;
   attributionSessionReads: number;
-  batchCalls: number;
+  canonicalBatchCalls: number;
+  shadowBatchCalls: number;
 }
 
 class FakeStatement {
@@ -76,8 +77,16 @@ const fakeDatabase = (state: FakeState): D1Database => ({
     return new FakeStatement(sql, state);
   },
   async batch(statements: FakeStatement[]) {
-    state.batchCalls += 1;
     const first = statements[0];
+    if (first.sql.includes("lead_signal_observations")) {
+      state.shadowBatchCalls += 1;
+      return statements.map((_, index) => ({
+        success: true,
+        meta: { changes: index === 0 ? 1 : 0 },
+        results: [],
+      }));
+    }
+    state.canonicalBatchCalls += 1;
     state.existing = {
       line_event_id: String(first.args[0]),
       canonical_fingerprint: String(first.args[26]),
@@ -103,7 +112,8 @@ test("P0-A freezes attribution at token issuance and redelivery never rereads se
     },
     existing: null,
     attributionSessionReads: 0,
-    batchCalls: 0,
+    canonicalBatchCalls: 0,
+    shadowBatchCalls: 0,
   };
   const database = fakeDatabase(state);
   const event: ParsedLineEvent = {
@@ -121,7 +131,8 @@ test("P0-A freezes attribution at token issuance and redelivery never rereads se
   const first = await processLineWebhookEvent(database, event, "p0a-secret");
   assert.equal(first, "ignored");
   assert.equal(state.attributionSessionReads, 0);
-  assert.equal(state.batchCalls, 1);
+  assert.equal(state.canonicalBatchCalls, 1);
+  assert.equal(state.shadowBatchCalls, 1);
   const firstFingerprint = state.existing?.canonical_fingerprint;
   assert.ok(firstFingerprint);
 
@@ -136,6 +147,7 @@ test("P0-A freezes attribution at token issuance and redelivery never rereads se
   );
   assert.equal(second, "duplicate");
   assert.equal(state.attributionSessionReads, 0);
-  assert.equal(state.batchCalls, 1);
+  assert.equal(state.canonicalBatchCalls, 1);
+  assert.equal(state.shadowBatchCalls, 2);
   assert.equal(state.existing?.canonical_fingerprint, firstFingerprint);
 });

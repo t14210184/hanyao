@@ -32,6 +32,8 @@ jobs:
         run: npm run build
       - name: TypeScript typecheck
         run: npm run typecheck
+      - name: Verify high-intent classifier and shadow schema
+        run: npm run test:v12:high-intent
       - name: Verify immutable attribution snapshot
         run: npm run test:v13:p0a
       - name: Verify provider ACK and RESULT_UNKNOWN recovery
