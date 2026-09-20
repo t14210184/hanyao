@@ -56,6 +56,8 @@ const config: UploaderConfig = {
   googleAdsAccountId: "4801404246",
   googleAdsConversionActionId: "7674301565",
   validateOnly: true,
+  enhancedUserDataEnabled: false,
+  adUserDataConsentGranted: false,
   terminalRetentionDays: null,
 };
 
