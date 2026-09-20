@@ -1,4 +1,5 @@
 import type { D1Database } from "@cloudflare/workers-types";
+import type { EnhancedHashedIdentifier } from "./enhanced-user-data.ts";
 
 export const GOOGLE_DATA_MANAGER_EVENTS_URL =
   "https://datamanager.googleapis.com/v1/events:ingest";
@@ -91,6 +92,7 @@ export interface ConversionOutboxRow {
   upload_payload_hash?: string | null;
   completion_id?: string | null;
   provider_warning_json?: string | null;
+  enhanced_user_identifiers?: EnhancedHashedIdentifier[];
 }
 export interface UploaderEnv {
   ATTRIBUTION_DB: D1Database;
@@ -100,6 +102,8 @@ export interface UploaderEnv {
   GOOGLE_ADS_LOGIN_CUSTOMER_ID?: string;
   MESSAGE_ASSET_METRICS_ENABLED?: string;
   MESSAGE_ASSET_METRICS_MIN_INTERVAL_MINUTES?: string;
+  GOOGLE_ENHANCED_CONVERSIONS_USER_DATA_ENABLED?: string;
+  GOOGLE_ENHANCED_CONVERSIONS_AD_USER_DATA_CONSENT?: string;
   GOOGLE_DATA_MANAGER_VALIDATE_ONLY?: string;
   GOOGLE_OUTBOX_TERMINAL_RETENTION_DAYS?: string;
   UPLOADER_ENVIRONMENT?: string;
@@ -110,6 +114,8 @@ export interface UploaderConfig {
   googleAdsAccountId: string;
   googleAdsConversionActionId: string;
   validateOnly: boolean;
+  enhancedUserDataEnabled: boolean;
+  adUserDataConsentGranted: boolean;
   terminalRetentionDays: number | null;
 }
 
@@ -124,6 +130,10 @@ export interface OutboxRepository {
     conversionId: string,
     nowIso: string
   ): Promise<ConversionOutboxRow | null>;
+  hydrateEnhancedUserData?(
+    row: ConversionOutboxRow,
+    nowIso: string
+  ): Promise<ConversionOutboxRow>;
   listDueDiagnostics(
     nowIso: string,
     limit: number
