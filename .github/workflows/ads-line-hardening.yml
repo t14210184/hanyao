@@ -8,6 +8,7 @@ on:
     paths:
       - "functions/api/line/**"
       - "functions/_lib/line-webhook.ts"
+      - "functions/_lib/high-intent-*.ts"
       - "functions/_lib/types.ts"
       - "workers/google-ads-uploader/**"
       - "scripts/hg09-*"
@@ -31,6 +32,7 @@ on:
       - "scripts/line4b-*"
       - "scripts/line4c-*"
       - "scripts/line4d-*"
+      - "scripts/v12-high-intent-*"
       - "scripts/v12-migration-reconstruction.test.mjs"
       - "scripts/v12-workflow-safety.test.mjs"
       - "migrations/**"
@@ -43,6 +45,7 @@ on:
     paths:
       - "functions/api/line/**"
       - "functions/_lib/line-webhook.ts"
+      - "functions/_lib/high-intent-*.ts"
       - "functions/_lib/types.ts"
       - "workers/google-ads-uploader/**"
       - "scripts/hg09-*"
@@ -75,6 +78,7 @@ on:
       - "scripts/line4c-*"
       - "scripts/line4d-*"
       - "scripts/wp06-lighthouse-summarize.mjs"
+      - "scripts/v12-high-intent-*"
       - "scripts/v12-migration-reconstruction.test.mjs"
       - "scripts/v12-workflow-safety.test.mjs"
       - "migrations/**"
