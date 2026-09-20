@@ -1,4 +1,5 @@
 import type { D1Database } from "@cloudflare/workers-types";
+import { snapshotEnhancedUserDataForConversion } from "./enhanced-user-data.ts";
 import {
   MAX_UPLOAD_ATTEMPTS,
   PROVIDER_DISPATCH_MIN_LEASE_REMAINING_MS,
@@ -286,6 +287,24 @@ export class D1OutboxRepository implements OutboxRepository {
       .prepare(`SELECT ${OUTBOX_COLUMNS} FROM conversion_outbox WHERE conversion_id = ?1`)
       .bind(conversionId)
       .first<ConversionOutboxRow>();
+  }
+
+  async hydrateEnhancedUserData(
+    row: ConversionOutboxRow,
+    nowIso: string
+  ): Promise<ConversionOutboxRow> {
+    if (!row.business_conversion_id) {
+      row.enhanced_user_identifiers = [];
+      return row;
+    }
+
+    row.enhanced_user_identifiers =
+      await snapshotEnhancedUserDataForConversion(
+        this.database,
+        row.business_conversion_id,
+        nowIso
+      );
+    return row;
   }
 
   async beginProviderAttempt(
