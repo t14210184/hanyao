@@ -1,3 +1,4 @@
+# HQ02 ops rollout trigger: no hardening semantics changed.
 name: Ads LINE hardening
 
 on:
