@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - ops/hq02-production-shadow-rollout-20260920
+      - main
     paths:
       - ".github/workflows/hq02-production-shadow-rollout.yml"
   pull_request:
@@ -50,7 +51,11 @@ jobs:
         run: |
           set -euo pipefail
           git fetch origin main --no-tags
-          base="$(git merge-base HEAD origin/main)"
+          if [ "$GITHUB_EVENT_NAME" = "push" ] && [ "$GITHUB_REF" = "refs/heads/main" ]; then
+            base="$(git rev-parse HEAD^1)"
+          else
+            base="$(git merge-base HEAD origin/main)"
+          fi
           test "$base" = "$EXPECTED_BASE_SHA"
           blob="$(git hash-object "migrations/$TARGET_MIGRATION")"
           test "$blob" = "$EXPECTED_MIGRATION_BLOB_SHA"
