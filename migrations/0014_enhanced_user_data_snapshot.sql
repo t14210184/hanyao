@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS conversion_user_data_snapshots (
   snapshot_version INTEGER NOT NULL DEFAULT 1
     CHECK (snapshot_version >= 1),
   snapshotted_at TEXT NOT NULL,
+  sealed_at TEXT,
   created_at TEXT NOT NULL,
   FOREIGN KEY (business_conversion_id)
     REFERENCES business_conversions (business_conversion_id)
