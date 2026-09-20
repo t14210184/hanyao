@@ -75,14 +75,14 @@ const config = (
 class SqliteD1Statement {
   db: DatabaseSync;
   sql: string;
-  args: unknown[] = [];
+  args: any[] = [];
 
   constructor(db: DatabaseSync, sql: string) {
     this.db = db;
     this.sql = sql;
   }
 
-  bind(...args: unknown[]) {
+  bind(...args: any[]) {
     this.args = args;
     return this;
   }
@@ -225,7 +225,7 @@ test("HQ06 D02 consent-gated userData preserves click identity and validateOnly 
   const result = await ingestDataManagerEvent(
     "unit-test-access-token",
     request,
-    async (_input, init) => {
+    (async (_input: RequestInfo | URL, init?: RequestInit) => {
       capturedBody = String(init?.body ?? "");
       return new Response(
         JSON.stringify({
@@ -237,7 +237,7 @@ test("HQ06 D02 consent-gated userData preserves click identity and validateOnly 
           headers: { "content-type": "application/json" },
         }
       );
-    }
+    }) as typeof fetch
   );
   assert.equal(request.validateOnly, true);
   assert.equal(result.requestId, null);
