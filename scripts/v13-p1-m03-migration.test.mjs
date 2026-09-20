@@ -9,7 +9,7 @@ const files = fs.readdirSync(migrationsDir)
   .filter((name) => /^\d{4}_.*\.sql$/.test(name))
   .sort();
 
-assert.equal(files.at(-1), "0013_high_intent_signal_shadow.sql");
+assert.equal(files.at(-1), "0014_enhanced_user_data_snapshot.sql");
 const db = new DatabaseSync(":memory:");
 db.exec("PRAGMA foreign_keys = ON;");
 for (const file of files) {
@@ -25,6 +25,8 @@ for (const table of [
   "lead_signal_observations",
   "lead_user_identifiers",
   "message_asset_metrics_daily",
+  "conversion_user_data_snapshots",
+  "conversion_user_data_snapshot_items",
 ]) {
   const row = db.prepare(
     "SELECT name FROM sqlite_master WHERE type='table' AND name=?"
@@ -38,4 +40,5 @@ console.log(JSON.stringify({
   outboxWarningEvidence: true,
   attemptWarningEvidence: true,
   highIntentShadowSchema: true,
+  enhancedUserDataSnapshotSchema: true,
 }));
