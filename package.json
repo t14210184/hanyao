@@ -43,7 +43,8 @@
     "test:google-ads:host-runner": "node scripts/google-ads-provider-host-runner-static.test.mjs",
     "test:hg10:readback": "node --test scripts/cloudflare-d1-readonly.test.mjs scripts/conversion-closure-classifier.test.mjs && node scripts/hg10-e17-inspector.test.mjs && node scripts/hg10-system-readback-runner-static.test.mjs && node scripts/google-ads-read-contract-static.test.mjs && npm run test:google-ads:host-runner",
     "test:v12:high-intent": "node --experimental-strip-types --test scripts/v12-high-intent-shadow.test.mjs && node scripts/line1a-http-v13-adapter.mjs",
-    "test:hq04:message-assets": "node --experimental-strip-types --test scripts/ads-message-asset-metrics.test.ts workers/google-ads-uploader/test/message-asset-metrics.test.ts"
+    "test:hq04:message-assets": "node --experimental-strip-types --test scripts/ads-message-asset-metrics.test.ts workers/google-ads-uploader/test/message-asset-metrics.test.ts",
+    "test:hq05:prereq": "node --experimental-strip-types --test scripts/ads-enhanced-conversion-prereq.test.ts"
   },
   "dependencies": {
     "@next/third-parties": "^16.2.9",

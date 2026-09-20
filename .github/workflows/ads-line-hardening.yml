@@ -20,6 +20,7 @@ on:
       - "scripts/ads-landing-*"
       - "scripts/ads-line-message-*"
       - "scripts/ads-message-asset-*"
+      - "scripts/ads-enhanced-conversion-*"
       - "scripts/ads-optimization-*"
       - "scripts/google-ads-read-*"
       - "scripts/google-ads-provider-*"
@@ -66,6 +67,7 @@ on:
       - "scripts/ads-landing-*"
       - "scripts/ads-line-message-*"
       - "scripts/ads-message-asset-*"
+      - "scripts/ads-enhanced-conversion-*"
       - "scripts/ads-optimization-*"
       - "scripts/google-ads-read-*"
       - "scripts/google-ads-provider-*"
@@ -117,6 +119,8 @@ jobs:
         run: node scripts/ads-cro-repair-hero-static.test.mjs
       - name: Verify Google Ads short-lived provider auth
         run: npm run test:google-ads:auth
+      - name: Verify enhanced conversion prerequisite readback
+        run: npm run test:hq05:prereq
       - name: Verify governed Google Ads host provider runner
         run: npm run test:google-ads:host-runner
       - name: Parse Google Ads host provider PowerShell
