@@ -94,6 +94,7 @@ const ENHANCED_USER_DATA_SCHEMA_STATEMENTS = [
     snapshot_version INTEGER NOT NULL DEFAULT 1
       CHECK (snapshot_version >= 1),
     snapshotted_at TEXT NOT NULL,
+    sealed_at TEXT,
     created_at TEXT NOT NULL,
     FOREIGN KEY (business_conversion_id)
       REFERENCES business_conversions (business_conversion_id)
@@ -200,9 +201,9 @@ export const snapshotEnhancedUserDataForConversion = async (
       .prepare(
         `INSERT OR IGNORE INTO conversion_user_data_snapshots (
           business_conversion_id, line_user_key, snapshot_version,
-          snapshotted_at, created_at
+          snapshotted_at, sealed_at, created_at
         )
-        SELECT business_conversion_id, subject_key, 1, ?2, ?2
+        SELECT business_conversion_id, subject_key, 1, ?2, NULL, ?2
           FROM business_conversions
          WHERE business_conversion_id=?1
            AND subject_kind='LINE_USER_HMAC'
@@ -225,6 +226,7 @@ export const snapshotEnhancedUserDataForConversion = async (
           JOIN lead_user_identifiers identifiers
             ON identifiers.line_user_key = snapshot.line_user_key
          WHERE snapshot.business_conversion_id=?1
+           AND snapshot.sealed_at IS NULL
            AND identifiers.first_seen_at <= snapshot.snapshotted_at
            AND length(identifiers.identifier_hash)=64
            AND identifiers.identifier_hash NOT GLOB '*[^0-9a-fA-F]*'
@@ -232,6 +234,14 @@ export const snapshotEnhancedUserDataForConversion = async (
                   identifiers.identifier_type,
                   identifiers.identifier_hash
          LIMIT ${GOOGLE_DATA_MANAGER_MAX_USER_IDENTIFIERS}`
+      )
+      .bind(businessConversionId, snapshottedAt),
+    database
+      .prepare(
+        `UPDATE conversion_user_data_snapshots
+            SET sealed_at=?2
+          WHERE business_conversion_id=?1
+            AND sealed_at IS NULL`
       )
       .bind(businessConversionId, snapshottedAt),
   ]);
