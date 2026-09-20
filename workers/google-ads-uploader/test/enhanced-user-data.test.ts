@@ -280,7 +280,7 @@ test("HQ06 snapshot freezes identifiers at first claim time and excludes later P
       subject_kind TEXT NOT NULL,
       subject_key TEXT
     );
-    INSERT INTO line_events(line_event_id) VALUES ('le-email'), ('le-phone');
+    INSERT INTO line_events(line_event_id) VALUES ('le-email'), ('le-phone'), ('le-backdated');
     INSERT INTO business_conversions(
       business_conversion_id, subject_kind, subject_key
     ) VALUES (
@@ -330,12 +330,32 @@ test("HQ06 snapshot freezes identifiers at first claim time and excludes later P
     "2026-09-20T11:00:00.000Z"
   );
 
+  db.prepare(`
+    INSERT INTO lead_user_identifiers (
+      identifier_id, line_user_key, identifier_type, identifier_hash,
+      source_line_event_id, first_seen_at, created_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    "id-backdated",
+    "lu_v1_hq06",
+    "PHONE_SHA256",
+    PHONE_HASH,
+    "le-backdated",
+    "2026-09-20T09:30:00.000Z",
+    "2026-09-20T11:30:00.000Z"
+  );
+
   const second = await snapshotEnhancedUserDataForConversion(
     d1,
     "bc-hq06",
     "2026-09-20T12:00:00.000Z"
   );
   assert.deepEqual(second, first);
+  const seal = db.prepare(
+    "SELECT snapshotted_at, sealed_at FROM conversion_user_data_snapshots WHERE business_conversion_id=?"
+  ).get("bc-hq06");
+  assert.equal(seal.snapshotted_at, "2026-09-20T10:00:00.000Z");
+  assert.equal(seal.sealed_at, "2026-09-20T10:00:00.000Z");
 });
 
 test("HQ06 helper omits empty or invalid userData", () => {
