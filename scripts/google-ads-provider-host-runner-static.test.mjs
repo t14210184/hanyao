@@ -19,6 +19,10 @@ test("host runner is a SYSTEM-only immutable-source wrapper around existing engi
     "WP03_VALIDATE_ENABLE",
     "WP03_ENABLE",
     "HG10_E10_READBACK",
+    "HQ05_PREREQ_READ",
+    "HQ07_READ",
+    "HQ07_VALIDATE_CREATE",
+    "HQ07_CREATE",
   ]) {
     assert.match(source, new RegExp("'" + mode + "'"));
   }
@@ -35,11 +39,15 @@ test("host runner is a SYSTEM-only immutable-source wrapper around existing engi
     source,
     /https:\/\/codeload\.github\.com\/\$REPOSITORY\/zip\/\$SourceRef/
   );
+  assert.doesNotMatch(source, /git\s+(?:clone|fetch|checkout)/i);
+  assert.match(source, /Expand-Archive -LiteralPath \$zipPath -DestinationPath \$extractRoot -Force/);
 
   for (const engine of [
     "scripts\\\\ads-search-hygiene-audit\.ts",
     "scripts\\\\ads-search-hygiene-mutate\.ts",
     "scripts\\\\ads-rsa-provider\.ts",
+    "scripts\\\\ads-enhanced-conversion-prereq\.ts",
+    "scripts\\\\ads-qualified-lead-action\.ts",
   ]) {
     assert.match(source, new RegExp(engine));
   }
@@ -84,7 +92,7 @@ test("host runner preserves existing production gates and exact plan hashes", as
 
   assert.match(
     source,
-    /\$applyModes = @\('WP02_APPLY','WP03_APPLY_PAUSED','WP03_ENABLE'\)/
+    /\$applyModes = @\('WP02_APPLY','WP03_APPLY_PAUSED','WP03_ENABLE','HQ07_CREATE'\)/
   );
   assert.match(
     source,
@@ -107,6 +115,44 @@ test("host runner preserves existing production gates and exact plan hashes", as
     /HANYAO_WP03_PAUSED_CREATE_APPROVED_20260918/
   );
   assert.match(source, /HANYAO_WP03_ENABLE_APPROVED_20260918/);
+  assert.match(source, /'HQ07_CREATE'\)/);
+  assert.match(
+    source,
+    /\$psi\.EnvironmentVariables\['HQ07_EXPECTED_PLAN_HASH'\] = \$ExpectedPlanHash/
+  );
+  assert.match(
+    source,
+    /\$psi\.EnvironmentVariables\['HQ07_PRODUCTION_GATE'\] = 'HANYAO_HQ07_GOAL_MODE_20260920'/
+  );
+});
+
+test("HQ05/HQ07 host modes are bounded and read modes have no mutation flag", async () => {
+  const source = await readFile(RUNNER, "utf8");
+
+  const readModeBlocks = ["HQ05_PREREQ_READ", "HQ07_READ"].map((mode) => {
+    const match = source.match(
+      new RegExp("'" + mode + "'\\s*\\{([\\s\\S]*?)\\n\\s*\\}")
+    );
+    assert.ok(match, `${mode} mapping is present`);
+    return match[1];
+  });
+  for (const block of readModeBlocks) {
+    assert.doesNotMatch(block, /--(?:apply|validate-create)/);
+  }
+
+  const validateBlock = source.match(
+    /'HQ07_VALIDATE_CREATE'\s*\{\s*\$script = 'scripts\\ads-qualified-lead-action\.ts'\s*\$engineArgs = @\('--validate-create'\)/
+  );
+  assert.ok(validateBlock);
+  assert.doesNotMatch(validateBlock[0], /--apply/);
+
+  const createBlock = source.match(
+    /'HQ07_CREATE'\s*\{\s*\$script = 'scripts\\ads-qualified-lead-action\.ts'\s*\$engineArgs = @\('--apply'\)/
+  );
+  assert.ok(createBlock);
+  assert.match(createBlock[0], /--apply/);
+  assert.match(source, /\$readOnlyModes = @\([\s\S]*'HQ05_PREREQ_READ'[\s\S]*'HQ07_READ'\)/);
+  assert.match(source, /HANYAO_HOST_RUNNER_READ_MODE_PLAN_HASH_FORBIDDEN/);
 });
 
 test("host runner does not disclose gcloud config paths", async () => {
