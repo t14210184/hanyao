@@ -1,0 +1,168 @@
+name: HQ02 Production shadow schema rollout
+
+on:
+  push:
+    branches:
+      - ops/hq02-production-shadow-rollout-20260920
+    paths:
+      - ".github/workflows/hq02-production-shadow-rollout.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hq02-production-shadow-rollout
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      EXPECTED_BASE_SHA: f50f7ac1256d41365dcfca1d83a2c45f389e81b3
+      EXPECTED_MIGRATION_BLOB_SHA: 78350651150a4d6026f527db181e82059fa8c464
+      TARGET_MIGRATION: 0013_high_intent_signal_shadow.sql
+      PRODUCTION_D1_ID: 52453bad-90a3-4495-911b-c3d5b6cefb1f
+
+    steps:
+      - name: Checkout exact ops branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Verify immutable migration and parent
+        shell: bash
+        run: |
+          set -euo pipefail
+          parent="$(git rev-parse HEAD^)"
+          test "$parent" = "$EXPECTED_BASE_SHA"
+          blob="$(git hash-object "migrations/$TARGET_MIGRATION")"
+          test "$blob" = "$EXPECTED_MIGRATION_BLOB_SHA"
+          echo "HQ02_SOURCE_FENCE=PASS"
+
+      - name: Resolve Cloudflare provider material
+        shell: bash
+        env:
+          CF_TOKEN_PRIMARY: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_TOKEN_LEGACY: ${{ secrets.CF_API_TOKEN }}
+          CF_ACCOUNT_VAR: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          CF_ACCOUNT_SECRET: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CF_ACCOUNT_LEGACY_VAR: ${{ vars.CF_ACCOUNT_ID }}
+          CF_ACCOUNT_LEGACY_SECRET: ${{ secrets.CF_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          token="${CF_TOKEN_PRIMARY:-}"
+          if [ -z "$token" ]; then token="${CF_TOKEN_LEGACY:-}"; fi
+          account="${CF_ACCOUNT_VAR:-}"
+          if [ -z "$account" ]; then account="${CF_ACCOUNT_SECRET:-}"; fi
+          if [ -z "$account" ]; then account="${CF_ACCOUNT_LEGACY_VAR:-}"; fi
+          if [ -z "$account" ]; then account="${CF_ACCOUNT_LEGACY_SECRET:-}"; fi
+          if [ -z "$token" ]; then echo "HQ02_CLOUDFLARE_AUTH=MISSING_TOKEN"; exit 10; fi
+          if [ -z "$account" ]; then echo "HQ02_CLOUDFLARE_AUTH=MISSING_ACCOUNT"; exit 11; fi
+          echo "::add-mask::$token"
+          echo "::add-mask::$account"
+          {
+            echo "CLOUDFLARE_API_TOKEN=$token"
+            echo "CLOUDFLARE_ACCOUNT_ID=$account"
+          } >> "$GITHUB_ENV"
+          echo "HQ02_CLOUDFLARE_AUTH=RESOLVED"
+
+      - name: Read Production D1 prestate
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx wrangler d1 execute "$PRODUCTION_D1_ID" --remote --json \
+            --command "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('line_events','business_conversions','conversion_outbox','lead_signal_observations','lead_user_identifiers','message_asset_metrics_daily') ORDER BY name; SELECT (SELECT COUNT(*) FROM line_events) AS line_events_count,(SELECT COUNT(*) FROM business_conversions) AS business_conversions_count,(SELECT COUNT(*) FROM conversion_outbox) AS conversion_outbox_count;" \
+            > /tmp/hq02-pre.json
+          node <<'NODE'
+          const fs = require("fs");
+          const p = JSON.parse(fs.readFileSync("/tmp/hq02-pre.json","utf8"));
+          const chunks = Array.isArray(p) ? p : [p];
+          const sets = chunks.flatMap(x => Array.isArray(x.results) ? [x.results] : []);
+          const tableRows = sets.find(rows => rows.some(r => r && typeof r.name === "string")) || [];
+          const names = new Set(tableRows.map(r => r.name));
+          for (const required of ["line_events","business_conversions","conversion_outbox"]) {
+            if (!names.has(required)) throw new Error("HQ02_CANONICAL_PRESTATE_MISSING_" + required);
+          }
+          const shadow = ["lead_signal_observations","lead_user_identifiers","message_asset_metrics_daily"].filter(x => names.has(x));
+          if (shadow.length !== 0 && shadow.length !== 3) throw new Error("HQ02_SHADOW_SCHEMA_PARTIAL");
+          const countRows = sets.find(rows => rows.some(r => r && r.line_events_count !== undefined)) || [];
+          if (countRows.length !== 1) throw new Error("HQ02_PRE_COUNTS_MISSING");
+          fs.writeFileSync("/tmp/hq02-pre-counts.json", JSON.stringify(countRows[0]));
+          fs.writeFileSync("/tmp/hq02-shadow-pre.txt", String(shadow.length));
+          console.log("HQ02_PRESTATE=PASS");
+          console.log("HQ02_SHADOW_TABLES_PRE=" + shadow.length);
+          NODE
+
+      - name: Read pending D1 migrations
+        if: success()
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "$(cat /tmp/hq02-shadow-pre.txt)" = "3" ]; then
+            echo "HQ02_PENDING_CHECK=SKIPPED_ALREADY_PRESENT"
+            exit 0
+          fi
+          npx wrangler d1 migrations list ATTRIBUTION_DB --remote --env production \
+            --config workers/google-ads-uploader/wrangler.jsonc \
+            > /tmp/hq02-pending.txt
+          mapfile -t pending < <(grep -Eo '[0-9]{4}_[A-Za-z0-9_.-]+\.sql' /tmp/hq02-pending.txt | sort -u || true)
+          if [ "${#pending[@]}" -ne 1 ] || [ "${pending[0]:-}" != "$TARGET_MIGRATION" ]; then
+            echo "HQ02_PENDING_MIGRATIONS_UNEXPECTED=count:${#pending[@]}"
+            exit 20
+          fi
+          echo "HQ02_PENDING_MIGRATIONS=EXACT_0013"
+
+      - name: Apply exact pending migration
+        if: success()
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "$(cat /tmp/hq02-shadow-pre.txt)" = "3" ]; then
+            echo "HQ02_APPLY=ALREADY_PRESENT"
+            exit 0
+          fi
+          npx wrangler d1 migrations apply ATTRIBUTION_DB --remote --env production \
+            --config workers/google-ads-uploader/wrangler.jsonc
+          echo "HQ02_APPLY=DISPATCHED_ONCE"
+
+      - name: Same-source Production D1 readback
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx wrangler d1 execute "$PRODUCTION_D1_ID" --remote --json \
+            --command "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('lead_signal_observations','lead_user_identifiers','message_asset_metrics_daily') ORDER BY name; SELECT (SELECT COUNT(*) FROM line_events) AS line_events_count,(SELECT COUNT(*) FROM business_conversions) AS business_conversions_count,(SELECT COUNT(*) FROM conversion_outbox) AS conversion_outbox_count,(SELECT COUNT(*) FROM lead_signal_observations) AS lead_signal_observations_count,(SELECT COUNT(*) FROM lead_user_identifiers) AS lead_user_identifiers_count,(SELECT COUNT(*) FROM message_asset_metrics_daily) AS message_asset_metrics_daily_count;" \
+            > /tmp/hq02-post.json
+          node <<'NODE'
+          const fs = require("fs");
+          const pre = JSON.parse(fs.readFileSync("/tmp/hq02-pre-counts.json","utf8"));
+          const p = JSON.parse(fs.readFileSync("/tmp/hq02-post.json","utf8"));
+          const chunks = Array.isArray(p) ? p : [p];
+          const sets = chunks.flatMap(x => Array.isArray(x.results) ? [x.results] : []);
+          const tableRows = sets.find(rows => rows.some(r => r && typeof r.name === "string")) || [];
+          const names = new Set(tableRows.map(r => r.name));
+          for (const required of ["lead_signal_observations","lead_user_identifiers","message_asset_metrics_daily"]) {
+            if (!names.has(required)) throw new Error("HQ02_POSTSTATE_MISSING_" + required);
+          }
+          const countRows = sets.find(rows => rows.some(r => r && r.line_events_count !== undefined)) || [];
+          if (countRows.length !== 1) throw new Error("HQ02_POST_COUNTS_MISSING");
+          const post = countRows[0];
+          for (const key of ["line_events_count","business_conversions_count","conversion_outbox_count"]) {
+            if (String(pre[key]) !== String(post[key])) throw new Error("HQ02_CANONICAL_ROWCOUNT_DRIFT_" + key);
+          }
+          for (const key of ["lead_signal_observations_count","lead_user_identifiers_count","message_asset_metrics_daily_count"]) {
+            if (Number(post[key]) !== 0) throw new Error("HQ02_SHADOW_TABLE_NOT_EMPTY_" + key);
+          }
+          console.log("HQ02_PRODUCTION_SCHEMA_READBACK=PASS");
+          console.log("HQ02_CANONICAL_ROWCOUNTS_UNCHANGED=PASS");
+          console.log("HQ02_SHADOW_TABLES_EMPTY=PASS");
+          NODE
