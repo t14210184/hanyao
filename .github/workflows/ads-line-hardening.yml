@@ -121,6 +121,8 @@ jobs:
         run: npm run test:google-ads:auth
       - name: Verify enhanced conversion prerequisite readback
         run: npm run test:hq05:prereq
+      - name: Verify HQ06 enhanced user-data payload and snapshot
+        run: npm run test:hq06:userdata
       - name: Verify governed Google Ads host provider runner
         run: npm run test:google-ads:host-runner
       - name: Parse Google Ads host provider PowerShell

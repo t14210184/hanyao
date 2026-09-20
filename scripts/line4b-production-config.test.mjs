@@ -27,6 +27,8 @@ assert.equal(production.vars.GOOGLE_ADS_CONVERSION_ACTION_ID, "7674301565");
 assert.equal(production.vars.GOOGLE_OUTBOX_TERMINAL_RETENTION_DAYS, "90");
 assert.equal(production.vars.MESSAGE_ASSET_METRICS_ENABLED, "false");
 assert.equal(production.vars.MESSAGE_ASSET_METRICS_MIN_INTERVAL_MINUTES, "60");
+assert.equal(production.vars.GOOGLE_ENHANCED_CONVERSIONS_USER_DATA_ENABLED, "false");
+assert.equal(production.vars.GOOGLE_ENHANCED_CONVERSIONS_AD_USER_DATA_CONSENT, "UNSPECIFIED");
 assert.equal("PRODUCTION_HUMAN_GATE" in production.vars, false);
 
 const crons = production.triggers?.crons;

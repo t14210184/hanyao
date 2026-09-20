@@ -64,6 +64,8 @@ const config: UploaderConfig = {
   googleAdsAccountId: "4801404246",
   googleAdsConversionActionId: "7674301565",
   validateOnly: true,
+  enhancedUserDataEnabled: false,
+  adUserDataConsentGranted: false,
   terminalRetentionDays: DEFAULT_TERMINAL_RETENTION_DAYS,
 };
 
@@ -230,6 +232,8 @@ const testEnv = (
     GOOGLE_DATA_MANAGER_SERVICE_ACCOUNT_JSON: serviceAccountJson,
     GOOGLE_ADS_ACCOUNT_ID: "4801404246",
     GOOGLE_ADS_CONVERSION_ACTION_ID: "7674301565",
+    GOOGLE_ENHANCED_CONVERSIONS_USER_DATA_ENABLED: "false",
+    GOOGLE_ENHANCED_CONVERSIONS_AD_USER_DATA_CONSENT: "UNSPECIFIED",
     GOOGLE_DATA_MANAGER_VALIDATE_ONLY: "true",
     GOOGLE_OUTBOX_TERMINAL_RETENTION_DAYS: "90",
     UPLOADER_ENVIRONMENT: "preview",

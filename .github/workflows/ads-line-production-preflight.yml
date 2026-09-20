@@ -88,6 +88,8 @@ jobs:
         run: npm run build
       - name: TypeScript typecheck
         run: npm run typecheck
+      - name: Verify HQ06 enhanced user-data payload and snapshot
+        run: npm run test:hq06:userdata
       - name: Verify Google Ads short-lived provider auth
         run: npm run test:google-ads:auth
       - name: Verify governed Google Ads host provider runner

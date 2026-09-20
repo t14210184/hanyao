@@ -852,6 +852,26 @@ export const runScheduledCycle = async (
     if (!row) continue;
     claimedRows += 1;
     remaining -= 1;
+
+    if (
+      config.enhancedUserDataEnabled &&
+      config.adUserDataConsentGranted &&
+      repository.hydrateEnhancedUserData
+    ) {
+      try {
+        await repository.hydrateEnhancedUserData(row, nowIso);
+      } catch {
+        row.enhanced_user_identifiers = [];
+        options.logger?.warn?.(
+          "google-ads-uploader enhanced user data omitted after snapshot failure",
+          {
+            conversion_id: row.conversion_id,
+            failure_code: "ENHANCED_USER_DATA_SNAPSHOT_FAILED",
+          }
+        );
+      }
+    }
+
     await processUpload(
       repository,
       row,
