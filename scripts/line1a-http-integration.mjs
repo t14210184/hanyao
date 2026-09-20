@@ -133,6 +133,7 @@ const makeMigrationRoots = () => {
     "0006_p1c2_i2_canonical_integrity.sql",
     "0007_canonical_outbox_delivery.sql",
     "0008_attribution_abuse_rate_state.sql",
+    "0013_high_intent_signal_shadow.sql",
   ]) {
     copyFileSync(join(cwd, "migrations", name), join(v3, "migrations", name));
   }
@@ -317,6 +318,19 @@ const counts = (configPath, persistTo) => ({
   lineEvents: lineEvents(configPath, persistTo).length,
   outbox: outboxRows(configPath, persistTo).length,
 });
+
+const shadowRows = (configPath, persistTo) =>
+  execute(
+    configPath,
+    persistTo,
+    "SELECT o.observation_id,o.line_event_id,e.webhook_event_id,o.line_user_key,o.lead_token,o.rule_version,o.match_status,o.attribution_lane,o.service_signal,o.transaction_intent_signal,o.location_signal,o.schedule_signal,o.contact_signal,o.qualified_candidate FROM lead_signal_observations o JOIN line_events e ON e.line_event_id=o.line_event_id ORDER BY o.created_at,o.observation_id;"
+  )[0].results;
+const identifierRows = (configPath, persistTo) =>
+  execute(
+    configPath,
+    persistTo,
+    "SELECT identifier_id,line_user_key,identifier_type,identifier_hash,source_line_event_id FROM lead_user_identifiers ORDER BY first_seen_at,identifier_id;"
+  )[0].results;
 
 const seedSql = [
   "INSERT INTO attribution_sessions (session_id, schema_version, first_gclid, last_gclid, server_created_at, server_updated_at, expires_at) VALUES",
@@ -685,6 +699,17 @@ try {
     lineEvents(configPath, persistTo).some((row) => row.line_user_key === "line-user-W20"),
     false
   );
+  const w20Shadow = shadowRows(configPath, persistTo).find(
+    (row) => row.webhook_event_id === "W20"
+  );
+  assert.equal(w20Shadow?.attribution_lane, "EXACT_CLICK");
+  assert.equal(w20Shadow?.contact_signal, 1);
+  const w20Identifiers = identifierRows(configPath, persistTo).filter(
+    (row) => row.source_line_event_id === w20Readback.line_event_id
+  );
+  assert.equal(w20Identifiers.length, 1);
+  assert.equal(w20Identifiers[0].identifier_type, "EMAIL_SHA256");
+  assert.match(w20Identifiers[0].identifier_hash, /^[0-9a-f]{64}$/);
 
   const beforeW22 = counts(configPath, persistTo);
   const w22 = await postPayload(running.baseUrl, {
@@ -774,6 +799,65 @@ try {
     (row) => row.subject_key === w27Key
   );
   assert.deepEqual(afterW27Lock, beforeW27Lock);
+
+  const beforeW28 = counts(configPath, persistTo);
+  const beforeW28Shadow = shadowRows(configPath, persistTo).length;
+  const w28Payload = {
+    events: [
+      lineTextEvent(
+        "W28",
+        "M28",
+        "冷氣不冷，明天下午可以來鳳山估價嗎？請聯絡 0912-345-678",
+        canonicalEventTimestamp,
+        "line-user-message-asset"
+      ),
+    ],
+  };
+  const w28 = await postPayload(running.baseUrl, w28Payload);
+  assertStatus(w28, 200, "W28 Message Asset-like direct LINE");
+  assertBodyStatus(w28, "ignored", "W28 Message Asset-like direct LINE");
+  const afterW28 = counts(configPath, persistTo);
+  assert.equal(afterW28.lineEvents, beforeW28.lineEvents + 1);
+  assert.equal(afterW28.outbox, beforeW28.outbox);
+  const w28Event = lineEvents(configPath, persistTo).find(
+    (row) => row.webhook_event_id === "W28"
+  );
+  assert.equal(w28Event.match_status, "UNMATCHED");
+  const w28Shadow = shadowRows(configPath, persistTo).find(
+    (row) => row.webhook_event_id === "W28"
+  );
+  assert.equal(w28Shadow?.attribution_lane, "USER_DATA_ONLY");
+  assert.equal(w28Shadow?.service_signal, 1);
+  assert.equal(w28Shadow?.transaction_intent_signal, 1);
+  assert.equal(w28Shadow?.location_signal, 1);
+  assert.equal(w28Shadow?.schedule_signal, 1);
+  assert.equal(w28Shadow?.contact_signal, 1);
+  assert.equal(w28Shadow?.qualified_candidate, 1);
+  const w28Identifiers = identifierRows(configPath, persistTo).filter(
+    (row) => row.source_line_event_id === w28Event.line_event_id
+  );
+  assert.equal(w28Identifiers.length, 1);
+  assert.equal(w28Identifiers[0].identifier_type, "PHONE_SHA256");
+  assert.match(w28Identifiers[0].identifier_hash, /^[0-9a-f]{64}$/);
+  assert.equal(JSON.stringify(w28Identifiers).includes("0912-345-678"), false);
+
+  const w28Redelivery = await postPayload(running.baseUrl, {
+    events: [
+      lineTextEvent(
+        "W28",
+        "M28",
+        "冷氣不冷，明天下午可以來鳳山估價嗎？請聯絡 0912-345-678",
+        canonicalEventTimestamp,
+        "line-user-message-asset",
+        "user",
+        true
+      ),
+    ],
+  });
+  assertStatus(w28Redelivery, 200, "W28 redelivery");
+  assertBodyStatus(w28Redelivery, "duplicate", "W28 redelivery");
+  assert.equal(shadowRows(configPath, persistTo).length, beforeW28Shadow + 1);
+  assert.equal(counts(configPath, persistTo).outbox, beforeW28.outbox);
 
   const persistedIdentityValues = [
     ...lineEvents(configPath, persistTo).map((row) => row.line_user_key),
