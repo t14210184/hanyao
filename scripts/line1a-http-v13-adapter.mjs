@@ -25,6 +25,7 @@ patched = replaceExactlyOnce(
 
 const migrationAnchor = [
   '    "0008_attribution_abuse_rate_state.sql",',
+  '    "0013_high_intent_signal_shadow.sql",',
   '  ]) {',
 ].join("\n");
 const migrationReplacement = [
@@ -33,6 +34,7 @@ const migrationReplacement = [
   '    "0010_provider_transport_recovery.sql",',
   '    "0011_atomic_terminal_completion.sql",',
   '    "0012_provider_quality_evidence.sql",',
+  '    "0013_high_intent_signal_shadow.sql",',
   '  ]) {',
 ].join("\n");
 patched = replaceExactlyOnce(
@@ -92,7 +94,7 @@ patched = replaceExactlyOnce(
 patched = replaceExactlyOnce(
   patched,
   'migration: "0001 -> existing data -> 0002 -> existing data -> 0003 -> 0008 PASS",',
-  'migration: "0001 -> existing data -> 0002 -> existing data -> 0003 -> 0012 PASS",',
+  'migration: "0001 -> existing data -> 0002 -> existing data -> 0003 -> 0013 PASS",',
   "migration result label"
 );
 
