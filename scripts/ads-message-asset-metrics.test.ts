@@ -53,7 +53,7 @@ test("HQ04 GAQL is BUSINESS_MESSAGE-only and read-only", async () => {
 });
 
 test("HQ04 parser preserves provider status and message-specific metrics", () => {
-  const rows = normalizeMessageAssetMetricRows(payload);
+  const rows = normalizeMessageAssetMetricRows(payload, "4801404246");
   assert.equal(rows.length, 1);
   assert.deepEqual(rows[0], {
     metricDate: "2026-09-20",
@@ -80,8 +80,8 @@ test("HQ04 parser preserves provider status and message-specific metrics", () =>
 });
 
 test("HQ04 exact SearchStream request never mutates provider state", async () => {
-  const calls = [];
-  const fetchImpl = async (url, init) => {
+  const calls: Array<{ url: string; init?: RequestInit }> = [];
+  const fetchImpl: typeof fetch = async (url, init) => {
     calls.push({ url: String(url), init });
     return new Response(JSON.stringify(payload), {
       status: 200,
@@ -99,12 +99,11 @@ test("HQ04 exact SearchStream request never mutates provider state", async () =>
   assert.equal(rows.length, 1);
   assert.equal(calls.length, 1);
   assert.match(calls[0].url, /googleAds:searchStream$/);
-  assert.equal(calls[0].init.method, "POST");
-  assert.equal(
-    calls[0].init.headers["login-customer-id"],
-    "9401096633"
-  );
-  const body = JSON.parse(calls[0].init.body);
+  assert.equal(calls[0].init?.method, "POST");
+  const headers = new Headers(calls[0].init?.headers);
+  assert.equal(headers.get("login-customer-id"), "9401096633");
+  assert.equal(typeof calls[0].init?.body, "string");
+  const body = JSON.parse(String(calls[0].init?.body));
   assert.match(body.query, /BUSINESS_MESSAGE/);
   assert.doesNotMatch(body.query, /mutate|UPDATE|INSERT|DELETE/i);
 });
@@ -113,7 +112,7 @@ test("HQ04 rejects non-BUSINESS_MESSAGE drift and malformed dates", () => {
   const wrong = structuredClone(payload);
   wrong[0].results[0].campaignAsset.fieldType = "CALL";
   assert.throws(
-    () => normalizeMessageAssetMetricRows(wrong),
+    () => normalizeMessageAssetMetricRows(wrong, "4801404246"),
     /MESSAGE_ASSET_FIELD_TYPE_DRIFT/
   );
   assert.throws(
