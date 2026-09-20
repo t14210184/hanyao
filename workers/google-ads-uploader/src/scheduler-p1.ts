@@ -1,4 +1,5 @@
 import { D1OutboxRepository } from "./repository.ts";
+import { collectMessageAssetMetrics } from "./message-asset-metrics.ts";
 import {
   runScheduledCycle,
   type ScheduledCycleOptions,
@@ -90,8 +91,14 @@ export const runScheduledCycleP1 = async (
 ): Promise<ScheduledCycleSummary> => {
   const inner =
     options.repository || new D1OutboxRepository(env.ATTRIBUTION_DB);
-  return runScheduledCycle(env, {
+  const summary = await runScheduledCycle(env, {
     ...options,
     repository: withP1Scheduling(inner, options.logger),
   });
+  await collectMessageAssetMetrics(env, {
+    now: options.now,
+    fetchImpl: options.fetchImpl,
+    logger: options.logger,
+  });
+  return summary;
 };
