@@ -26,6 +26,14 @@ export const resolveValidateOnly = (
   return !(environment === "production" && humanGate === "HUMAN_GATE_CONFIRMED");
 };
 
+export const resolveEnhancedUserDataEnabled = (
+  rawValue: unknown
+): boolean => rawValue === "true";
+
+export const resolveAdUserDataConsentGranted = (
+  rawValue: unknown
+): boolean => rawValue === "CONSENT_GRANTED";
+
 const safeAccountId = (value: string | undefined, expected: string): string => {
   const candidate = value?.trim();
   if (!candidate) {
@@ -87,6 +95,12 @@ export const getUploaderConfig = (env: UploaderEnv): UploaderConfig => {
       DEFAULT_GOOGLE_ADS_CONVERSION_ACTION_ID
     ),
     validateOnly,
+    enhancedUserDataEnabled: resolveEnhancedUserDataEnabled(
+      env.GOOGLE_ENHANCED_CONVERSIONS_USER_DATA_ENABLED
+    ),
+    adUserDataConsentGranted: resolveAdUserDataConsentGranted(
+      env.GOOGLE_ENHANCED_CONVERSIONS_AD_USER_DATA_CONSENT
+    ),
     terminalRetentionDays: resolveTerminalRetentionDays(
       env.GOOGLE_OUTBOX_TERMINAL_RETENTION_DAYS
     ),
