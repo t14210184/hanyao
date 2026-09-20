@@ -34,6 +34,8 @@ jobs:
         run: npm run typecheck
       - name: Verify high-intent classifier and shadow schema
         run: npm run test:v12:high-intent
+      - name: Verify Message Asset read-only metrics collector
+        run: npm run test:hq04:message-assets
       - name: Verify immutable attribution snapshot
         run: npm run test:v13:p0a
       - name: Verify provider ACK and RESULT_UNKNOWN recovery

@@ -57,6 +57,8 @@ assert.equal(config.d1_databases[0].preview_database_id, "google-ads-uploader-lo
 assert.equal("remote" in config.d1_databases[0], false);
 assert.equal(config.vars.GOOGLE_DATA_MANAGER_VALIDATE_ONLY, "true");
 assert.equal(config.vars.GOOGLE_OUTBOX_TERMINAL_RETENTION_DAYS, "90");
+assert.equal(config.vars.MESSAGE_ASSET_METRICS_ENABLED, "false");
+assert.equal(config.vars.MESSAGE_ASSET_METRICS_MIN_INTERVAL_MINUTES, "60");
 
 console.log(JSON.stringify({
   result: "LINE4A_STATIC_PASS",

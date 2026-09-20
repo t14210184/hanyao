@@ -19,7 +19,7 @@
     "test:line1b2a:local": "node --experimental-strip-types scripts/line1b2a-local-integration.ts",
     "test:line1b2b:unit": "node --experimental-strip-types --test scripts/line1b2b-unit.test.ts",
     "test:line1b2b:browser": "node scripts/line1b2b-browser-smoke.mjs",
-    "test:line4a:unit": "node --experimental-strip-types --test workers/google-ads-uploader/test/uploader.test.ts workers/google-ads-uploader/test/hardening.test.ts workers/google-ads-uploader/test/auth-scopes.test.ts workers/google-ads-uploader/test/p1-scheduling.test.ts workers/google-ads-uploader/test/p1-m04.test.mjs",
+    "test:line4a:unit": "node --experimental-strip-types --test workers/google-ads-uploader/test/uploader.test.ts workers/google-ads-uploader/test/message-asset-metrics.test.ts workers/google-ads-uploader/test/hardening.test.ts workers/google-ads-uploader/test/auth-scopes.test.ts workers/google-ads-uploader/test/p1-scheduling.test.ts workers/google-ads-uploader/test/p1-m04.test.mjs",
     "test:line4a:migration": "node scripts/line4a-migration.test.mjs",
     "test:line4a:local": "node scripts/line4a-scheduled-local.mjs",
     "test:line4a:static": "node scripts/line4a-static.test.mjs",
@@ -42,7 +42,8 @@
     "test:google-ads:auth": "node --experimental-strip-types --test scripts/google-ads-provider-auth.test.ts",
     "test:google-ads:host-runner": "node scripts/google-ads-provider-host-runner-static.test.mjs",
     "test:hg10:readback": "node --test scripts/cloudflare-d1-readonly.test.mjs scripts/conversion-closure-classifier.test.mjs && node scripts/hg10-e17-inspector.test.mjs && node scripts/hg10-system-readback-runner-static.test.mjs && node scripts/google-ads-read-contract-static.test.mjs && npm run test:google-ads:host-runner",
-    "test:v12:high-intent": "node --experimental-strip-types --test scripts/v12-high-intent-shadow.test.mjs && node scripts/line1a-http-v13-adapter.mjs"
+    "test:v12:high-intent": "node --experimental-strip-types --test scripts/v12-high-intent-shadow.test.mjs && node scripts/line1a-http-v13-adapter.mjs",
+    "test:hq04:message-assets": "node --experimental-strip-types --test scripts/ads-message-asset-metrics.test.ts workers/google-ads-uploader/test/message-asset-metrics.test.ts"
   },
   "dependencies": {
     "@next/third-parties": "^16.2.9",
