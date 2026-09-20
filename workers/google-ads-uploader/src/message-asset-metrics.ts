@@ -232,7 +232,7 @@ export const readMessageAssetMetrics = async (
   return normalizeMessageAssetMetricRows(payload, customerId);
 };
 
-const ensureMetricsTable = async (env: UploaderEnv): Promise<void> => {
+export const ensureMessageAssetMetricsTable = async (env: UploaderEnv): Promise<void> => {
   await env.ATTRIBUTION_DB.batch([
     env.ATTRIBUTION_DB.prepare(
       `CREATE TABLE IF NOT EXISTS message_asset_metrics_daily (
@@ -273,7 +273,7 @@ const lastObservedAt = async (env: UploaderEnv): Promise<string | null> => {
   return row?.last_observed_at ?? null;
 };
 
-const upsertMetrics = async (
+export const projectMessageAssetMetricRows = async (
   env: UploaderEnv,
   rows: MessageAssetMetricRow[],
   nowIso: string
@@ -346,7 +346,7 @@ export const collectMessageAssetMetrics = async (
       : DEFAULT_MESSAGE_ASSET_METRICS_INTERVAL_MS;
 
   try {
-    await ensureMetricsTable(env);
+    await ensureMessageAssetMetricsTable(env);
     const last = await lastObservedAt(env);
     if (
       last &&
@@ -375,7 +375,7 @@ export const collectMessageAssetMetrics = async (
       options.targetDate ?? null,
       fetchImpl
     );
-    const written = await upsertMetrics(env, rows, nowIso);
+    const written = await projectMessageAssetMetricRows(env, rows, nowIso);
     options.logger?.info?.("google-ads Message Asset metrics collected", {
       rows_read: rows.length,
       rows_written: written,
