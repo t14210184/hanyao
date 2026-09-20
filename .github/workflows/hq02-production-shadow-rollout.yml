@@ -6,6 +6,11 @@ on:
       - ops/hq02-production-shadow-rollout-20260920
     paths:
       - ".github/workflows/hq02-production-shadow-rollout.yml"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/hq02-production-shadow-rollout.yml"
 
 permissions:
   contents: read
@@ -16,6 +21,7 @@ concurrency:
 
 jobs:
   migrate:
+    if: github.event_name == 'push' || github.head_ref == 'ops/hq02-production-shadow-rollout-20260920'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
@@ -28,7 +34,7 @@ jobs:
       - name: Checkout exact ops branch
         uses: actions/checkout@v4
         with:
-          fetch-depth: 2
+          fetch-depth: 0
 
       - name: Setup Node.js 22
         uses: actions/setup-node@v4
@@ -43,8 +49,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          parent="$(git rev-parse HEAD^)"
-          test "$parent" = "$EXPECTED_BASE_SHA"
+          git fetch origin main --no-tags
+          base="$(git merge-base HEAD origin/main)"
+          test "$base" = "$EXPECTED_BASE_SHA"
           blob="$(git hash-object "migrations/$TARGET_MIGRATION")"
           test "$blob" = "$EXPECTED_MIGRATION_BLOB_SHA"
           echo "HQ02_SOURCE_FENCE=PASS"
