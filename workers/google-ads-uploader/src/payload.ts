@@ -1,5 +1,6 @@
 import type { UploaderConfig } from "./types.ts";
 import type { ConversionOutboxRow } from "./types.ts";
+import { buildDataManagerUserData, type DataManagerUserData } from "./enhanced-user-data.ts";
 
 export const GOOGLE_ADS_DESTINATION_REFERENCE = "google-ads-destination";
 
@@ -15,6 +16,10 @@ export interface DataManagerDestination {
   productDestinationId: string;
 }
 
+export interface DataManagerConsent {
+  adUserData: "CONSENT_GRANTED";
+}
+
 export interface DataManagerEvent {
   destinationReferences: string[];
   transactionId: string;
@@ -24,12 +29,15 @@ export interface DataManagerEvent {
     gbraid?: string;
     wbraid?: string;
   };
+  userData?: DataManagerUserData;
+  consent?: DataManagerConsent;
   eventSource: "MESSAGE";
 }
 
 export interface DataManagerIngestRequest {
   destinations: DataManagerDestination[];
   events: DataManagerEvent[];
+  encoding?: "HEX";
   validateOnly: boolean;
 }
 
@@ -70,6 +78,24 @@ export const buildDataManagerRequest = (
     accountType: "GOOGLE_ADS" as const,
     accountId,
   };
+  const enhancedUserData =
+    config.enhancedUserDataEnabled && config.adUserDataConsentGranted
+      ? buildDataManagerUserData(row.enhanced_user_identifiers)
+      : null;
+
+  const event: DataManagerEvent = {
+    destinationReferences: [reference],
+    transactionId: row.transaction_id,
+    eventTimestamp: row.event_timestamp,
+    adIdentifiers,
+    eventSource: "MESSAGE",
+  };
+
+  if (enhancedUserData) {
+    event.userData = enhancedUserData;
+    event.consent = { adUserData: "CONSENT_GRANTED" };
+  }
+
   return {
     destinations: [
       {
@@ -79,15 +105,8 @@ export const buildDataManagerRequest = (
         productDestinationId: conversionActionId,
       },
     ],
-    events: [
-      {
-        destinationReferences: [reference],
-        transactionId: row.transaction_id,
-        eventTimestamp: row.event_timestamp,
-        adIdentifiers,
-        eventSource: "MESSAGE",
-      },
-    ],
+    events: [event],
+    ...(enhancedUserData ? { encoding: "HEX" as const } : {}),
     validateOnly: config.validateOnly,
   };
 };
