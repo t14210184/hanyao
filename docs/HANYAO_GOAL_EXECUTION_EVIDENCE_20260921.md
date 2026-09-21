@@ -5,12 +5,12 @@ This is a sanitized execution checkpoint for the user-authorized handoff scope. 
 ## Current repository checkpoint
 
 ```text
-CURRENT_MAIN_SHA=00c04a651b57fa6bf4e238bc085d8fbe149d7f44
-CHECKPOINT_OBSERVED_MAIN_SHA=00c04a651b57fa6bf4e238bc085d8fbe149d7f44
+CURRENT_MAIN_SHA=31a677d7783a3e1cc9b98ec57194ea49cb259b51
+CHECKPOINT_OBSERVED_MAIN_SHA=31a677d7783a3e1cc9b98ec57194ea49cb259b51
 MERGED_PR=https://github.com/t14210184/hanyao/pull/77
 MERGED_REPAIR_PR=https://github.com/t14210184/hanyao/pull/78
-MERGED_EVIDENCE_PR=https://github.com/t14210184/hanyao/pull/80
-ACTIVE_BRANCH=docs/hanyao-system-control-matrix-20260921
+MERGED_EVIDENCE_PR=https://github.com/t14210184/hanyao/pull/81
+ACTIVE_BRANCH=docs/hanyao-python-control-followup-20260921
 OPEN_PR_BEFORE_PUSH=NONE
 HQ02_HQ06_MAIN_STATE=MERGED
 ```
@@ -69,6 +69,8 @@ GENERIC_POWERSHELL_CHILD_RESULT=PASS
 GENERIC_NODE_CHILD_RESULT=PASS
 PROCESSSTARTINFO_REDIRECT_RESULT=PASS
 BUNDLED_PYTHON_MINIMAL_RESULT=TIMEOUT
+BUNDLED_PYTHON_CODE_PASS_RESULT=TIMEOUT
+BUNDLED_PYTHON_STARTUP_FLAG_VARIANTS_RESULT=TIMEOUT_ALL
 BUNDLED_PYTHON_VERSION_RESULT=PASS
 GCLOUD_LAUNCHER_CLASSIFICATION=PYTHON_RUNTIME_BROKEN
 GCLOUD_ROOT_CAUSE_CLASSIFICATION=PYTHON_RUNTIME_BROKEN
@@ -77,13 +79,13 @@ GCLOUD_AUTH_RESULT=PRIOR_TIMEOUT_2_OF_2_CURRENT_NOT_RUN_AFTER_PYTHON_CONTROL_TIM
 GCLOUD_CLEAN_CONFIG_RESULT=TIMEOUT
 GCLOUD_EXISTING_CONFIG_RESULT=TIMEOUT_2_OF_2
 GCLOUD_CMD_WRAPPER_RESULT=TIMEOUT_CLEAN_AND_EXISTING
-GCLOUD_DIRECT_RUNTIME_RESULT=TIMEOUT_BUNDLED_PYTHON_MINIMAL_AND_ENTRYPOINT
+GCLOUD_DIRECT_RUNTIME_RESULT=TIMEOUT_BUNDLED_PYTHON_CODE_EXECUTION_AND_ENTRYPOINT
 NPX_VERSION_RESULT=TIMEOUT
 SYSTEM_WRANGLER_AUTH_RESULT=TIMEOUT_NPX_AND_DIRECT_NODE_TOKEN
 ISOLATED_OFFICIAL_RUNTIME_RESULT=TIMED_OUT_NO_RESULT
 ```
 
-The fresh Factory status still reports one stale broker record. Its receipt remains `STARTED` without completion fields, while an exact request/run process-tree query returned zero matching processes, so the dependency is confirmed as an orphan broker record. No cleanup or reaper API is exposed, so the record was not edited directly. Generic child controls all passed; Node code execution passed; the SDK bundled Python version command passed but the minimal `-c` control timed out, and the gcloud entrypoint also timed out. The isolated official runtime attempt timed out without a result; its task-created temporary directory was removed by an exact cleanup operation. These are execution-infrastructure classifications, not Google Ads provider responses.
+The fresh Factory status still reports one stale broker record. Its receipt remains `STARTED` without completion fields, while an exact request/run process-tree query returned zero matching processes, so the dependency is confirmed as an orphan broker record. No cleanup or reaper API is exposed, so the record was not edited directly. Generic child controls all passed; Node code execution passed; the SDK bundled Python version command passed but plain `-c`, `-c pass`, `-S`, `-E`, and `-E -S` code controls all timed out, and the gcloud entrypoint also timed out. The isolated official runtime attempt timed out without a result; its task-created temporary directory was removed by an exact cleanup operation. These are execution-infrastructure classifications, not Google Ads provider responses.
 
 ## HQ07 implementation checkpoint
 

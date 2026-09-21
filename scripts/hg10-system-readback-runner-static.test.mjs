@@ -47,3 +47,12 @@ test("child process output is bounded and no shell LASTEXITCODE is used", async 
   assert.doesNotMatch(source, /LASTEXITCODE/);
   assert.match(source, /HG10_CHILD_OUTPUT_TOO_LARGE/);
 });
+
+test("SYSTEM runner timeout cleanup terminates the exact child tree", async () => {
+  const source = await readFile(RUNNER, "utf8");
+
+  assert.match(
+    source,
+    /WaitForExit\(\$TimeoutSeconds \* 1000\)[\s\S]{0,360}taskkill\.exe[\s\S]{0,120}\/PID \$process\.Id[\s\S]{0,80}\/T[\s\S]{0,20}\/F/
+  );
+});
