@@ -36,7 +36,7 @@ param(
   [string]$TargetDate,
 
   [ValidateRange(30,300)]
-  [int]$EngineTimeoutSeconds = 180
+  [int]$EngineTimeoutSeconds = 180,
 
   [ValidateRange(5,120)]
   [int]$GcloudTimeoutSeconds = 30
