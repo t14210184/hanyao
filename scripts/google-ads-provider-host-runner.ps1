@@ -36,7 +36,10 @@ param(
   [string]$TargetDate,
 
   [ValidateRange(30,300)]
-  [int]$EngineTimeoutSeconds = 180
+  [int]$EngineTimeoutSeconds = 180,
+
+  [ValidateRange(5,120)]
+  [int]$GcloudTimeoutSeconds = 30
 )
 
 Set-StrictMode -Version Latest
@@ -114,7 +117,8 @@ function Get-ImpersonatedAdsToken {
   param(
     [Parameter(Mandatory=$true)][string]$Gcloud,
     [Parameter(Mandatory=$true)][string[]]$ConfigCandidates,
-    [Parameter(Mandatory=$true)][string]$TempRoot
+    [Parameter(Mandatory=$true)][string]$TempRoot,
+    [Parameter(Mandatory=$true)][int]$TimeoutSeconds
   )
 
   if ($ConfigCandidates.Count -eq 0) {
@@ -141,7 +145,14 @@ function Get-ImpersonatedAdsToken {
         if (-not $process.Start()) { throw 'HANYAO_HOST_RUNNER_GCLOUD_START_FAILED' }
         $stdoutTask = $process.StandardOutput.ReadToEndAsync()
         $stderrTask = $process.StandardError.ReadToEndAsync()
-        $process.WaitForExit()
+        if (-not $process.WaitForExit($TimeoutSeconds * 1000)) {
+          try {
+            & (Join-Path $env:SystemRoot 'System32\taskkill.exe') /PID $process.Id /T /F *> $null
+          } catch {
+            try { $process.Kill() } catch {}
+          }
+          throw 'HANYAO_HOST_RUNNER_GCLOUD_TIMEOUT'
+        }
         $stdout = [string]$stdoutTask.GetAwaiter().GetResult()
         $stderr = [string]$stderrTask.GetAwaiter().GetResult()
         if ($stdout.Length -gt 8192 -or $stderr.Length -gt 8192) {
@@ -297,7 +308,7 @@ try {
 
   $gcloud = Resolve-GcloudCommand
   $configs = @(Get-GcloudConfigCandidates)
-  $tokenResult = Get-ImpersonatedAdsToken -Gcloud $gcloud -ConfigCandidates $configs -TempRoot $tempRoot
+  $tokenResult = Get-ImpersonatedAdsToken -Gcloud $gcloud -ConfigCandidates $configs -TempRoot $tempRoot -TimeoutSeconds $GcloudTimeoutSeconds
   $accessToken = [string]$tokenResult.token
 
   Invoke-WebRequest -UseBasicParsing -Uri $SOURCE_ARCHIVE -OutFile $zipPath
