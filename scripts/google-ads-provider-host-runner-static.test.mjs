@@ -197,3 +197,16 @@ test("gcloud impersonation warning is captured outside PowerShell native stderr 
   assert.doesNotMatch(source, /2>\$stderrPath/);
   assert.doesNotMatch(source, /gcloud-\$index\.stderr/);
 });
+
+test("gcloud timeout input remains explicitly bounded", async () => {
+  const source = await readFile(RUNNER, "utf8");
+
+  assert.match(
+    source,
+    /\[ValidateRange\(5,120\)\]\s*\[int\]\$GcloudTimeoutSeconds = 30/
+  );
+  assert.match(
+    source,
+    /Get-ImpersonatedAdsToken[\s\S]*-TimeoutSeconds \$GcloudTimeoutSeconds/
+  );
+});

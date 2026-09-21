@@ -5,9 +5,10 @@ This is a sanitized execution checkpoint for the user-authorized handoff scope. 
 ## Current repository checkpoint
 
 ```text
-CHECKPOINT_BASE_MAIN_SHA=7479c503069cafd6d3b9df0eb5689f6914bc4b3d
+CHECKPOINT_OBSERVED_MAIN_SHA=4fe5f100107ba4e2bedc05a4a8aefda6f1b12738
 MERGED_PR=https://github.com/t14210184/hanyao/pull/77
-ACTIVE_BRANCH=fix/hq05-hq07-gcloud-timeout-20260921
+MERGED_REPAIR_PR=https://github.com/t14210184/hanyao/pull/78
+ACTIVE_BRANCH=docs/hq05-hq07-live-evidence-20260921
 OPEN_PR_BEFORE_PUSH=NONE
 HQ02_HQ06_MAIN_STATE=MERGED
 ```
@@ -39,8 +40,8 @@ HQ07_TYPE=UPLOAD_CLICKS
 HQ07_COUNTING=ONE_PER_CLICK
 HQ07_PRIMARY_FOR_GOAL=false
 HQ07_MUTATION_DISPATCH_COUNT=0
-HQ07_ACTION_EXISTS=NOT_VERIFIED_PENDING_SYSTEM_HOST_READ
-HQ07_PLAN_HASH=NOT_AVAILABLE_PENDING_SYSTEM_HOST_READ
+HQ07_ACTION_EXISTS=NOT_VERIFIED_HOST_GCLOUD_UNRESPONSIVE
+HQ07_PLAN_HASH=NOT_AVAILABLE_HOST_GCLOUD_UNRESPONSIVE
 SMART_BIDDING_READY=NOT_READY
 ```
 
@@ -49,7 +50,7 @@ The runner enforces fresh HQ05 prerequisites, exact duplicate/similar-action inv
 ## Provider and runtime status
 
 ```text
-HQ05_PROVIDER_VERDICT=NOT_VERIFIED_PENDING_SYSTEM_HOST_READ
+HQ05_PROVIDER_VERDICT=NOT_VERIFIED_HOST_GCLOUD_UNRESPONSIVE
 HQ06_PRODUCTION_USERDATA=DISARMED
 HQ06_PRODUCTION_CONSENT=UNSPECIFIED
 GOOGLE_ADS_MUTATION_COUNT=0
@@ -63,11 +64,15 @@ SYSTEM_HOST_GCLOUD_AUTH_LIST_PROBE=TIMEOUT_2_OF_2
 SYSTEM_HOST_GCLOUD_IMPERSONATED_ADS_TOKEN_PROBE=TIMEOUT_2_OF_2
 SYSTEM_HOST_PROVIDER_LIVE_READBACK=NOT_VERIFIED_HOST_GCLOUD_UNRESPONSIVE
 SYSTEM_HOST_PROVIDER_MUTATION_COUNT=0
+HQ05_READ_ATTEMPT=HANYAO_HOST_RUNNER_GCLOUD_TIMEOUT
+HQ07_READ_ATTEMPT=HANYAO_HOST_RUNNER_GCLOUD_TIMEOUT
 ```
 
 The existing production Worker secret names were read without reading secret values. GitHub Actions has no provider credential surface, but that is not evidence that Google Ads auth is unavailable: the approved existing SYSTEM host runner is available through the Factory broker. No credential or provider body was exposed.
 
 Fresh bounded SYSTEM probes reached the Factory route but the only installed gcloud.cmd timed out on --version, auth list, and impersonated Ads-token acquisition for both discovered config candidates. This is classified as a host-tool responsiveness blocker; it is not a provider denial, auth absence, or project-authorization gate.
+
+After PR #78 merged the gcloud acquisition guard, one bounded read-only HQ05 attempt and one bounded read-only HQ07 attempt both returned HANYAO_HOST_RUNNER_GCLOUD_TIMEOUT before any provider request. No token, provider response, or mutation was produced.
 
 ## Verification
 
@@ -85,7 +90,7 @@ TEST_HQ06=PASS
 ## Next executable checkpoint
 
 ```text
-NEXT_EXECUTABLE_NON_HUMAN_ACTION=MERGE_BOUNDED_GCLOUD_TIMEOUT_REPAIR_THEN_RETRY_READ_ONLY_HOST_ROUTE
+NEXT_EXECUTABLE_NON_HUMAN_ACTION=RETRY_READ_ONLY_HQ05_HQ07_AFTER_EXISTING_SYSTEM_GCLOUD_RECOVERY_OR_ALTERNATE_AUTH_ROUTE
 BLOCKED_BRANCH=HQ05_HQ07_SYSTEM_PROVIDER_READBACK_ONLY
 BLOCKER=EXISTING_SYSTEM_GCLOUD_CMD_UNRESPONSIVE_ON_VERSION_AUTH_AND_IMPERSONATED_TOKEN_PROBES
 ```
