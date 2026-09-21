@@ -12,7 +12,11 @@ param(
     'WP03_READ_ENABLE',
     'WP03_VALIDATE_ENABLE',
     'WP03_ENABLE',
-    'HG10_E10_READBACK'
+    'HG10_E10_READBACK',
+    'HQ05_PREREQ_READ',
+    'HQ07_READ',
+    'HQ07_VALIDATE_CREATE',
+    'HQ07_CREATE'
   )]
   [string]$Mode,
 
@@ -48,9 +52,14 @@ if ([Security.Principal.WindowsIdentity]::GetCurrent().Name -ne 'NT AUTHORITY\SY
   throw 'HANYAO_HOST_RUNNER_REQUIRES_SYSTEM'
 }
 
-$applyModes = @('WP02_APPLY','WP03_APPLY_PAUSED','WP03_ENABLE')
+$readOnlyModes = @('WP02_AUDIT','WP02_DRY_RUN','WP02_VALIDATE','WP03_DRY_RUN_CREATE','WP03_VALIDATE_CREATE','WP03_READ_ENABLE','WP03_VALIDATE_ENABLE','HG10_E10_READBACK','HQ05_PREREQ_READ','HQ07_READ')
+$applyModes = @('WP02_APPLY','WP03_APPLY_PAUSED','WP03_ENABLE','HQ07_CREATE')
 if ($Mode -in $applyModes -and -not $ExpectedPlanHash) {
   throw 'HANYAO_HOST_RUNNER_EXPECTED_PLAN_HASH_REQUIRED'
+}
+
+if ($Mode -in $readOnlyModes -and $ExpectedPlanHash) {
+  throw 'HANYAO_HOST_RUNNER_READ_MODE_PLAN_HASH_FORBIDDEN'
 }
 
 if ($TargetAdGroupsJson) {
@@ -231,6 +240,13 @@ function Invoke-HanyaoNodeEngine {
       if (-not $TargetDate) { throw 'HANYAO_HOST_RUNNER_TARGET_DATE_REQUIRED' }
       $psi.EnvironmentVariables['GOOGLE_ADS_REPORTING_TARGET_DATE'] = $TargetDate
     }
+    'HQ07_VALIDATE_CREATE' {
+      $psi.EnvironmentVariables['HQ07_PRODUCTION_GATE'] = 'HANYAO_HQ07_GOAL_MODE_20260920'
+    }
+    'HQ07_CREATE' {
+      $psi.EnvironmentVariables['HQ07_EXPECTED_PLAN_HASH'] = $ExpectedPlanHash
+      $psi.EnvironmentVariables['HQ07_PRODUCTION_GATE'] = 'HANYAO_HQ07_GOAL_MODE_20260920'
+    }
   }
 
   if ($TargetAdGroupsJson) {
@@ -339,6 +355,20 @@ try {
     }
     'HG10_E10_READBACK' {
       $script = 'scripts\line4d-google-ads-reporting-monitor.ts'
+    }
+    'HQ05_PREREQ_READ' {
+      $script = 'scripts\ads-enhanced-conversion-prereq.ts'
+    }
+    'HQ07_READ' {
+      $script = 'scripts\ads-qualified-lead-action.ts'
+    }
+    'HQ07_VALIDATE_CREATE' {
+      $script = 'scripts\ads-qualified-lead-action.ts'
+      $engineArgs = @('--validate-create')
+    }
+    'HQ07_CREATE' {
+      $script = 'scripts\ads-qualified-lead-action.ts'
+      $engineArgs = @('--apply')
     }
   }
 

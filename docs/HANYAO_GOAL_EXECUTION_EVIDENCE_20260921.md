@@ -5,8 +5,8 @@ This is a sanitized execution checkpoint for the user-authorized handoff scope. 
 ## Current repository checkpoint
 
 ```text
-CURRENT_MAIN_SHA=3e6d49e
-ACTIVE_BRANCH=feat/hq07-qualified-lead-action-20260920
+CURRENT_MAIN_SHA=f17608ae5e22c205a1320fe7e0424bba2a06ff4c
+ACTIVE_BRANCH=feat/hq05-hq07-host-provider-20260921
 OPEN_PR_BEFORE_PUSH=NONE
 HQ02_HQ06_MAIN_STATE=MERGED
 ```
@@ -38,8 +38,8 @@ HQ07_TYPE=UPLOAD_CLICKS
 HQ07_COUNTING=ONE_PER_CLICK
 HQ07_PRIMARY_FOR_GOAL=false
 HQ07_MUTATION_DISPATCH_COUNT=0
-HQ07_ACTION_EXISTS=NOT_VERIFIED_NO_ADS_AUTH
-HQ07_PLAN_HASH=NOT_AVAILABLE_NO_ADS_AUTH
+HQ07_ACTION_EXISTS=NOT_VERIFIED_PENDING_SYSTEM_HOST_READ
+HQ07_PLAN_HASH=NOT_AVAILABLE_PENDING_SYSTEM_HOST_READ
 SMART_BIDDING_READY=NOT_READY
 ```
 
@@ -48,14 +48,17 @@ The runner enforces fresh HQ05 prerequisites, exact duplicate/similar-action inv
 ## Provider and runtime status
 
 ```text
-HQ05_PROVIDER_VERDICT=NOT_VERIFIED_CREDENTIAL_SURFACE_UNAVAILABLE
+HQ05_PROVIDER_VERDICT=NOT_VERIFIED_PENDING_SYSTEM_HOST_READ
 HQ06_PRODUCTION_USERDATA=DISARMED
 HQ06_PRODUCTION_CONSENT=UNSPECIFIED
 GOOGLE_ADS_MUTATION_COUNT=0
 NATURAL_CONVERSION_SYNTHESIS=NONE
+GITHUB_ACTIONS_PROVIDER_CREDENTIAL_SURFACE=UNAVAILABLE
+SYSTEM_HOST_PROVIDER_ROUTE=AVAILABLE_VIA_EXISTING_FACTORY_SYSTEM_RUNNER
+SYSTEM_HOST_PROVIDER_LIVE_READBACK=NOT_VERIFIED_PENDING_HOST_RUN
 ```
 
-The existing production Worker secret names were read without reading secret values. The local GitHub CLI cannot dispatch the provider workflow because the token has no repository-admin permission; no credential or provider body was exposed.
+The existing production Worker secret names were read without reading secret values. GitHub Actions has no provider credential surface, but that is not evidence that Google Ads auth is unavailable: the approved existing SYSTEM host runner is available through the Factory broker. No credential or provider body was exposed.
 
 ## Verification
 
@@ -73,9 +76,9 @@ TEST_HQ06=PASS
 ## Next executable checkpoint
 
 ```text
-NEXT_EXECUTABLE_NON_HUMAN_ACTION=COMMIT_PUSH_PR_CI_AND_EXACT_HEAD_MERGE
-BLOCKED_BRANCH=GOOGLE_ADS_LIVE_HQ05_HQ07_READBACK_AND_MUTATION
-BLOCKER=NO_LOCAL_ADS_AUTH_AND_GITHUB_WORKFLOW_DISPATCH_FORBIDDEN_BY_REPOSITORY_PERMISSION
+NEXT_EXECUTABLE_NON_HUMAN_ACTION=RUN_EXISTING_SYSTEM_HOST_PROVIDER_HQ05_PREREQ_READ
+BLOCKED_BRANCH=NONE
+BLOCKER=GITHUB_ACTIONS_PROVIDER_CREDENTIAL_SURFACE_UNAVAILABLE_IS_NOT_PROJECT_BLOCKER
 ```
 
 No claim of Google Ads action creation, qualified upload, natural E2E, or Smart Bidding readiness is made by this file.
