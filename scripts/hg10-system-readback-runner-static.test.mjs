@@ -28,6 +28,17 @@ test("Cloudflare OAuth token stays memory-only and D1 path is read-only", async 
   assert.doesNotMatch(source, /WriteAllText\([^\n]*cloudflareToken/i);
 });
 
+test("Cloudflare auth requires one exact account before D1 dispatch", async () => {
+  const source = await readFile(RUNNER, "utf8");
+
+  assert.match(source, /HG10_WRANGLER_AUTH_SURFACE_NOT_FOUND/);
+  assert.match(source, /HG10_CLOUDFLARE_ACCOUNT_AMBIGUOUS/);
+  assert.match(source, /accounts\.Count -ne 1/);
+  assert.match(source, /accountId -notmatch '\^\[0-9a-fA-F\]\{32\}\$'/);
+  assert.match(source, /wrangler auth token --json[\s\S]*wrangler whoami --json/);
+  assert.match(source, /CLOUDFLARE_API_TOKEN = \$cloudflareToken/);
+});
+
 test("child process output is bounded and no shell LASTEXITCODE is used", async () => {
   const source = await readFile(RUNNER, "utf8");
   assert.match(source, /Diagnostics\.ProcessStartInfo/);
