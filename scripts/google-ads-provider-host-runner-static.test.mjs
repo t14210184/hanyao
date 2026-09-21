@@ -192,6 +192,8 @@ test("gcloud impersonation warning is captured outside PowerShell native stderr 
   assert.match(source, /Diagnostics\.ProcessStartInfo/);
   assert.match(source, /RedirectStandardOutput = \$true/);
   assert.match(source, /RedirectStandardError = \$true/);
+  assert.match(source, /WaitForExit\(\$TimeoutSeconds \* 1000\)/);
+  assert.match(source, /HANYAO_HOST_RUNNER_GCLOUD_TIMEOUT/);
   assert.doesNotMatch(source, /2>\$stderrPath/);
   assert.doesNotMatch(source, /gcloud-\$index\.stderr/);
 });
