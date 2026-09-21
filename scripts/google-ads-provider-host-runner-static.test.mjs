@@ -210,3 +210,16 @@ test("gcloud timeout input remains explicitly bounded", async () => {
     /Get-ImpersonatedAdsToken[\s\S]*-TimeoutSeconds \$GcloudTimeoutSeconds/
   );
 });
+
+test("bounded child process timeouts terminate the full process tree", async () => {
+  const source = await readFile(RUNNER, "utf8");
+
+  assert.match(
+    source,
+    /WaitForExit\(\$TimeoutSeconds \* 1000\)[\s\S]{0,400}taskkill\.exe[\s\S]{0,120}\/PID \$process\.Id[\s\S]{0,80}\/T[\s\S]{0,20}\/F/
+  );
+  assert.match(
+    source,
+    /WaitForExit\(\$EngineTimeoutSeconds \* 1000\)[\s\S]{0,400}taskkill\.exe[\s\S]{0,120}\/PID \$process\.Id[\s\S]{0,80}\/T[\s\S]{0,20}\/F/
+  );
+});
