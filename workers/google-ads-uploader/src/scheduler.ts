@@ -4,6 +4,7 @@ import { ProviderRequestError } from "./errors.ts";
 import {
   buildDataManagerRequest,
   GOOGLE_ADS_DESTINATION_REFERENCE,
+  stageTypeForConversionType,
 } from "./payload.ts";
 import { D1OutboxRepository } from "./repository.ts";
 import {
@@ -596,6 +597,12 @@ const processDiagnostic = async (
             googleAdsAccountId: row.google_ads_account_id ?? "",
             googleAdsConversionActionId: row.google_ads_conversion_action_id ?? "",
             expectedRecordCount: 1,
+            ...(row.conversion_type === "verified_line_contact"
+              ? {}
+              : {
+                  conversionType: row.conversion_type,
+                  stageType: stageTypeForConversionType(row.conversion_type),
+                }),
           },
           fetchImpl
         )

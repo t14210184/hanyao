@@ -18,7 +18,8 @@ const OUTBOX_COLUMNS = `
   business_conversion_id, snapshot_version, eligibility_rule_version,
   google_ads_account_id, google_ads_conversion_action_id, event_source,
   lease_generation, lease_owner, lease_expires_at, upload_payload_hash,
-  completion_id, provider_warning_json`;
+  completion_id, provider_warning_json, stage_event_id,
+  conversion_value_micros, currency_code`;
 
 const changesFrom = (result: { meta?: { changes?: number } }): number =>
   Number(result.meta?.changes ?? 0);

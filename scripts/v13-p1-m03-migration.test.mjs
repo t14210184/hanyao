@@ -9,7 +9,7 @@ const files = fs.readdirSync(migrationsDir)
   .filter((name) => /^\d{4}_.*\.sql$/.test(name))
   .sort();
 
-assert.equal(files.at(-1), "0015_v11_observability_hardening.sql");
+assert.equal(files.at(-1), "0017_v11_multi_stage_conversion_types.sql");
 const db = new DatabaseSync(":memory:");
 db.exec("PRAGMA foreign_keys = ON;");
 for (const file of files) {
@@ -22,6 +22,7 @@ const columns = (table) => new Set(
 assert.ok(columns("conversion_outbox").has("provider_warning_json"));
 assert.ok(columns("provider_attempt_events").has("provider_warning_json"));
 for (const table of [
+  "lead_stage_events",
   "lead_signal_observations",
   "lead_user_identifiers",
   "message_asset_metrics_daily",
@@ -33,6 +34,16 @@ for (const table of [
   ).get(table);
   assert.equal(row?.name, table);
 }
+for (const table of ["business_conversions", "business_conversion_dedupe_locks", "conversion_outbox"]) {
+  const sql = db.prepare(
+    "SELECT sql FROM sqlite_master WHERE type='table' AND name=?"
+  ).get(table)?.sql ?? "";
+  assert.match(sql, /qualified_line_lead/);
+  assert.match(sql, /won_job/);
+}
+assert.ok(columns("conversion_outbox").has("stage_event_id"));
+assert.ok(columns("conversion_outbox").has("conversion_value_micros"));
+assert.ok(columns("conversion_outbox").has("currency_code"));
 
 console.log(JSON.stringify({
   result: "V13_P1_M03_MIGRATION_PASS",

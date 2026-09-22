@@ -48,6 +48,15 @@ const safeAccountId = (value: string | undefined, expected: string): string => {
   return candidate;
 };
 
+const safeOptionalActionId = (value: string | undefined): string | null => {
+  const candidate = value?.trim();
+  if (!candidate) return null;
+  if (!/^\d{6,20}$/.test(candidate)) {
+    throw new Error("INVALID_GOOGLE_CONVERSION_ACTION_CONFIGURATION");
+  }
+  return candidate;
+};
+
 const resolveTerminalRetentionDays = (
   value: string | undefined
 ): number | null => {
@@ -94,6 +103,12 @@ export const getUploaderConfig = (env: UploaderEnv): UploaderConfig => {
       env.GOOGLE_ADS_CONVERSION_ACTION_ID,
       DEFAULT_GOOGLE_ADS_CONVERSION_ACTION_ID
     ),
+    qualifiedLineLeadConversionActionId: safeOptionalActionId(
+      env.GOOGLE_ADS_QUALIFIED_LINE_LEAD_CONVERSION_ACTION_ID
+    ),
+    wonJobConversionActionId: safeOptionalActionId(
+      env.GOOGLE_ADS_WON_JOB_CONVERSION_ACTION_ID
+    ),
     validateOnly,
     enhancedUserDataEnabled: resolveEnhancedUserDataEnabled(
       env.GOOGLE_ENHANCED_CONVERSIONS_USER_DATA_ENABLED
@@ -104,5 +119,7 @@ export const getUploaderConfig = (env: UploaderEnv): UploaderConfig => {
     terminalRetentionDays: resolveTerminalRetentionDays(
       env.GOOGLE_OUTBOX_TERMINAL_RETENTION_DAYS
     ),
+    qualifiedUserDataOnlyProviderProof:
+      env.GOOGLE_QUALIFIED_USER_DATA_ONLY_PROVIDER_PROOF === "PASS",
   };
 };

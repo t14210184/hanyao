@@ -44,6 +44,8 @@ jobs:
         run: npm run test:hq07:qualified-action
       - name: Verify V1.1 WP02-WP06 hardening contracts
         run: npm run test:v11:wp02-wp06
+      - name: Verify V1.1 WP07-WP09 stage ledger and multi-destination contracts
+        run: npm run test:v11:wp07-wp09
       - name: Verify immutable attribution snapshot
         run: npm run test:v13:p0a
       - name: Verify provider ACK and RESULT_UNKNOWN recovery
