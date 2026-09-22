@@ -127,6 +127,8 @@ export interface DiagnosticExpectation {
   googleAdsAccountId: string;
   googleAdsConversionActionId: string;
   expectedRecordCount: number;
+  conversionType?: "verified_line_contact" | "qualified_line_lead" | "won_job";
+  stageType?: "VERIFIED_LINE_CONTACT" | "QUALIFIED_CONFIRMED" | "WON_JOB";
 }
 
 export interface DiagnosticResponse {
@@ -238,6 +240,18 @@ const destinationIdentityMatches = (
       asNonEmptyString(login.accountId) !== expectation.googleAdsAccountId)
   ) {
     return false;
+  }
+  if (expectation.conversionType) {
+    const observedType =
+      asNonEmptyString(statusDestination.conversionType) ||
+      asNonEmptyString(asRecord(statusDestination.eventsIngestionStatus)?.conversionType);
+    if (observedType !== expectation.conversionType) return false;
+  }
+  if (expectation.stageType) {
+    const observedStage =
+      asNonEmptyString(statusDestination.stageType) ||
+      asNonEmptyString(asRecord(statusDestination.eventsIngestionStatus)?.stageType);
+    if (observedStage !== expectation.stageType) return false;
   }
   return true;
 };

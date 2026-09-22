@@ -54,10 +54,17 @@ export type DiagnosticStatus =
   | "TIMEBOX_EXCEEDED"
   | "UNKNOWN";
 
+export type ConversionType =
+  | "verified_line_contact"
+  | "qualified_line_lead"
+  | "won_job";
+
+export type DataManagerEventSource = "MESSAGE" | "PHONE" | "OTHER";
+
 export interface ConversionOutboxRow {
   conversion_id: string;
   lead_token: string;
-  conversion_type: "verified_line_contact";
+  conversion_type: ConversionType;
   event_timestamp: string;
   gclid: string | null;
   gbraid: string | null;
@@ -86,13 +93,16 @@ export interface ConversionOutboxRow {
   eligibility_rule_version?: string;
   google_ads_account_id?: string | null;
   google_ads_conversion_action_id?: string | null;
-  event_source?: "MESSAGE" | null;
+  event_source?: DataManagerEventSource | null;
   lease_generation?: number;
   lease_owner?: string | null;
   lease_expires_at?: string | null;
   upload_payload_hash?: string | null;
   completion_id?: string | null;
   provider_warning_json?: string | null;
+  stage_event_id?: string | null;
+  conversion_value_micros?: number | null;
+  currency_code?: string | null;
   enhanced_user_identifiers?: EnhancedHashedIdentifier[];
   consent_state?: "GRANTED" | "DENIED" | "UNSPECIFIED" | null;
   consent_source?: string | null;
@@ -104,6 +114,8 @@ export interface UploaderEnv {
   GOOGLE_DATA_MANAGER_SERVICE_ACCOUNT_JSON?: string;
   GOOGLE_ADS_ACCOUNT_ID?: string;
   GOOGLE_ADS_CONVERSION_ACTION_ID?: string;
+  GOOGLE_ADS_QUALIFIED_LINE_LEAD_CONVERSION_ACTION_ID?: string;
+  GOOGLE_ADS_WON_JOB_CONVERSION_ACTION_ID?: string;
   GOOGLE_ADS_LOGIN_CUSTOMER_ID?: string;
   MESSAGE_ASSET_METRICS_ENABLED?: string;
   MESSAGE_ASSET_METRICS_MIN_INTERVAL_MINUTES?: string;
@@ -111,6 +123,7 @@ export interface UploaderEnv {
   GOOGLE_ENHANCED_CONVERSIONS_AD_USER_DATA_CONSENT?: string;
   GOOGLE_DATA_MANAGER_VALIDATE_ONLY?: string;
   GOOGLE_OUTBOX_TERMINAL_RETENTION_DAYS?: string;
+  GOOGLE_QUALIFIED_USER_DATA_ONLY_PROVIDER_PROOF?: string;
   UPLOADER_ENVIRONMENT?: string;
   PRODUCTION_HUMAN_GATE?: string;
 }
@@ -122,6 +135,9 @@ export interface UploaderConfig {
   enhancedUserDataEnabled: boolean;
   adUserDataConsentGranted: boolean;
   terminalRetentionDays: number | null;
+  qualifiedLineLeadConversionActionId?: string | null;
+  wonJobConversionActionId?: string | null;
+  qualifiedUserDataOnlyProviderProof?: boolean;
 }
 
 export interface OutboxRepository {
