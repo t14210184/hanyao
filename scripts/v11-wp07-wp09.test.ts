@@ -3,6 +3,7 @@ import fs from "node:fs";
 import { DatabaseSync } from "node:sqlite";
 import { test } from "node:test";
 import {
+  REPEAT_STAGE_POLICY,
   projectConfirmedStageToCanonicalOutbox,
   recordLeadStageEvent,
   type LeadStageEventInput,
@@ -31,20 +32,42 @@ class SqliteD1Statement {
   async first<T>() {
     return (this.database.prepare(this.sql).get(...this.args) ?? null) as T | null;
   }
+  async all<T>() {
+    return {
+      success: true,
+      results: this.database.prepare(this.sql).all(...this.args) as T[],
+      meta: { changes: 0 },
+    };
+  }
   async run() {
     const result = this.database.prepare(this.sql).run(...this.args);
     return { success: true, meta: { changes: Number(result.changes ?? 0) }, results: [] };
   }
 }
 
-const sqliteD1 = (database: DatabaseSync) => ({
+const sqliteD1 = (
+  database: DatabaseSync,
+  options: { failBatchAt?: number } = {}
+) => ({
   prepare(sql: string) {
     return new SqliteD1Statement(database, sql);
   },
   async batch(statements: SqliteD1Statement[]) {
     const results = [];
-    for (const statement of statements) results.push(await statement.run());
-    return results;
+    database.exec("BEGIN");
+    try {
+      for (const [index, statement] of statements.entries()) {
+        if (options.failBatchAt === index + 1) {
+          throw new Error("FORCED_BATCH_FAILURE");
+        }
+        results.push(await statement.run());
+      }
+      database.exec("COMMIT");
+      return results;
+    } catch (error) {
+      database.exec("ROLLBACK");
+      throw error;
+    }
   },
 });
 
@@ -271,6 +294,17 @@ test("T119/T126/T127/T128: one canonical outbox supports qualified and won stage
     ),
     "ALREADY_PRESENT"
   );
+  assert.deepEqual(
+    {
+      ...database.prepare(
+        `SELECT
+           (SELECT COUNT(*) FROM business_conversions WHERE conversion_type='qualified_line_lead') AS business_count,
+           (SELECT COUNT(*) FROM business_conversion_dedupe_locks WHERE conversion_type='qualified_line_lead') AS lock_count,
+           (SELECT COUNT(*) FROM conversion_outbox WHERE conversion_type='qualified_line_lead') AS outbox_count`
+      ).get(),
+    },
+    { business_count: 1, lock_count: 1, outbox_count: 1 }
+  );
 
   const won = await recordLeadStageEvent(
     d1 as never,
@@ -308,6 +342,247 @@ test("T119/T126/T127/T128: one canonical outbox supports qualified and won stage
     1
   );
   assert.deepEqual(database.prepare("PRAGMA foreign_key_check").all(), []);
+});
+
+test("T140/T146: repeat-stage policy blocks a different stage event before any canonical write", async () => {
+  const database = migratedDatabase();
+  seedVerifiedConversion(database);
+  const d1 = sqliteD1(database);
+  assert.equal(
+    REPEAT_STAGE_POLICY,
+    "ONE_CANONICAL_OUTCOME_PER_VERIFIED_INQUIRY_AND_STAGE_TYPE"
+  );
+
+  const first = await recordLeadStageEvent(d1 as never, stageInput());
+  await projectConfirmedStageToCanonicalOutbox(
+    d1 as never,
+    first.record.stageEventId,
+    "8800000001",
+    "4801404246",
+    "2026-09-22T01:02:00.000Z"
+  );
+  const repeat = await recordLeadStageEvent(
+    d1 as never,
+    stageInput({
+      occurredAt: "2026-09-23T01:00:00.000Z",
+      createdAt: "2026-09-23T01:00:00.000Z",
+      evidence: {
+        ...evidence,
+        sourceIds: ["line_event:line-event-stage", "quote:repeat-stage"],
+      },
+    })
+  );
+
+  await assert.rejects(
+    projectConfirmedStageToCanonicalOutbox(
+      d1 as never,
+      repeat.record.stageEventId,
+      "8800000001",
+      "4801404246",
+      "2026-09-23T01:01:00.000Z"
+    ),
+    /STAGE_REPEAT_OUTCOME_BLOCKED/
+  );
+  assert.deepEqual(
+    {
+      ...database.prepare(
+        `SELECT
+           (SELECT COUNT(*) FROM business_conversions WHERE conversion_type='qualified_line_lead') AS business_count,
+           (SELECT COUNT(*) FROM business_conversion_dedupe_locks WHERE conversion_type='qualified_line_lead') AS lock_count,
+           (SELECT COUNT(*) FROM conversion_outbox WHERE conversion_type='qualified_line_lead') AS outbox_count`
+      ).get(),
+    },
+    { business_count: 1, lock_count: 1, outbox_count: 1 }
+  );
+});
+
+test("T141: a conflicting dedupe lock is fail-closed with zero canonical writes", async () => {
+  const database = migratedDatabase();
+  seedVerifiedConversion(database);
+  database.prepare(
+    `INSERT INTO business_conversion_dedupe_locks (
+       subject_kind, subject_key, conversion_type, active_business_conversion_id,
+       dedupe_until, last_lineage_observed_at, fence_version, updated_at
+     ) VALUES (?, ?, 'qualified_line_lead', ?, ?, ?, 0, ?)`
+  ).run(
+    "LINE_USER_HMAC",
+    "subject-stage",
+    "business-verified-stage",
+    "2026-10-22T00:00:00.000Z",
+    "2026-09-21T00:00:00.000Z",
+    "2026-09-21T00:00:00.000Z"
+  );
+  const d1 = sqliteD1(database);
+  const stage = await recordLeadStageEvent(d1 as never, stageInput());
+
+  await assert.rejects(
+    projectConfirmedStageToCanonicalOutbox(
+      d1 as never,
+      stage.record.stageEventId,
+      "8800000001",
+      "4801404246",
+      "2026-09-22T01:02:00.000Z"
+    ),
+    /STAGE_DEDUPE_LOCK_CONFLICT/
+  );
+  assert.equal(
+    database.prepare("SELECT COUNT(*) AS count FROM business_conversions WHERE conversion_type='qualified_line_lead'").get().count,
+    0
+  );
+  assert.equal(
+    database.prepare("SELECT COUNT(*) AS count FROM conversion_outbox WHERE conversion_type='qualified_line_lead'").get().count,
+    0
+  );
+});
+
+test("T142: a business conversion without its outbox is reconciliation-required", async () => {
+  const database = migratedDatabase();
+  seedVerifiedConversion(database);
+  const d1 = sqliteD1(database);
+  const stage = await recordLeadStageEvent(d1 as never, stageInput());
+  await projectConfirmedStageToCanonicalOutbox(
+    d1 as never,
+    stage.record.stageEventId,
+    "8800000001",
+    "4801404246",
+    "2026-09-22T01:02:00.000Z"
+  );
+  database.prepare("DELETE FROM conversion_outbox WHERE stage_event_id=?").run(stage.record.stageEventId);
+
+  await assert.rejects(
+    projectConfirmedStageToCanonicalOutbox(
+      d1 as never,
+      stage.record.stageEventId,
+      "8800000001",
+      "4801404246",
+      "2026-09-22T01:03:00.000Z"
+    ),
+    /RECONCILIATION_REQUIRED/
+  );
+  assert.equal(
+    database.prepare("SELECT COUNT(*) AS count FROM business_conversions WHERE stage_event_id=?").get(stage.record.stageEventId).count,
+    1
+  );
+  assert.equal(
+    database.prepare("SELECT COUNT(*) AS count FROM conversion_outbox WHERE stage_event_id=?").get(stage.record.stageEventId).count,
+    0
+  );
+});
+
+test("T143: an outbox identity collision is fail-closed without repairing it", async () => {
+  const database = migratedDatabase();
+  seedVerifiedConversion(database);
+  const d1 = sqliteD1(database);
+  const stage = await recordLeadStageEvent(d1 as never, stageInput());
+  const otherStage = await recordLeadStageEvent(
+    d1 as never,
+    stageInput({
+      occurredAt: "2026-09-23T01:00:00.000Z",
+      createdAt: "2026-09-23T01:00:00.000Z",
+      evidence: {
+        ...evidence,
+        sourceIds: ["line_event:line-event-stage", "quote:other-stage"],
+      },
+    })
+  );
+  database.prepare(
+    `INSERT INTO conversion_outbox (
+       conversion_id, lead_token, conversion_type, event_timestamp, transaction_id,
+       destination_key, created_at, updated_at, business_conversion_id,
+       eligibility_rule_version, google_ads_account_id,
+       google_ads_conversion_action_id, event_source, stage_event_id
+     ) VALUES (?, 'HY-STAGE01', 'qualified_line_lead', ?, ?,
+       'HY_QUALIFIED_LINE_LEAD', ?, ?, ?, 'v11-qualified-v1',
+       '4801404246', '8800000001', 'MESSAGE', ?)`
+  ).run(
+    `stage_outbox_${stage.record.stageEventId}`,
+    stageInput().occurredAt,
+    "conflicting-transaction-stage",
+    "2026-09-22T01:00:00.000Z",
+    "2026-09-22T01:00:00.000Z",
+    "other-business-stage",
+    otherStage.record.stageEventId
+  );
+
+  await assert.rejects(
+    projectConfirmedStageToCanonicalOutbox(
+      d1 as never,
+      stage.record.stageEventId,
+      "8800000001",
+      "4801404246",
+      "2026-09-22T01:02:00.000Z"
+    ),
+    /CANONICAL_STAGE_CONFLICT/
+  );
+  assert.equal(
+    database.prepare("SELECT COUNT(*) AS count FROM business_conversions WHERE conversion_type='qualified_line_lead'").get().count,
+    0
+  );
+  assert.equal(
+    database.prepare("SELECT COUNT(*) AS count FROM business_conversion_dedupe_locks WHERE conversion_type='qualified_line_lead'").get().count,
+    0
+  );
+  assert.equal(
+    database.prepare("SELECT COUNT(*) AS count FROM conversion_outbox WHERE conversion_id=?").get(`stage_outbox_${stage.record.stageEventId}`).count,
+    1
+  );
+});
+
+test("T144: later-stage dedupe fences use stage occurrence, not an expired Verified window", async () => {
+  const database = migratedDatabase();
+  seedVerifiedConversion(database);
+  database.prepare(
+    "UPDATE business_conversions SET dedupe_until=? WHERE business_conversion_id=?"
+  ).run("2026-09-01T00:00:00.000Z", "business-verified-stage");
+  const d1 = sqliteD1(database);
+  const stage = await recordLeadStageEvent(d1 as never, stageInput());
+  await projectConfirmedStageToCanonicalOutbox(
+    d1 as never,
+    stage.record.stageEventId,
+    "8800000001",
+    "4801404246",
+    "2026-09-22T01:02:00.000Z"
+  );
+
+  const business = database.prepare(
+    "SELECT dedupe_until FROM business_conversions WHERE stage_event_id=?"
+  ).get(stage.record.stageEventId);
+  const lock = database.prepare(
+    "SELECT dedupe_until FROM business_conversion_dedupe_locks WHERE active_business_conversion_id=?"
+  ).get(`stage_bc_${stage.record.stageEventId}`);
+  assert.equal(business.dedupe_until, "2026-10-22T01:00:00.000Z");
+  assert.equal(lock.dedupe_until, "2026-10-22T01:00:00.000Z");
+  assert.notEqual(business.dedupe_until, "2026-09-01T00:00:00.000Z");
+});
+
+test("T145: a forced SQL failure rolls back the entire canonical batch", async () => {
+  const database = migratedDatabase();
+  seedVerifiedConversion(database);
+  const d1 = sqliteD1(database, { failBatchAt: 2 });
+  const stage = await recordLeadStageEvent(d1 as never, stageInput());
+
+  await assert.rejects(
+    projectConfirmedStageToCanonicalOutbox(
+      d1 as never,
+      stage.record.stageEventId,
+      "8800000001",
+      "4801404246",
+      "2026-09-22T01:02:00.000Z"
+    ),
+    /CANONICAL_BATCH_FAILED_ROLLED_BACK/
+  );
+  assert.equal(
+    database.prepare("SELECT COUNT(*) AS count FROM business_conversions WHERE conversion_type='qualified_line_lead'").get().count,
+    0
+  );
+  assert.equal(
+    database.prepare("SELECT COUNT(*) AS count FROM business_conversion_dedupe_locks WHERE conversion_type='qualified_line_lead'").get().count,
+    0
+  );
+  assert.equal(
+    database.prepare("SELECT COUNT(*) AS count FROM conversion_outbox WHERE conversion_type='qualified_line_lead'").get().count,
+    0
+  );
 });
 
 test("T120/T121/T122/T123/T124/T125/T128: destination and identity policy fail closed", () => {

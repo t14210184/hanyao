@@ -8,6 +8,12 @@
 -- Production application remains separately gated by a fresh D1 sqlite_schema
 -- readback and same-source post-migration verification. This file is replayed
 -- locally in CI before any provider mutation is considered.
+--
+-- WP09A repeat-stage policy: one canonical Qualified outcome and one canonical
+-- Won Job outcome are allowed per verified inquiry. The lead-token/type
+-- uniqueness below is intentional and is enforced by a prestate gate with the
+-- deterministic STAGE_REPEAT_OUTCOME_BLOCKED reason; it is not a silent
+-- legacy constraint.
 
 PRAGMA foreign_keys = OFF;
 
