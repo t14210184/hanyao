@@ -1,21 +1,21 @@
-# HANYAO V1.1 Goal Execution Evidence — WP07–WP09 — 2026-09-22
+# HANYAO V1.1 Goal Execution Evidence — WP07–WP10 Current Truth — 2026-09-22
 
-This checkpoint records the fresh repository, local schema-replay, and code-test truth after the merged WP02–WP06 checkpoint. Attachment text is treated as specification and evidence policy; mutable provider state is classified only from fresh same-source readback.
+This checkpoint records the fresh repository, local schema-replay, code-test, merge, and provider-lane truth after the merged WP02–WP06 and WP07–WP09 checkpoints. Attachment text is treated as specification and evidence policy; mutable provider state is classified only from fresh same-source readback.
 
 ## Current truth
 
 ```text
 SPEC_VERSION=HANYAO_HIGH_QUALITY_CONVERSION_SIGNAL_SMART_BIDDING_CONSTRUCTION_SPEC_v1.1_20260922
 PROMPT_VERSION=HANYAO_CODEX_V1.1_GOAL_MODE_CONTINUATION_PROMPT_20260922
-OBSERVED_AT_UTC=2026-09-22T12:21:40Z
-CURRENT_MAIN_SHA=ffe024651df9ff7519889622604eca1fcf004327
-EVIDENCE_BASELINE_SHA=ffe024651df9ff7519889622604eca1fcf004327
-ACTIVE_BRANCH=v11-wp07-wp09-stage-routing
+OBSERVED_AT_UTC=2026-09-22T12:35:25Z
+CURRENT_MAIN_SHA=350cae63278b994dada226c45da5ddd5b2fde1e9
+EVIDENCE_BASELINE_SHA=350cae63278b994dada226c45da5ddd5b2fde1e9
+ACTIVE_BRANCH=v11-wp10-provider-readonly-blocked
 OPEN_PR_BEFORE_PUSH=NONE
-LAST_COMPLETED_GATE=V11-WP02-WP06_EXACT_HEAD_MERGED
-CURRENT_GATE=V11-WP07-WP09_LOCAL_REHEARSAL_READY_FOR_COMMIT_PUSH_PR_CI
+LAST_COMPLETED_GATE=V11-WP07-WP09_EXACT_HEAD_MERGED
+CURRENT_GATE=V11-WP10_PROVIDER_READ_ONLY_BLOCKED_SYSTEM_CAPABILITY_RUN_DENY
 BLOCKED_LANES=SYSTEM_PROVIDER_EXECUTION;FRESH_D1_READBACK;HQ05_PROVIDER;HQ07_PROVIDER;MESSAGE_ASSET_PROVIDER
-READY_LANES=WP07_WP09_GITHUB_CI
+READY_LANES=EVIDENCE_CURRENT_STATE_CORRECTION
 ```
 
 ## Provider and infrastructure truth
@@ -30,10 +30,15 @@ FACTORY_HOST_EXEC_LIVE_JOB_COUNT=0
 FACTORY_HOST_EXEC_STALE_COUNT=0
 FACTORY_HOST_EXEC_ORPHAN_COUNT=5
 FACTORY_HOST_EXEC_CAPACITY=4
+FACTORY_HOST_EXEC_BROKER_RECORDS=923
+FACTORY_HOST_EXEC_LAST_STATE=COMPLETED
+FACTORY_HOST_EXEC_LAST_FINISHED_AT_UTC=2026-09-22T12:22:26Z
 FACTORY_TUNNEL_LIVE=TRUE
 FACTORY_TUNNEL_READY=TRUE
 FACTORY_CONTROL_PLANE=ok
+FACTORY_CONTROL_PLANE_OBSERVED_AT_UTC=2026-09-22T12:32:41Z
 FACTORY_HOST_EXEC_PROBE=SYSTEM_CAPABILITY_RUN_DENY
+FACTORY_HOST_EXEC_PROBE_OBSERVED_AT_UTC=2026-09-22T12:35:25Z
 CURRENT_PAGES_SOURCE=NOT_VERIFIED
 CURRENT_WORKER_VERSION=NOT_VERIFIED
 CURRENT_D1_READBACK=NOT_VERIFIED
@@ -50,7 +55,7 @@ CLOUDFLARE_MUTATION_COUNT=0
 NATURAL_EVENT_STATUS=NOT_STARTED_NO_SYNTHETIC_EVENTS
 ```
 
-The fresh Factory status reports no active, effective, live, or stale jobs; five orphan records remain shared infrastructure debt. The previously fresh minimal SYSTEM host execution probe was denied by the host capability layer, so that provider execution branch remains parked without being reclassified as Google Ads or Cloudflare provider failure. No provider mutation, fake click, synthetic conversion, webhook replay, or raw secret was used.
+The fresh Factory status reports no active, effective, live, or stale jobs; five orphan records remain shared infrastructure debt. A new bounded SYSTEM read-only probe at `2026-09-22T12:35:25Z` was denied by the host capability layer with `SYSTEM_CAPABILITY_RUN_DENY`. The provider execution branch therefore remains parked without being reclassified as Google Ads or Cloudflare provider failure. No provider mutation, fake click, synthetic conversion, webhook replay, or raw secret was used.
 
 ## WP07–WP09 code and schema checkpoint
 
@@ -79,12 +84,15 @@ TEST_HQ07_QUALIFIED_ACTION=PASS_8_OF_8
 TEST_HG10_READBACK_STATIC=PASS
 TYPESCRIPT_TYPECHECK=PASS
 NEXT_BUILD=PASS
-CI_STATUS=NOT_YET_RUN_FOR_THIS_HEAD
+CI_STATUS=PASS_PR84_REQUIRED_GATE_HARDENING_PRODUCTION_PREFLIGHT
+PR84_HEAD_SHA=e4a031501a57883bd2b22a2f4d3e4e179dbc6594
+PR84_MERGE_COMMIT=350cae63278b994dada226c45da5ddd5b2fde1e9
+PR84_STATE=CLOSED_MERGED_SAME_SOURCE_READBACK_PASS
 ```
 
 HQ06 production userData remains disarmed until fresh HQ05/provider and validateOnly evidence exists. HQ07 provider creation/readback, natural qualified-lead E2E, Smart Bidding canary, and scale remain evidence-gated; local stage and payload tests do not substitute for provider truth.
 
 ```text
 PROVIDER_READBACK=NOT_VERIFIED_HOST_CAPABILITY_RUN_DENY
-NEXT_EXECUTABLE_NON_HUMAN_ACTION=COMMIT_PUSH_CREATE_PR_THEN_RUN_REQUIRED_CI_AND_EXACT_HEAD_MERGE;AFTER_MERGE_REASSESS_READ_ONLY_PROVIDER_ROUTES
+NEXT_EXECUTABLE_NON_HUMAN_ACTION=REASSESS_READ_ONLY_PROVIDER_ROUTE_AFTER_SYSTEM_CAPABILITY_STATE_CHANGE;NO_PROVIDER_MUTATION_UNTIL_FRESH_READBACK
 ```

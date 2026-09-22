@@ -39,6 +39,7 @@ on:
       - "scripts/v12-migration-reconstruction.test.mjs"
       - "scripts/v12-workflow-safety.test.mjs"
       - "migrations/**"
+      - "docs/**"
       - "package.json"
       - "package-lock.json"
       - ".github/workflows/ads-line-hardening.yml"
