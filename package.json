@@ -46,7 +46,8 @@
     "test:hq04:message-assets": "node --experimental-strip-types --test scripts/ads-message-asset-metrics.test.ts workers/google-ads-uploader/test/message-asset-metrics.test.ts",
     "test:hq05:prereq": "node --experimental-strip-types --test scripts/ads-enhanced-conversion-prereq.test.ts",
     "test:hq06:userdata": "node --experimental-strip-types --test workers/google-ads-uploader/test/enhanced-user-data.test.mjs",
-    "test:hq07:qualified-action": "node --experimental-strip-types --test scripts/ads-qualified-lead-action.test.ts"
+    "test:hq07:qualified-action": "node --experimental-strip-types --test scripts/ads-qualified-lead-action.test.ts",
+    "test:v11:wp02-wp06": "node scripts/v11-wp02-wp06.test.mjs"
   },
   "dependencies": {
     "@next/third-parties": "^16.2.9",

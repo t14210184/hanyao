@@ -9,6 +9,7 @@ import {
   normalizeTaiwanMobileForGoogle,
 } from "../functions/_lib/high-intent-signal.ts";
 import {
+  cleanupExpiredLeadUserIdentifiers,
   ensureHighIntentShadowSchema,
   persistHighIntentShadowSafely,
 } from "../functions/_lib/high-intent-shadow.ts";
@@ -179,15 +180,33 @@ test("HQ02 migration replays idempotently and enforces shadow constraints", asyn
   }, /CHECK/);
 });
 
-test("HQ02 lazy bootstrap creates only additive shadow schema and is idempotent", async () => {
+test("HQ02 runtime only verifies the additive shadow schema after migration replay", async () => {
   const db = new DatabaseSync(":memory:");
   db.exec(`
     PRAGMA foreign_keys = ON;
     CREATE TABLE lead_tokens (lead_token TEXT PRIMARY KEY);
     CREATE TABLE line_events (line_event_id TEXT PRIMARY KEY);
+    CREATE TABLE business_conversions (
+      business_conversion_id TEXT PRIMARY KEY,
+      subject_kind TEXT NOT NULL,
+      subject_key TEXT
+    );
+    CREATE TABLE attribution_sessions (
+      session_id TEXT PRIMARY KEY,
+      first_gclid TEXT,
+      last_gclid TEXT,
+      first_gbraid TEXT,
+      last_gbraid TEXT,
+      first_wbraid TEXT,
+      last_wbraid TEXT,
+      expires_at TEXT
+    );
     INSERT INTO lead_tokens(lead_token) VALUES ('HY-KEEP');
     INSERT INTO line_events(line_event_id) VALUES ('LE-KEEP');
   `);
+  db.exec(await readFile("migrations/0013_high_intent_signal_shadow.sql", "utf8"));
+  db.exec(await readFile("migrations/0014_enhanced_user_data_snapshot.sql", "utf8"));
+  db.exec(await readFile("migrations/0015_v11_observability_hardening.sql", "utf8"));
   const d1 = sqliteD1(db);
 
   await ensureHighIntentShadowSchema(d1);
@@ -222,6 +241,109 @@ test("HQ02 lazy bootstrap creates only additive shadow schema and is idempotent"
   assert.equal(
     db.prepare("SELECT COUNT(*) AS c FROM message_asset_metrics_daily").get().c,
     0
+  );
+});
+
+test("HQ06 retention cleanup removes only expired identifiers not referenced by snapshots", async () => {
+  const db = new DatabaseSync(":memory:");
+  db.exec(`
+    PRAGMA foreign_keys = ON;
+    CREATE TABLE lead_tokens (lead_token TEXT PRIMARY KEY);
+    CREATE TABLE line_events (line_event_id TEXT PRIMARY KEY);
+    CREATE TABLE business_conversions (
+      business_conversion_id TEXT PRIMARY KEY,
+      subject_kind TEXT NOT NULL,
+      subject_key TEXT
+    );
+    CREATE TABLE attribution_sessions (
+      session_id TEXT PRIMARY KEY,
+      first_gclid TEXT,
+      last_gclid TEXT,
+      first_gbraid TEXT,
+      last_gbraid TEXT,
+      first_wbraid TEXT,
+      last_wbraid TEXT,
+      expires_at TEXT
+    );
+    INSERT INTO line_events(line_event_id) VALUES ('LE-RETENTION');
+    INSERT INTO business_conversions(business_conversion_id, subject_kind, subject_key)
+      VALUES ('BC-RETENTION', 'LINE_USER_HMAC', 'lu_retention');
+  `);
+  db.exec(await readFile("migrations/0013_high_intent_signal_shadow.sql", "utf8"));
+  db.exec(await readFile("migrations/0014_enhanced_user_data_snapshot.sql", "utf8"));
+  db.exec(await readFile("migrations/0015_v11_observability_hardening.sql", "utf8"));
+
+  db.prepare(`
+    INSERT INTO lead_user_identifiers (
+      identifier_id, line_user_key, identifier_type, identifier_hash,
+      source_line_event_id, first_seen_at, expires_at, retention_policy_version, created_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    "id-expired-free",
+    "lu_retention",
+    "EMAIL_SHA256",
+    "d".repeat(64),
+    "LE-RETENTION",
+    "2026-01-01T00:00:00.000Z",
+    "2026-02-01T00:00:00.000Z",
+    "v1",
+    "2026-01-01T00:00:00.000Z"
+  );
+  db.prepare(`
+    INSERT INTO lead_user_identifiers (
+      identifier_id, line_user_key, identifier_type, identifier_hash,
+      source_line_event_id, first_seen_at, expires_at, retention_policy_version, created_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    "id-expired-referenced",
+    "lu_retention",
+    "PHONE_SHA256",
+    "e".repeat(64),
+    "LE-RETENTION",
+    "2026-01-01T00:00:00.000Z",
+    "2026-02-01T00:00:00.000Z",
+    "v1",
+    "2026-01-01T00:00:00.000Z"
+  );
+  db.prepare(`
+    INSERT INTO conversion_user_data_snapshots (
+      business_conversion_id, line_user_key, snapshot_version,
+      snapshotted_at, sealed_at, consent_state, consent_policy_version, created_at
+    ) VALUES (?, ?, 1, ?, ?, 'UNSPECIFIED', 'v1', ?)
+  `).run(
+    "BC-RETENTION",
+    "lu_retention",
+    "2026-01-01T00:00:00.000Z",
+    "2026-01-01T00:00:00.000Z",
+    "2026-01-01T00:00:00.000Z"
+  );
+  db.prepare(`
+    INSERT INTO conversion_user_data_snapshot_items (
+      business_conversion_id, identifier_type, identifier_hash,
+      source_line_event_id, first_seen_at, created_at
+    ) VALUES (?, ?, ?, ?, ?, ?)
+  `).run(
+    "BC-RETENTION",
+    "PHONE_SHA256",
+    "e".repeat(64),
+    "LE-RETENTION",
+    "2026-01-01T00:00:00.000Z",
+    "2026-01-01T00:00:00.000Z"
+  );
+
+  const removed = await cleanupExpiredLeadUserIdentifiers(
+    sqliteD1(db),
+    "2026-03-01T00:00:00.000Z",
+    10
+  );
+  assert.equal(removed, 1);
+  assert.equal(
+    db.prepare("SELECT COUNT(*) AS c FROM lead_user_identifiers WHERE identifier_id='id-expired-free'").get().c,
+    0
+  );
+  assert.equal(
+    db.prepare("SELECT COUNT(*) AS c FROM lead_user_identifiers WHERE identifier_id='id-expired-referenced'").get().c,
+    1
   );
 });
 

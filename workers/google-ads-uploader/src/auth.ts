@@ -2,6 +2,7 @@ import {
   GOOGLE_CLOUD_PLATFORM_SCOPE,
   GOOGLE_DATA_MANAGER_SCOPE,
   GOOGLE_OAUTH_TOKEN_URL,
+  AUTH_HTTP_TIMEOUT_MS,
   type FetchLike,
 } from "./types.ts";
 import {
@@ -173,6 +174,7 @@ export const exchangeServiceAccountTokenForScopes = async (
       method: "POST",
       headers: { "content-type": "application/x-www-form-urlencoded" },
       body,
+      signal: AbortSignal.timeout(AUTH_HTTP_TIMEOUT_MS),
     });
   } catch {
     throw new ProviderRequestError("AUTH_TOKEN_NETWORK_ERROR", true);
@@ -182,7 +184,7 @@ export const exchangeServiceAccountTokenForScopes = async (
   if (!response.ok) {
     throw new ProviderRequestError(
       "AUTH_TOKEN_EXCHANGE_FAILED",
-      response.status === 400 || response.status === 401 || retryableHttpStatus(response.status),
+      retryableHttpStatus(response.status),
       response.status,
       parseSafeErrorReason(responseText) || sanitizeHttpReason(response.status)
     );

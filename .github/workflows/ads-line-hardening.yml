@@ -127,6 +127,8 @@ jobs:
         run: npm run test:hq06:userdata
       - name: Verify HQ07 Qualified Lead action contract and create fence
         run: npm run test:hq07:qualified-action
+      - name: Verify V1.1 WP02-WP06 hardening contracts
+        run: npm run test:v11:wp02-wp06
       - name: Verify governed Google Ads host provider runner
         run: npm run test:google-ads:host-runner
       - name: Parse Google Ads host provider PowerShell

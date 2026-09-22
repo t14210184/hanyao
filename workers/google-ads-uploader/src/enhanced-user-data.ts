@@ -20,6 +20,23 @@ export interface DataManagerUserData {
   userIdentifiers: DataManagerUserIdentifier[];
 }
 
+export type ConsentState = "GRANTED" | "DENIED" | "UNSPECIFIED";
+
+export interface ConsentSnapshotInput {
+  state: ConsentState;
+  source: string;
+  observedAt: string;
+  policyVersion: string;
+}
+
+export interface EnhancedUserDataSnapshot {
+  identifiers: EnhancedHashedIdentifier[];
+  consentState: ConsentState;
+  consentSource: string | null;
+  consentObservedAt: string | null;
+  consentPolicyVersion: string | null;
+}
+
 const SHA256_HEX = /^[0-9a-f]{64}$/;
 
 export const normalizeEnhancedHashedIdentifiers = (
@@ -71,70 +88,6 @@ export const buildDataManagerUserData = (
 const schemaReady = new WeakSet<object>();
 const schemaInflight = new WeakMap<object, Promise<void>>();
 
-const ENHANCED_USER_DATA_SCHEMA_STATEMENTS = [
-  `CREATE TABLE IF NOT EXISTS lead_user_identifiers (
-    identifier_id TEXT PRIMARY KEY NOT NULL,
-    line_user_key TEXT NOT NULL,
-    identifier_type TEXT NOT NULL CHECK (
-      identifier_type IN ('EMAIL_SHA256', 'PHONE_SHA256')
-    ),
-    identifier_hash TEXT NOT NULL CHECK (length(identifier_hash) = 64),
-    source_line_event_id TEXT NOT NULL,
-    first_seen_at TEXT NOT NULL,
-    created_at TEXT NOT NULL,
-    UNIQUE (line_user_key, identifier_type, identifier_hash),
-    FOREIGN KEY (source_line_event_id) REFERENCES line_events (line_event_id)
-      ON DELETE RESTRICT
-  )`,
-  `CREATE INDEX IF NOT EXISTS idx_lead_user_identifiers_line_user
-    ON lead_user_identifiers (line_user_key, identifier_type, first_seen_at)`,
-  `CREATE TABLE IF NOT EXISTS conversion_user_data_snapshots (
-    business_conversion_id TEXT PRIMARY KEY NOT NULL,
-    line_user_key TEXT NOT NULL,
-    snapshot_version INTEGER NOT NULL DEFAULT 1
-      CHECK (snapshot_version >= 1),
-    snapshotted_at TEXT NOT NULL,
-    sealed_at TEXT,
-    created_at TEXT NOT NULL,
-    FOREIGN KEY (business_conversion_id)
-      REFERENCES business_conversions (business_conversion_id)
-      ON DELETE RESTRICT
-  )`,
-  `CREATE INDEX IF NOT EXISTS idx_conversion_user_data_snapshots_line_user
-    ON conversion_user_data_snapshots (line_user_key, snapshotted_at)`,
-  `CREATE TABLE IF NOT EXISTS conversion_user_data_snapshot_items (
-    business_conversion_id TEXT NOT NULL,
-    identifier_type TEXT NOT NULL CHECK (
-      identifier_type IN ('EMAIL_SHA256', 'PHONE_SHA256')
-    ),
-    identifier_hash TEXT NOT NULL CHECK (
-      length(identifier_hash) = 64
-      AND identifier_hash NOT GLOB '*[^0-9a-fA-F]*'
-    ),
-    source_line_event_id TEXT NOT NULL,
-    first_seen_at TEXT NOT NULL,
-    created_at TEXT NOT NULL,
-    PRIMARY KEY (
-      business_conversion_id,
-      identifier_type,
-      identifier_hash
-    ),
-    FOREIGN KEY (business_conversion_id)
-      REFERENCES conversion_user_data_snapshots (business_conversion_id)
-      ON DELETE CASCADE,
-    FOREIGN KEY (source_line_event_id)
-      REFERENCES line_events (line_event_id)
-      ON DELETE RESTRICT
-  )`,
-  `CREATE INDEX IF NOT EXISTS idx_conversion_user_data_snapshot_items_lookup
-    ON conversion_user_data_snapshot_items (
-      business_conversion_id,
-      identifier_type,
-      first_seen_at,
-      identifier_hash
-    )`,
-] as const;
-
 const verifyEnhancedUserDataSchema = async (
   database: D1Database
 ): Promise<void> => {
@@ -154,6 +107,21 @@ const verifyEnhancedUserDataSchema = async (
   if (Number(row?.count ?? 0) !== 3) {
     throw new Error("ENHANCED_USER_DATA_SCHEMA_INCOMPLETE");
   }
+  const columns = await database
+    .prepare(
+      `SELECT COUNT(*) AS count
+         FROM pragma_table_info('conversion_user_data_snapshots')
+        WHERE name IN (
+          'consent_state',
+          'consent_source',
+          'consent_observed_at',
+          'consent_policy_version'
+        )`
+    )
+    .first<{ count: number | string }>();
+  if (Number(columns?.count ?? 0) !== 4) {
+    throw new Error("ENHANCED_USER_DATA_CONSENT_SCHEMA_INCOMPLETE");
+  }
 };
 
 export const ensureEnhancedUserDataSchema = async (
@@ -165,11 +133,6 @@ export const ensureEnhancedUserDataSchema = async (
   let inflight = schemaInflight.get(key);
   if (!inflight) {
     inflight = (async () => {
-      await database.batch(
-        ENHANCED_USER_DATA_SCHEMA_STATEMENTS.map((sql) =>
-          database.prepare(sql)
-        )
-      );
       await verifyEnhancedUserDataSchema(database);
       schemaReady.add(key);
     })();
@@ -189,11 +152,24 @@ interface SnapshotIdentifierRow {
   identifier_hash: string;
 }
 
-export const snapshotEnhancedUserDataForConversion = async (
+interface SnapshotConsentRow {
+  consent_state: ConsentState;
+  consent_source: string | null;
+  consent_observed_at: string | null;
+  consent_policy_version: string | null;
+}
+
+export const readEnhancedUserDataSnapshotForConversion = async (
   database: D1Database,
   businessConversionId: string,
-  snapshottedAt: string
-): Promise<EnhancedHashedIdentifier[]> => {
+  snapshottedAt: string,
+  consent: ConsentSnapshotInput = {
+    state: "UNSPECIFIED",
+    source: "NO_PER_RECORD_EVIDENCE",
+    observedAt: snapshottedAt,
+    policyVersion: "v1",
+  }
+): Promise<EnhancedUserDataSnapshot> => {
   await ensureEnhancedUserDataSchema(database);
 
   await database.batch([
@@ -201,15 +177,24 @@ export const snapshotEnhancedUserDataForConversion = async (
       .prepare(
         `INSERT OR IGNORE INTO conversion_user_data_snapshots (
           business_conversion_id, line_user_key, snapshot_version,
-          snapshotted_at, sealed_at, created_at
+          snapshotted_at, sealed_at, consent_state, consent_source,
+          consent_observed_at, consent_policy_version, created_at
         )
-        SELECT business_conversion_id, subject_key, 1, ?2, NULL, ?2
+        SELECT business_conversion_id, subject_key, 1, ?2, NULL, ?3, ?4,
+               ?5, ?6, ?2
           FROM business_conversions
          WHERE business_conversion_id=?1
            AND subject_kind='LINE_USER_HMAC'
            AND subject_key IS NOT NULL`
       )
-      .bind(businessConversionId, snapshottedAt),
+      .bind(
+        businessConversionId,
+        snapshottedAt,
+        consent.state,
+        consent.source,
+        consent.observedAt,
+        consent.policyVersion
+      ),
     database
       .prepare(
         `INSERT OR IGNORE INTO conversion_user_data_snapshot_items (
@@ -257,10 +242,41 @@ export const snapshotEnhancedUserDataForConversion = async (
     .bind(businessConversionId)
     .all<SnapshotIdentifierRow>();
 
-  return normalizeEnhancedHashedIdentifiers(
-    (result.results ?? []).map((row) => ({
-      type: row.identifier_type,
-      hash: row.identifier_hash,
-    }))
-  );
+  const consentRow = await database
+    .prepare(
+      `SELECT consent_state, consent_source, consent_observed_at,
+              consent_policy_version
+         FROM conversion_user_data_snapshots
+        WHERE business_conversion_id=?1`
+    )
+    .bind(businessConversionId)
+    .first<SnapshotConsentRow>();
+
+  return {
+    identifiers: normalizeEnhancedHashedIdentifiers(
+      (result.results ?? []).map((row) => ({
+        type: row.identifier_type,
+        hash: row.identifier_hash,
+      }))
+    ),
+    consentState: consentRow?.consent_state ?? "UNSPECIFIED",
+    consentSource: consentRow?.consent_source ?? null,
+    consentObservedAt: consentRow?.consent_observed_at ?? null,
+    consentPolicyVersion: consentRow?.consent_policy_version ?? null,
+  };
 };
+
+export const snapshotEnhancedUserDataForConversion = async (
+  database: D1Database,
+  businessConversionId: string,
+  snapshottedAt: string,
+  consent?: ConsentSnapshotInput
+): Promise<EnhancedHashedIdentifier[]> =>
+  (
+    await readEnhancedUserDataSnapshotForConversion(
+      database,
+      businessConversionId,
+      snapshottedAt,
+      consent
+    )
+  ).identifiers;

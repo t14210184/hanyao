@@ -405,7 +405,7 @@ const acquireTokenFactory = (
       const serialized = env.GOOGLE_DATA_MANAGER_SERVICE_ACCOUNT_JSON;
       if (!serialized) {
         tokenPromise = Promise.reject(
-          new ProviderRequestError("AUTH_CREDENTIAL_MISSING", true)
+          new ProviderRequestError("AUTH_CREDENTIAL_MISSING", false)
         );
       } else {
         tokenPromise = exchangeServiceAccountToken(serialized, fetchImpl, now).then(
