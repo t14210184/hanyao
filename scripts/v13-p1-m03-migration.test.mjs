@@ -9,7 +9,7 @@ const files = fs.readdirSync(migrationsDir)
   .filter((name) => /^\d{4}_.*\.sql$/.test(name))
   .sort();
 
-assert.equal(files.at(-1), "0014_enhanced_user_data_snapshot.sql");
+assert.equal(files.at(-1), "0015_v11_observability_hardening.sql");
 const db = new DatabaseSync(":memory:");
 db.exec("PRAGMA foreign_keys = ON;");
 for (const file of files) {
