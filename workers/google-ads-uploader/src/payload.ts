@@ -78,8 +78,15 @@ export const buildDataManagerRequest = (
     accountType: "GOOGLE_ADS" as const,
     accountId,
   };
+  const perRecordConsentGranted =
+    row.consent_state === "GRANTED" &&
+    Boolean(row.consent_source?.trim()) &&
+    Boolean(row.consent_observed_at?.trim()) &&
+    Boolean(row.consent_policy_version?.trim());
   const enhancedUserData =
-    config.enhancedUserDataEnabled && config.adUserDataConsentGranted
+    config.enhancedUserDataEnabled &&
+    config.adUserDataConsentGranted &&
+    perRecordConsentGranted
       ? buildDataManagerUserData(row.enhanced_user_identifiers)
       : null;
 

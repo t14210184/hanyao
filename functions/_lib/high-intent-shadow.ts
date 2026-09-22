@@ -28,85 +28,10 @@ export type HighIntentShadowResult =
   | "SKIPPED_NON_TEXT"
   | "FAILED";
 
+export const HIGH_INTENT_IDENTIFIER_RETENTION_DAYS = 90;
+
 const schemaReady = new WeakSet<object>();
 const schemaInflight = new WeakMap<object, Promise<void>>();
-
-const SHADOW_SCHEMA_STATEMENTS = [
-  `CREATE TABLE IF NOT EXISTS lead_signal_observations (
-    observation_id TEXT PRIMARY KEY NOT NULL,
-    line_event_id TEXT NOT NULL UNIQUE,
-    line_user_key TEXT,
-    lead_token TEXT,
-    observed_at TEXT NOT NULL,
-    rule_version TEXT NOT NULL,
-    match_status TEXT NOT NULL,
-    attribution_lane TEXT NOT NULL CHECK (
-      attribution_lane IN ('EXACT_CLICK', 'USER_DATA_ONLY', 'UNATTRIBUTED')
-    ),
-    service_signal INTEGER NOT NULL DEFAULT 0 CHECK (service_signal IN (0, 1)),
-    transaction_intent_signal INTEGER NOT NULL DEFAULT 0
-      CHECK (transaction_intent_signal IN (0, 1)),
-    location_signal INTEGER NOT NULL DEFAULT 0 CHECK (location_signal IN (0, 1)),
-    schedule_signal INTEGER NOT NULL DEFAULT 0 CHECK (schedule_signal IN (0, 1)),
-    contact_signal INTEGER NOT NULL DEFAULT 0 CHECK (contact_signal IN (0, 1)),
-    qualified_candidate INTEGER NOT NULL DEFAULT 0
-      CHECK (qualified_candidate IN (0, 1)),
-    created_at TEXT NOT NULL,
-    FOREIGN KEY (line_event_id) REFERENCES line_events (line_event_id)
-      ON DELETE RESTRICT,
-    FOREIGN KEY (lead_token) REFERENCES lead_tokens (lead_token)
-      ON DELETE SET NULL
-  )`,
-  `CREATE INDEX IF NOT EXISTS idx_lead_signal_observations_candidate
-    ON lead_signal_observations (
-      qualified_candidate,
-      attribution_lane,
-      observed_at
-    )`,
-  `CREATE INDEX IF NOT EXISTS idx_lead_signal_observations_line_user
-    ON lead_signal_observations (line_user_key, observed_at)`,
-  `CREATE TABLE IF NOT EXISTS lead_user_identifiers (
-    identifier_id TEXT PRIMARY KEY NOT NULL,
-    line_user_key TEXT NOT NULL,
-    identifier_type TEXT NOT NULL CHECK (
-      identifier_type IN ('EMAIL_SHA256', 'PHONE_SHA256')
-    ),
-    identifier_hash TEXT NOT NULL CHECK (length(identifier_hash) = 64),
-    source_line_event_id TEXT NOT NULL,
-    first_seen_at TEXT NOT NULL,
-    created_at TEXT NOT NULL,
-    UNIQUE (line_user_key, identifier_type, identifier_hash),
-    FOREIGN KEY (source_line_event_id) REFERENCES line_events (line_event_id)
-      ON DELETE RESTRICT
-  )`,
-  `CREATE INDEX IF NOT EXISTS idx_lead_user_identifiers_line_user
-    ON lead_user_identifiers (line_user_key, identifier_type, first_seen_at)`,
-  `CREATE TABLE IF NOT EXISTS message_asset_metrics_daily (
-    metric_date TEXT NOT NULL,
-    google_ads_customer_id TEXT NOT NULL,
-    campaign_id TEXT NOT NULL,
-    asset_id TEXT NOT NULL,
-    asset_status TEXT,
-    policy_status TEXT,
-    impressions INTEGER NOT NULL DEFAULT 0 CHECK (impressions >= 0),
-    interactions INTEGER NOT NULL DEFAULT 0 CHECK (interactions >= 0),
-    clicks INTEGER NOT NULL DEFAULT 0 CHECK (clicks >= 0),
-    conversions REAL NOT NULL DEFAULT 0 CHECK (conversions >= 0),
-    all_conversions REAL NOT NULL DEFAULT 0 CHECK (all_conversions >= 0),
-    cost_micros INTEGER NOT NULL DEFAULT 0 CHECK (cost_micros >= 0),
-    provider_observed_at TEXT NOT NULL,
-    created_at TEXT NOT NULL,
-    updated_at TEXT NOT NULL,
-    PRIMARY KEY (
-      metric_date,
-      google_ads_customer_id,
-      campaign_id,
-      asset_id
-    )
-  )`,
-  `CREATE INDEX IF NOT EXISTS idx_message_asset_metrics_campaign_date
-    ON message_asset_metrics_daily (campaign_id, metric_date)`,
-] as const;
 
 const verifyShadowSchema = async (database: D1Database): Promise<void> => {
   const row = await database
@@ -124,6 +49,36 @@ const verifyShadowSchema = async (database: D1Database): Promise<void> => {
   if (Number(row?.count ?? 0) !== 3) {
     throw new Error("HIGH_INTENT_SHADOW_SCHEMA_INCOMPLETE");
   }
+  const requiredColumns = await database
+    .prepare(
+      `SELECT COUNT(*) AS count
+         FROM pragma_table_info('lead_user_identifiers')
+        WHERE name IN ('expires_at', 'retention_policy_version')`
+    )
+    .first<{ count: number | string }>();
+  if (Number(requiredColumns?.count ?? 0) !== 2) {
+    throw new Error("HIGH_INTENT_RETENTION_SCHEMA_INCOMPLETE");
+  }
+  const metricsColumns = await database
+    .prepare(
+      `SELECT COUNT(*) AS count
+         FROM pragma_table_info('message_asset_metrics_daily')
+        WHERE name IN ('message_chats', 'message_impressions', 'message_chat_rate')`
+    )
+    .first<{ count: number | string }>();
+  if (Number(metricsColumns?.count ?? 0) !== 3) {
+    throw new Error("HIGH_INTENT_MESSAGE_METRICS_SCHEMA_INCOMPLETE");
+  }
+  const checkpoint = await database
+    .prepare(
+      `SELECT COUNT(*) AS count
+         FROM sqlite_master
+        WHERE type='table' AND name='message_asset_metrics_collector_state'`
+    )
+    .first<{ count: number | string }>();
+  if (Number(checkpoint?.count ?? 0) !== 1) {
+    throw new Error("HIGH_INTENT_MESSAGE_CHECKPOINT_SCHEMA_INCOMPLETE");
+  }
 };
 
 export const ensureHighIntentShadowSchema = async (
@@ -135,10 +90,6 @@ export const ensureHighIntentShadowSchema = async (
   let inflight = schemaInflight.get(key);
   if (!inflight) {
     inflight = (async () => {
-      const statements = SHADOW_SCHEMA_STATEMENTS.map((sql) =>
-        database.prepare(sql)
-      );
-      await database.batch(statements);
       await verifyShadowSchema(database);
       schemaReady.add(key);
     })();
@@ -176,6 +127,10 @@ export const persistHighIntentShadow = async (
   const analysis = await analyzer(input.messageText);
   const lane = classifyLane(input, analysis);
   const observationId = crypto.randomUUID();
+  const expiresAt = new Date(
+    Date.parse(input.observedAt) +
+      HIGH_INTENT_IDENTIFIER_RETENTION_DAYS * 24 * 60 * 60 * 1000
+  ).toISOString();
   const statements = [
     database.prepare(
       `INSERT OR IGNORE INTO lead_signal_observations (
@@ -211,8 +166,9 @@ export const persistHighIntentShadow = async (
         database.prepare(
           `INSERT OR IGNORE INTO lead_user_identifiers (
             identifier_id, line_user_key, identifier_type, identifier_hash,
-            source_line_event_id, first_seen_at, created_at
-          ) VALUES (?1,?2,?3,?4,?5,?6,?7)`
+            source_line_event_id, first_seen_at, expires_at,
+            retention_policy_version, created_at
+          ) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9)`
         ).bind(
           crypto.randomUUID(),
           input.lineUserKey,
@@ -220,6 +176,8 @@ export const persistHighIntentShadow = async (
           identifier.hash,
           input.lineEventId,
           input.observedAt,
+          expiresAt,
+          "v1",
           input.observedAt
         )
       );
@@ -244,4 +202,33 @@ export const persistHighIntentShadowSafely = async (
     });
     return "FAILED";
   }
+};
+
+export const cleanupExpiredLeadUserIdentifiers = async (
+  database: D1Database,
+  nowIso: string,
+  limit = 100
+): Promise<number> => {
+  const boundedLimit = Math.max(1, Math.min(Math.floor(limit), 500));
+  const result = await database
+    .prepare(
+      `DELETE FROM lead_user_identifiers
+        WHERE identifier_id IN (
+          SELECT candidate.identifier_id
+            FROM lead_user_identifiers candidate
+           WHERE candidate.expires_at IS NOT NULL
+             AND candidate.expires_at <= ?1
+             AND NOT EXISTS (
+               SELECT 1
+                 FROM conversion_user_data_snapshot_items item
+                WHERE item.identifier_type = candidate.identifier_type
+                  AND lower(item.identifier_hash) = lower(candidate.identifier_hash)
+             )
+           ORDER BY candidate.expires_at, candidate.identifier_id
+           LIMIT ?2
+        )`
+    )
+    .bind(nowIso, boundedLimit)
+    .run();
+  return Number(result.meta?.changes ?? 0);
 };

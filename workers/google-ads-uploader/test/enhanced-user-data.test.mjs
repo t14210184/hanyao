@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import { DatabaseSync } from "node:sqlite";
 import test from "node:test";
 import {
@@ -48,6 +49,10 @@ const baseRow = (overrides = {}) => ({
   google_ads_account_id: "4801404246",
   google_ads_conversion_action_id: "7674301565",
   event_source: "MESSAGE",
+  consent_state: "UNSPECIFIED",
+  consent_source: null,
+  consent_observed_at: null,
+  consent_policy_version: null,
   lease_generation: 0,
   lease_owner: null,
   lease_expires_at: null,
@@ -181,13 +186,17 @@ test("HQ06 D02 consent-gated userData preserves click identity and validateOnly 
       { type: "EMAIL_SHA256", hash: EMAIL_HASH },
       { type: "PHONE_SHA256", hash: PHONE_HASH },
     ],
+    consent_state: "GRANTED",
+    consent_source: "TEST_EXPLICIT_EVENT",
+    consent_observed_at: "2026-09-20T10:00:00.000Z",
+    consent_policy_version: "v1-test",
   });
   const request = buildDataManagerRequest(
     row,
     config({
       enhancedUserDataEnabled: true,
       adUserDataConsentGranted: true,
-    })
+    }),
   );
 
   assert.equal(request.encoding, "HEX");
@@ -268,6 +277,16 @@ test("HQ06 snapshot seal blocks later and backdated-late identifiers from retry 
       subject_kind TEXT NOT NULL,
       subject_key TEXT
     );
+    CREATE TABLE attribution_sessions (
+      session_id TEXT PRIMARY KEY,
+      first_gclid TEXT,
+      last_gclid TEXT,
+      first_gbraid TEXT,
+      last_gbraid TEXT,
+      first_wbraid TEXT,
+      last_wbraid TEXT,
+      expires_at TEXT
+    );
     INSERT INTO line_events(line_event_id)
       VALUES ('le-email'), ('le-phone'), ('le-backdated');
     INSERT INTO business_conversions(
@@ -276,6 +295,10 @@ test("HQ06 snapshot seal blocks later and backdated-late identifiers from retry 
       'bc-hq06', 'LINE_USER_HMAC', 'lu_v1_hq06'
     );
   `);
+
+  db.exec(await readFile("migrations/0013_high_intent_signal_shadow.sql", "utf8"));
+  db.exec(await readFile("migrations/0014_enhanced_user_data_snapshot.sql", "utf8"));
+  db.exec(await readFile("migrations/0015_v11_observability_hardening.sql", "utf8"));
 
   const d1 = sqliteD1(db);
   await ensureEnhancedUserDataSchema(d1);

@@ -1,6 +1,7 @@
 import { exchangeServiceAccountTokenForScopes } from "./auth.ts";
 import {
   GOOGLE_ADS_SCOPE,
+  PROVIDER_HTTP_TIMEOUT_MS,
   type FetchLike,
   type UploaderEnv,
   type UploaderLogger,
@@ -38,6 +39,15 @@ export interface MessageAssetMetricsSummary {
   rowsRead: number;
   rowsWritten: number;
   failureCode: string | null;
+}
+
+interface MessageAssetCollectorStateRow {
+  customer_id: string;
+  last_attempt_at: string | null;
+  last_success_at: string | null;
+  last_nonempty_at: string | null;
+  last_failure_code: string | null;
+  last_row_count: number | string | null;
 }
 
 const asRecord = (value: unknown): RecordLike | null =>
@@ -205,6 +215,7 @@ export const readMessageAssetMetrics = async (
       body: JSON.stringify({
         query: buildMessageAssetMetricsQuery(targetDate),
       }),
+      signal: AbortSignal.timeout(PROVIDER_HTTP_TIMEOUT_MS),
     }
   );
   const text = await response.text();
@@ -233,44 +244,81 @@ export const readMessageAssetMetrics = async (
 };
 
 export const ensureMessageAssetMetricsTable = async (env: UploaderEnv): Promise<void> => {
-  await env.ATTRIBUTION_DB.batch([
-    env.ATTRIBUTION_DB.prepare(
-      `CREATE TABLE IF NOT EXISTS message_asset_metrics_daily (
-        metric_date TEXT NOT NULL,
-        google_ads_customer_id TEXT NOT NULL,
-        campaign_id TEXT NOT NULL,
-        asset_id TEXT NOT NULL,
-        asset_status TEXT,
-        policy_status TEXT,
-        impressions INTEGER NOT NULL DEFAULT 0 CHECK (impressions >= 0),
-        interactions INTEGER NOT NULL DEFAULT 0 CHECK (interactions >= 0),
-        clicks INTEGER NOT NULL DEFAULT 0 CHECK (clicks >= 0),
-        conversions REAL NOT NULL DEFAULT 0 CHECK (conversions >= 0),
-        all_conversions REAL NOT NULL DEFAULT 0 CHECK (all_conversions >= 0),
-        cost_micros INTEGER NOT NULL DEFAULT 0 CHECK (cost_micros >= 0),
-        provider_observed_at TEXT NOT NULL,
-        created_at TEXT NOT NULL,
-        updated_at TEXT NOT NULL,
-        PRIMARY KEY (
-          metric_date,
-          google_ads_customer_id,
-          campaign_id,
-          asset_id
-        )
-      )`
-    ),
-    env.ATTRIBUTION_DB.prepare(
-      `CREATE INDEX IF NOT EXISTS idx_message_asset_metrics_campaign_date
-        ON message_asset_metrics_daily (campaign_id, metric_date)`
-    ),
-  ]);
+  const tables = await env.ATTRIBUTION_DB
+    .prepare(
+      `SELECT COUNT(*) AS count
+         FROM sqlite_master
+        WHERE type='table'
+          AND name IN ('message_asset_metrics_daily', 'message_asset_metrics_collector_state')`
+    )
+    .first<{ count: number | string }>();
+  if (Number(tables?.count ?? 0) !== 2) {
+    throw new Error("MESSAGE_ASSET_METRICS_SCHEMA_INCOMPLETE");
+  }
+  const columns = await env.ATTRIBUTION_DB
+    .prepare(
+      `SELECT COUNT(*) AS count
+         FROM pragma_table_info('message_asset_metrics_daily')
+        WHERE name IN (
+          'message_chats',
+          'message_impressions',
+          'message_chat_rate'
+        )`
+    )
+    .first<{ count: number | string }>();
+  if (Number(columns?.count ?? 0) !== 3) {
+    throw new Error("MESSAGE_ASSET_METRICS_V2_SCHEMA_INCOMPLETE");
+  }
 };
 
-const lastObservedAt = async (env: UploaderEnv): Promise<string | null> => {
-  const row = await env.ATTRIBUTION_DB.prepare(
-    "SELECT MAX(provider_observed_at) AS last_observed_at FROM message_asset_metrics_daily"
-  ).first<{ last_observed_at: string | null }>();
-  return row?.last_observed_at ?? null;
+const readCollectorState = async (
+  env: UploaderEnv,
+  customerId: string
+): Promise<MessageAssetCollectorStateRow | null> =>
+  env.ATTRIBUTION_DB
+    .prepare(
+      `SELECT customer_id, last_attempt_at, last_success_at, last_nonempty_at,
+              last_failure_code, last_row_count
+         FROM message_asset_metrics_collector_state
+        WHERE customer_id=?1`
+    )
+    .bind(customerId)
+    .first<MessageAssetCollectorStateRow>();
+
+const updateCollectorState = async (
+  env: UploaderEnv,
+  input: {
+    customerId: string;
+    attemptAt: string;
+    successAt?: string | null;
+    nonemptyAt?: string | null;
+    failureCode?: string | null;
+    rowCount?: number | null;
+  }
+): Promise<void> => {
+  await env.ATTRIBUTION_DB
+    .prepare(
+      `INSERT INTO message_asset_metrics_collector_state (
+        customer_id, last_attempt_at, last_success_at, last_nonempty_at,
+        last_failure_code, last_row_count, updated_at
+      ) VALUES (?1,?2,?3,?4,?5,?6,?2)
+      ON CONFLICT(customer_id) DO UPDATE SET
+        last_attempt_at=excluded.last_attempt_at,
+        last_success_at=COALESCE(excluded.last_success_at, message_asset_metrics_collector_state.last_success_at),
+        last_nonempty_at=COALESCE(excluded.last_nonempty_at, message_asset_metrics_collector_state.last_nonempty_at),
+        last_failure_code=excluded.last_failure_code,
+        last_row_count=excluded.last_row_count,
+        updated_at=excluded.updated_at`
+    )
+    .bind(
+      input.customerId,
+      input.attemptAt,
+      input.successAt ?? null,
+      input.nonemptyAt ?? null,
+      input.failureCode ?? null,
+      input.rowCount ?? null
+    )
+    .run();
 };
 
 export const projectMessageAssetMetricRows = async (
@@ -284,10 +332,11 @@ export const projectMessageAssetMetricRows = async (
       `INSERT INTO message_asset_metrics_daily (
         metric_date, google_ads_customer_id, campaign_id, asset_id,
         asset_status, policy_status, impressions, interactions, clicks,
-        conversions, all_conversions, cost_micros, provider_observed_at,
+        conversions, all_conversions, cost_micros, message_chats,
+        message_impressions, message_chat_rate, provider_observed_at,
         created_at, updated_at
       ) VALUES (
-        ?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?13,?13
+        ?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?16,?16
       )
       ON CONFLICT(metric_date,google_ads_customer_id,campaign_id,asset_id)
       DO UPDATE SET
@@ -299,6 +348,9 @@ export const projectMessageAssetMetricRows = async (
         conversions=excluded.conversions,
         all_conversions=excluded.all_conversions,
         cost_micros=excluded.cost_micros,
+        message_chats=excluded.message_chats,
+        message_impressions=excluded.message_impressions,
+        message_chat_rate=excluded.message_chat_rate,
         provider_observed_at=excluded.provider_observed_at,
         updated_at=excluded.updated_at`
     ).bind(
@@ -314,6 +366,9 @@ export const projectMessageAssetMetricRows = async (
       row.conversions,
       row.allConversions,
       row.costMicros,
+      row.messageChats,
+      row.messageImpressions,
+      row.messageChatRate,
       nowIso
     )
   );
@@ -345,9 +400,14 @@ export const collectMessageAssetMetrics = async (
       ? intervalMinutes * 60 * 1000
       : DEFAULT_MESSAGE_ASSET_METRICS_INTERVAL_MS;
 
+  const customerId = env.GOOGLE_ADS_ACCOUNT_ID?.trim() || "";
   try {
     await ensureMessageAssetMetricsTable(env);
-    const last = await lastObservedAt(env);
+    if (!/^\d+$/.test(customerId)) {
+      throw new Error("MESSAGE_ASSET_CUSTOMER_ID_INVALID");
+    }
+    const state = await readCollectorState(env, customerId);
+    const last = state?.last_success_at ?? null;
     if (
       last &&
       Number.isFinite(Date.parse(last)) &&
@@ -356,10 +416,16 @@ export const collectMessageAssetMetrics = async (
       return { state: "NOT_DUE", rowsRead: 0, rowsWritten: 0, failureCode: null };
     }
 
+    await updateCollectorState(env, {
+      customerId,
+      attemptAt: nowIso,
+      rowCount: 0,
+      failureCode: null,
+    });
+
     const serialized = env.GOOGLE_DATA_MANAGER_SERVICE_ACCOUNT_JSON?.trim();
     if (!serialized) throw new Error("MESSAGE_ASSET_PROVIDER_CREDENTIAL_MISSING");
 
-    const customerId = env.GOOGLE_ADS_ACCOUNT_ID?.trim() || "";
     const loginCustomerId =
       env.GOOGLE_ADS_LOGIN_CUSTOMER_ID?.replace(/-/g, "").trim() || null;
     const token = await exchangeServiceAccountTokenForScopes(
@@ -376,6 +442,14 @@ export const collectMessageAssetMetrics = async (
       fetchImpl
     );
     const written = await projectMessageAssetMetricRows(env, rows, nowIso);
+    await updateCollectorState(env, {
+      customerId,
+      attemptAt: nowIso,
+      successAt: nowIso,
+      nonemptyAt: rows.length > 0 ? nowIso : null,
+      failureCode: null,
+      rowCount: rows.length,
+    });
     options.logger?.info?.("google-ads Message Asset metrics collected", {
       rows_read: rows.length,
       rows_written: written,
@@ -388,6 +462,18 @@ export const collectMessageAssetMetrics = async (
     };
   } catch (error) {
     const failureCode = safeCode(error);
+    if (/^\d+$/.test(customerId)) {
+      try {
+        await updateCollectorState(env, {
+          customerId,
+          attemptAt: nowIso,
+          failureCode,
+          rowCount: 0,
+        });
+      } catch {
+        // Preserve the provider failure classification if the checkpoint is unavailable.
+      }
+    }
     options.logger?.warn?.("google-ads Message Asset metrics isolated failure", {
       failure_code: failureCode,
     });

@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { generateKeyPairSync } from "node:crypto";
 import test from "node:test";
 import type { D1Database } from "@cloudflare/workers-types";
 import {
@@ -9,6 +10,7 @@ import {
   type MessageAssetMetricRow,
 } from "../src/message-asset-metrics.ts";
 import type { UploaderEnv } from "../src/types.ts";
+import { GOOGLE_OAUTH_TOKEN_URL } from "../src/types.ts";
 
 class FakeStatement {
   sql: string;
@@ -26,17 +28,39 @@ class FakeStatement {
   }
 
   async first<T>() {
-    if (this.sql.includes("MAX(provider_observed_at)")) {
+    if (this.sql.includes("sqlite_master")) {
+      return { count: 2 } as T;
+    }
+    if (this.sql.includes("pragma_table_info")) {
+      return { count: 3 } as T;
+    }
+    if (this.sql.includes("message_asset_metrics_collector_state")) {
       return {
-        last_observed_at: this.state.lastObservedAt,
+        customer_id: "4801404246",
+        last_attempt_at: this.state.lastAttemptAt,
+        last_success_at: this.state.lastSuccessAt,
+        last_nonempty_at: null,
+        last_failure_code: null,
+        last_row_count: this.state.lastRowCount,
       } as T;
     }
     throw new Error("UNEXPECTED_FIRST_QUERY");
   }
+
+  async run() {
+    if (this.sql.includes("message_asset_metrics_collector_state")) {
+      this.state.lastAttemptAt = String(this.args[1]);
+      this.state.lastSuccessAt = this.args[2] ? String(this.args[2]) : this.state.lastSuccessAt;
+      this.state.lastRowCount = this.args[5] == null ? null : Number(this.args[5]);
+    }
+    return { success: true, meta: { changes: 1 }, results: [] };
+  }
 }
 
 interface FakeState {
-  lastObservedAt: string | null;
+  lastAttemptAt: string | null;
+  lastSuccessAt: string | null;
+  lastRowCount: number | null;
   batches: number;
   projected: unknown[][];
 }
@@ -51,7 +75,6 @@ const fakeDb = (state: FakeState): D1Database =>
       for (const statement of statements) {
         if (statement.sql.includes("INSERT INTO message_asset_metrics_daily")) {
           state.projected.push(statement.args);
-          state.lastObservedAt = String(statement.args[12]);
         }
       }
       return statements.map(() => ({
@@ -92,9 +115,21 @@ const metricRow = (): MessageAssetMetricRow => ({
   messageChatRate: 0.125,
 });
 
+const serviceAccountJson = (): string => {
+  const pair = generateKeyPairSync("rsa", { modulusLength: 2048 });
+  return JSON.stringify({
+    type: "service_account",
+    private_key: pair.privateKey.export({ type: "pkcs8", format: "pem" }).toString(),
+    client_email: "message-metrics-test@example.invalid",
+    token_uri: GOOGLE_OAUTH_TOKEN_URL,
+  });
+};
+
 test("HQ04 metrics lane is fully inert while disarmed", async () => {
   const state: FakeState = {
-    lastObservedAt: null,
+    lastAttemptAt: null,
+    lastSuccessAt: null,
+    lastRowCount: null,
     batches: 0,
     projected: [],
   };
@@ -118,7 +153,9 @@ test("HQ04 metrics lane is fully inert while disarmed", async () => {
 
 test("HQ04 due gate avoids OAuth/provider work within interval", async () => {
   const state: FakeState = {
-    lastObservedAt: "2026-09-20T00:30:00.000Z",
+    lastAttemptAt: "2026-09-20T00:30:00.000Z",
+    lastSuccessAt: "2026-09-20T00:30:00.000Z",
+    lastRowCount: 1,
     batches: 0,
     projected: [],
   };
@@ -134,13 +171,15 @@ test("HQ04 due gate avoids OAuth/provider work within interval", async () => {
   });
 
   assert.equal(result.state, "NOT_DUE");
-  assert.equal(state.batches, 1);
+  assert.equal(state.batches, 0);
   assert.equal(state.projected.length, 0);
 });
 
 test("HQ04 D1 projector upserts normalized provider metrics only", async () => {
   const state: FakeState = {
-    lastObservedAt: null,
+    lastAttemptAt: null,
+    lastSuccessAt: null,
+    lastRowCount: null,
     batches: 0,
     projected: [],
   };
@@ -163,13 +202,16 @@ test("HQ04 D1 projector upserts normalized provider metrics only", async () => {
     "ENABLED",
     "ELIGIBLE",
   ]);
-  assert.deepEqual(args.slice(6, 13), [
+  assert.deepEqual(args.slice(6, 16), [
     20,
     3,
     2,
     1,
     1,
     1200000,
+    1,
+    8,
+    0.125,
     "2026-09-20T01:00:00.000Z",
   ]);
 });
@@ -224,4 +266,46 @@ test("HQ04 SearchStream reader includes message-native metrics without mutation"
   assert.equal(rows[0].messageChats, 1);
   assert.equal(rows[0].messageImpressions, 8);
   assert.equal(rows[0].messageChatRate, 0.125);
+});
+
+test("HQ04 zero-row success advances the durable hourly checkpoint", async () => {
+  const state: FakeState = {
+    lastAttemptAt: null,
+    lastSuccessAt: null,
+    lastRowCount: null,
+    batches: 0,
+    projected: [],
+  };
+  const env = baseEnv(state);
+  env.MESSAGE_ASSET_METRICS_ENABLED = "true";
+  env.GOOGLE_DATA_MANAGER_SERVICE_ACCOUNT_JSON = serviceAccountJson();
+
+  let providerCalls = 0;
+  const fetchImpl = async (input: RequestInfo | URL): Promise<Response> => {
+    providerCalls += 1;
+    if (String(input) === GOOGLE_OAUTH_TOKEN_URL) {
+      return new Response(JSON.stringify({ access_token: "test-token" }), { status: 200 });
+    }
+    return new Response("[]", { status: 200 });
+  };
+
+  const first = await collectMessageAssetMetrics(env, {
+    now: new Date("2026-09-20T00:00:00.000Z"),
+    fetchImpl,
+  });
+  assert.deepEqual(first, {
+    state: "SUCCESS",
+    rowsRead: 0,
+    rowsWritten: 0,
+    failureCode: null,
+  });
+  assert.equal(state.lastSuccessAt, "2026-09-20T00:00:00.000Z");
+  assert.equal(state.lastRowCount, 0);
+
+  const second = await collectMessageAssetMetrics(env, {
+    now: new Date("2026-09-20T00:30:00.000Z"),
+    fetchImpl,
+  });
+  assert.equal(second.state, "NOT_DUE");
+  assert.equal(providerCalls, 2);
 });

@@ -47,6 +47,18 @@ class FakeStatement {
     return this;
   }
   async first<T>() {
+    if (this.sql.includes("pragma_table_info('lead_user_identifiers')")) {
+      return { count: 2 } as T;
+    }
+    if (this.sql.includes("pragma_table_info('message_asset_metrics_daily')")) {
+      return { count: 3 } as T;
+    }
+    if (this.sql.includes("message_asset_metrics_collector_state")) {
+      return { count: 1 } as T;
+    }
+    if (this.sql.includes("FROM sqlite_master") && this.sql.includes("name IN")) {
+      return { count: 3 } as T;
+    }
     if (this.sql.includes("FROM lead_tokens WHERE lead_token")) {
       return this.state.lead as T;
     }

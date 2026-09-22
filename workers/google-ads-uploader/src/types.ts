@@ -22,6 +22,7 @@ export const FIRST_DIAGNOSTIC_DELAY_MS = 30 * 60 * 1000;
 export const DIAGNOSTIC_DELAY_CAP_MS = 60 * 60 * 1000;
 export const STALE_PROCESSING_THRESHOLD_MS = 30 * 60 * 1000;
 export const PROVIDER_HTTP_TIMEOUT_MS = 20 * 1000;
+export const AUTH_HTTP_TIMEOUT_MS = 15 * 1000;
 export const PROVIDER_LEASE_SAFETY_MARGIN_MS = 60 * 1000;
 export const PROVIDER_DISPATCH_MIN_LEASE_REMAINING_MS =
   PROVIDER_HTTP_TIMEOUT_MS + PROVIDER_LEASE_SAFETY_MARGIN_MS;
@@ -93,6 +94,10 @@ export interface ConversionOutboxRow {
   completion_id?: string | null;
   provider_warning_json?: string | null;
   enhanced_user_identifiers?: EnhancedHashedIdentifier[];
+  consent_state?: "GRANTED" | "DENIED" | "UNSPECIFIED" | null;
+  consent_source?: string | null;
+  consent_observed_at?: string | null;
+  consent_policy_version?: string | null;
 }
 export interface UploaderEnv {
   ATTRIBUTION_DB: D1Database;

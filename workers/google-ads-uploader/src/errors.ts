@@ -44,7 +44,7 @@ export class ProviderRequestError extends Error {
 }
 
 export const retryableHttpStatus = (status: number): boolean =>
-  status === 401 || status === 408 || status === 425 || status === 429 || status >= 500;
+  status === 408 || status === 425 || status === 429 || status >= 500;
 
 export const parseSafeErrorReason = (body: string): string | null => {
   try {

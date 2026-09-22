@@ -1,5 +1,5 @@
 import type { D1Database } from "@cloudflare/workers-types";
-import { snapshotEnhancedUserDataForConversion } from "./enhanced-user-data.ts";
+import { readEnhancedUserDataSnapshotForConversion } from "./enhanced-user-data.ts";
 import {
   MAX_UPLOAD_ATTEMPTS,
   PROVIDER_DISPATCH_MIN_LEASE_REMAINING_MS,
@@ -298,12 +298,16 @@ export class D1OutboxRepository implements OutboxRepository {
       return row;
     }
 
-    row.enhanced_user_identifiers =
-      await snapshotEnhancedUserDataForConversion(
-        this.database,
-        row.business_conversion_id,
-        nowIso
-      );
+    const snapshot = await readEnhancedUserDataSnapshotForConversion(
+      this.database,
+      row.business_conversion_id,
+      nowIso
+    );
+    row.enhanced_user_identifiers = snapshot.identifiers;
+    row.consent_state = snapshot.consentState;
+    row.consent_source = snapshot.consentSource;
+    row.consent_observed_at = snapshot.consentObservedAt;
+    row.consent_policy_version = snapshot.consentPolicyVersion;
     return row;
   }
 
