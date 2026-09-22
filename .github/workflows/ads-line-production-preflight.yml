@@ -27,6 +27,7 @@ on:
       - "scripts/line4c-*"
       - "scripts/v12-high-intent-*"
       - "scripts/v12-migration-reconstruction.test.mjs"
+      - "scripts/v11-wp09b-d1-native-migration.test.mjs"
       - "scripts/v12-workflow-safety.test.mjs"
       - "migrations/**"
       - "wrangler.jsonc"
@@ -58,6 +59,7 @@ on:
       - "scripts/line4c-*"
       - "scripts/v12-high-intent-*"
       - "scripts/v12-migration-reconstruction.test.mjs"
+      - "scripts/v11-wp09b-d1-native-migration.test.mjs"
       - "scripts/v12-workflow-safety.test.mjs"
       - "migrations/**"
       - "wrangler.jsonc"
@@ -96,6 +98,8 @@ jobs:
         run: npm run test:hq07:qualified-action
       - name: Verify V1.1 WP07-WP09 stage ledger and multi-destination contracts
         run: npm run test:v11:wp07-wp09
+      - name: Verify WP09B D1-native migration safety
+        run: npm run test:v11:wp09b
       - name: Verify Google Ads short-lived provider auth
         run: npm run test:google-ads:auth
       - name: Verify governed Google Ads host provider runner

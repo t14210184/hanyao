@@ -48,7 +48,8 @@
     "test:hq06:userdata": "node --experimental-strip-types --test workers/google-ads-uploader/test/enhanced-user-data.test.mjs",
     "test:hq07:qualified-action": "node --experimental-strip-types --test scripts/ads-qualified-lead-action.test.ts",
     "test:v11:wp02-wp06": "node scripts/v11-wp02-wp06.test.mjs",
-    "test:v11:wp07-wp09": "node --experimental-strip-types --test scripts/v11-wp07-wp09.test.ts"
+    "test:v11:wp07-wp09": "node --experimental-strip-types --test scripts/v11-wp07-wp09.test.ts",
+    "test:v11:wp09b": "node scripts/v11-wp09b-d1-native-migration.test.mjs"
   },
   "dependencies": {
     "@next/third-parties": "^16.2.9",

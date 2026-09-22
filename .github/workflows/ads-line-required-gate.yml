@@ -46,6 +46,8 @@ jobs:
         run: npm run test:v11:wp02-wp06
       - name: Verify V1.1 WP07-WP09 stage ledger and multi-destination contracts
         run: npm run test:v11:wp07-wp09
+      - name: Verify WP09B D1-native migration safety
+        run: npm run test:v11:wp09b
       - name: Verify immutable attribution snapshot
         run: npm run test:v13:p0a
       - name: Verify provider ACK and RESULT_UNKNOWN recovery
