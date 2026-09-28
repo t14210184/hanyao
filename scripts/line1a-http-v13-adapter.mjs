@@ -37,6 +37,7 @@ const migrationReplacement = [
   '    "0013_high_intent_signal_shadow.sql",',
   '    "0014_enhanced_user_data_snapshot.sql",',
   '    "0015_v11_observability_hardening.sql",',
+  '    "0018_line_match_reason_observability.sql",',
   '  ]) {',
 ].join("\n");
 patched = replaceExactlyOnce(
@@ -96,7 +97,7 @@ patched = replaceExactlyOnce(
 patched = replaceExactlyOnce(
   patched,
   'migration: "0001 -> existing data -> 0002 -> existing data -> 0003 -> 0008 PASS",',
-  'migration: "0001 -> existing data -> 0002 -> existing data -> 0003 -> 0015 PASS",',
+  'migration: "0001 -> existing data -> 0002 -> existing data -> 0003 -> 0015 -> 0018 PASS",',
   "migration result label"
 );
 
