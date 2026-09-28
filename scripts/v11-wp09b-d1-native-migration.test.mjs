@@ -582,7 +582,7 @@ function runFailureRehearsal() {
     seedFixture(sandbox);
     const before = captureCanonicalState(sandbox);
     const brokenMigration = `${readFileSync(path.join(migrationsDir, "0018_line_match_reason_observability.sql"), "utf8")}\nSELECT * FROM wp09b_intentional_sql_failure;\n`;
-    writeFileSync(path.join(sandbox.migrations, "0018_line_match_reason_observability.sql"), brokenMigration);
+    writeFileSync(path.join(sandbox.migrations, "0017_v11_multi_stage_conversion_types.sql"), brokenMigration);
     const failed = applyMigrations(sandbox, true);
     assert.notEqual(failed.status, 0, "intentional SQL failure unexpectedly succeeded");
     const after = captureCanonicalState(sandbox);
@@ -604,7 +604,7 @@ function runStaticGuard() {
     assert.doesNotMatch(sql, /PRAGMA\s+foreign_keys\s*=\s*OFF/i, `${name} disables FK enforcement`);
   }
   assert.match(
-    readFileSync(path.join(migrationsDir, "0018_line_match_reason_observability.sql"), "utf8"),
+    readFileSync(path.join(migrationsDir, "0017_v11_multi_stage_conversion_types.sql"), "utf8"),
     /PRAGMA\s+defer_foreign_keys\s*=\s*ON/i
   );
   return { unappliedMigrationCount: unapplied.length, foreignKeysOffGuard: true };
