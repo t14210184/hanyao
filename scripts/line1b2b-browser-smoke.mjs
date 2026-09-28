@@ -10,6 +10,15 @@ const trace = (message) => console.error(`[line1b2b-browser] ${message}`);
 const wrangler = join(cwd, "node_modules", "wrangler", "bin", "wrangler.js");
 const port = 8795;
 const baseUrl = `http://127.0.0.1:${port}`;
+const isOfficialLineProfileRequest = (href) => {
+  try {
+    const url = new URL(href);
+    const path = decodeURIComponent(url.pathname).replace(/\/+$/, "");
+    return url.hostname.toLowerCase() === "line.me" && path === "/R/ti/p/@451vpomq";
+  } catch {
+    return false;
+  }
+};
 const persistTo = mkdtempSync(join(tmpdir(), "line1b2b-local-d1-"));
 const runtimeDir = mkdtempSync(join(tmpdir(), "line1b2b-local-runtime-"));
 symlinkSync(join(cwd, "out"), join(runtimeDir, "out"), "dir");
@@ -242,7 +251,7 @@ try {
   });
   await failPage.setRequestInterception(true);
   failPage.on("request", (request) => {
-    if (request.url() === "https://line.me/R/ti/p/@451vpomq") {
+    if (isOfficialLineProfileRequest(request.url())) {
       profileFallbackRequests += 1;
       request.abort().catch(() => undefined);
       return;
