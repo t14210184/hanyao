@@ -270,10 +270,23 @@ export type LineMatchStatus =
   | "AMBIGUOUS"
   | "IGNORED_NON_TEXT";
 
+export type LineMatchReason =
+  | "MATCHED_ADS"
+  | "NO_TOKEN"
+  | "MULTIPLE_TOKENS"
+  | "UNKNOWN_TOKEN"
+  | "WRONG_CHANNEL"
+  | "DESTINATION_MISMATCH"
+  | "SNAPSHOT_OR_SESSION_MISSING"
+  | "ATTRIBUTION_EXPIRED"
+  | "AD_IDENTIFIER_MISSING"
+  | "IGNORED_NON_TEXT";
+
 export type LineWebhookOutcome = "accepted" | "duplicate" | "ignored";
 
 interface LineMatchDecision {
   matchStatus: LineMatchStatus;
+  matchReason: LineMatchReason;
   recordEventType: string;
   leadToken: string | null;
   attribution: GoogleAdsAttributionSelection | null;
@@ -293,9 +306,11 @@ interface LeadTokenLookupRow {
 
 const unattributedDecision = (
   matchStatus: "UNMATCHED" | "AMBIGUOUS",
-  tokenExtractionCount: number
+  tokenExtractionCount: number,
+  matchReason: "NO_TOKEN" | "MULTIPLE_TOKENS" | "UNKNOWN_TOKEN"
 ): LineMatchDecision => ({
   matchStatus,
+  matchReason,
   recordEventType: "line_message_received_unattributed",
   leadToken: null,
   attribution: null,
@@ -322,8 +337,8 @@ const classifyTextMessage = async (
   eventAt: Date
 ): Promise<LineMatchDecision> => {
   const tokens = extractLeadTokens(text);
-  if (tokens.length === 0) return unattributedDecision("UNMATCHED", 0);
-  if (tokens.length > 1) return unattributedDecision("AMBIGUOUS", tokens.length);
+  if (tokens.length === 0) return unattributedDecision("UNMATCHED", 0, "NO_TOKEN");
+  if (tokens.length > 1) return unattributedDecision("AMBIGUOUS", tokens.length, "MULTIPLE_TOKENS");
 
   const leadToken = tokens[0];
   const lead = await database
@@ -334,31 +349,36 @@ const classifyTextMessage = async (
     )
     .bind(leadToken)
     .first<LeadTokenLookupRow>();
-  if (!lead) return unattributedDecision("UNMATCHED", 1);
+  if (!lead) return unattributedDecision("UNMATCHED", 1, "UNKNOWN_TOKEN");
   if (lead.channel !== "line") {
-    return { matchStatus: "WRONG_CHANNEL", recordEventType: "line_message_received_unattributed",
+    return { matchStatus: "WRONG_CHANNEL", matchReason: "WRONG_CHANNEL",
+      recordEventType: "line_message_received_unattributed",
       leadToken, attribution: null, attributionSessionId: lead.session_id, tokenExtractionCount: 1 };
   }
 
   const snapshot = await readVerifiedLeadAttributionSnapshot(lead);
   if (!snapshot || !lead.session_id) {
-    return { matchStatus: "MATCHED_UNATTRIBUTED", recordEventType: "line_message_received",
+    return { matchStatus: "MATCHED_UNATTRIBUTED", matchReason: "SNAPSHOT_OR_SESSION_MISSING",
+      recordEventType: "line_message_received",
       leadToken, attribution: null, attributionSessionId: lead.session_id, tokenExtractionCount: 1 };
   }
   if (
     snapshot.session_expires_at === null ||
     Date.parse(snapshot.session_expires_at) <= eventAt.getTime()
   ) {
-    return { matchStatus: "MATCHED_UNATTRIBUTED", recordEventType: "line_message_received",
+    return { matchStatus: "MATCHED_UNATTRIBUTED", matchReason: "ATTRIBUTION_EXPIRED",
+      recordEventType: "line_message_received",
       leadToken, attribution: null, attributionSessionId: lead.session_id, tokenExtractionCount: 1 };
   }
   const attribution = snapshotAttribution(snapshot);
   if (!attribution) {
-    return { matchStatus: "MATCHED_UNATTRIBUTED", recordEventType: "line_message_received",
+    return { matchStatus: "MATCHED_UNATTRIBUTED", matchReason: "AD_IDENTIFIER_MISSING",
+      recordEventType: "line_message_received",
       leadToken, attribution: null, attributionSessionId: lead.session_id, tokenExtractionCount: 1 };
   }
   return {
     matchStatus: "MATCHED_ADS",
+    matchReason: "MATCHED_ADS",
     recordEventType: "line_message_received",
     leadToken,
     attribution,
@@ -396,6 +416,7 @@ export const processLineWebhookEvent = async (
   if (!destinationMatches) {
     decision = {
       matchStatus: "WRONG_CHANNEL",
+      matchReason: "DESTINATION_MISMATCH",
       recordEventType: "line_message_received_unattributed",
       leadToken: null,
       attribution: null,
@@ -409,6 +430,7 @@ export const processLineWebhookEvent = async (
   } else {
     decision = {
       matchStatus: "IGNORED_NON_TEXT",
+      matchReason: "IGNORED_NON_TEXT",
       recordEventType: event.eventType,
       leadToken: null,
       attribution: null,
@@ -478,7 +500,7 @@ export const processLineWebhookEvent = async (
   const statements = [
     database.prepare(
       `INSERT OR IGNORE INTO line_events (
-        line_event_id, webhook_event_id, message_id, lead_token, event_type, match_status,
+        line_event_id, webhook_event_id, message_id, lead_token, event_type, match_status, match_reason,
         line_event_timestamp, received_at, created_at, line_user_key, line_event_type,
         source_type, message_type, token_extraction_count, identity_state, identity_key_id,
         line_destination, business_subject_kind, business_subject_key, attribution_session_id,
@@ -486,11 +508,11 @@ export const processLineWebhookEvent = async (
         lineage_frozen_at, canonical_fingerprint
       ) VALUES (
         ?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17,?18,?19,
-        ?20,?21,?22,?23,?24,?25,?26,?27
+        ?20,?21,?22,?23,?24,?25,?26,?27,?28
       )`
     ).bind(
       lineEventId, event.webhookEventId, event.messageId, decision.leadToken,
-      decision.recordEventType, decision.matchStatus, event.lineEventTimestamp,
+      decision.recordEventType, decision.matchStatus, decision.matchReason, event.lineEventTimestamp,
       receivedAt, receivedAt, lineUserKey, event.eventType, event.sourceType ?? "unknown",
       event.messageType, decision.tokenExtractionCount, identityKnown ? "KNOWN" : "ABSENT",
       identityKnown ? identityKeyId : null, event.destination,
