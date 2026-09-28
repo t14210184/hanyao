@@ -19,7 +19,7 @@ assert.ok(existsSync(wranglerBin), "WRANGLER_LOCAL_BINARY_NOT_FOUND");
 const allMigrationFiles = readdirSync(migrationsDir)
   .filter((name) => /^\d{4}_.*\.sql$/.test(name))
   .sort();
-assert.equal(allMigrationFiles.at(-1), "0017_v11_multi_stage_conversion_types.sql");
+assert.equal(allMigrationFiles.at(-1), "0018_line_match_reason_observability.sql");
 
 function makeSandbox(label) {
   const sandboxRoot = mkdtempSync(path.join(tmpdir(), `hanyao-wp09b-${label}-`));
@@ -559,10 +559,12 @@ function runPositive() {
     assert.deepEqual(typeCounts, { verified: 1, qualified: 1, won: 1, qualified_outbox: 1, won_outbox: 1 });
     const applied = migrationNames(sandbox);
     assert.ok(applied.some((name) => name.includes("0017_v11_multi_stage_conversion_types")), "0017 not recorded by Wrangler D1 local migrations");
+    assert.ok(applied.some((name) => name.includes("0018_line_match_reason_observability")), "0018 not recorded by Wrangler D1 local migrations");
+    assert.ok(tableColumns(sandbox, "line_events").includes("match_reason"));
 
     return {
       inventory,
-      migrationReplay: "0001->0017",
+      migrationReplay: "0001->0018",
       legacyIndexCount: preIndexNames.length,
       preservedTableCount: Object.keys(preTableCounts).length,
       typeCounts,
@@ -579,8 +581,8 @@ function runFailureRehearsal() {
     applyMigrations(sandbox);
     seedFixture(sandbox);
     const before = captureCanonicalState(sandbox);
-    const brokenMigration = `${readFileSync(path.join(migrationsDir, "0017_v11_multi_stage_conversion_types.sql"), "utf8")}\nSELECT * FROM wp09b_intentional_sql_failure;\n`;
-    writeFileSync(path.join(sandbox.migrations, "0017_v11_multi_stage_conversion_types.sql"), brokenMigration);
+    const brokenMigration = `${readFileSync(path.join(migrationsDir, "0018_line_match_reason_observability.sql"), "utf8")}\nSELECT * FROM wp09b_intentional_sql_failure;\n`;
+    writeFileSync(path.join(sandbox.migrations, "0018_line_match_reason_observability.sql"), brokenMigration);
     const failed = applyMigrations(sandbox, true);
     assert.notEqual(failed.status, 0, "intentional SQL failure unexpectedly succeeded");
     const after = captureCanonicalState(sandbox);
@@ -602,7 +604,7 @@ function runStaticGuard() {
     assert.doesNotMatch(sql, /PRAGMA\s+foreign_keys\s*=\s*OFF/i, `${name} disables FK enforcement`);
   }
   assert.match(
-    readFileSync(path.join(migrationsDir, "0017_v11_multi_stage_conversion_types.sql"), "utf8"),
+    readFileSync(path.join(migrationsDir, "0018_line_match_reason_observability.sql"), "utf8"),
     /PRAGMA\s+defer_foreign_keys\s*=\s*ON/i
   );
   return { unappliedMigrationCount: unapplied.length, foreignKeysOffGuard: true };
@@ -616,7 +618,7 @@ console.log(JSON.stringify({
   result: "V11_WP09B_D1_NATIVE_MIGRATION_SAFETY_PASS",
   wrangler: wranglerPackage.version,
   tests: {
-    T147: "PASS_D1_LOCAL_0001_TO_0017",
+    T147: "PASS_D1_LOCAL_0001_TO_0018",
     T148: "PASS_POPULATED_FK_GRAPH",
     T149: "PASS_CANONICAL_IDS_TRANSACTION_DESTINATION_PRESERVED",
     T150: "PASS_PROVIDER_ATTEMPT_LEASE_PRESERVED",
