@@ -97,12 +97,21 @@ const identityDatabase = (state: IdentityState): D1Database => ({
   async batch(statements: IdentityStatement[]) {
     const first = statements[0];
     state.insertedArgs = [...first.args];
+    const insertColumns = first.sql
+      .match(/INSERT OR IGNORE INTO line_events\s*\(([\s\S]*?)\)\s*VALUES/i)?.[1]
+      .split(",")
+      .map((column) => column.trim()) ?? [];
+    const valueFor = (column: string): unknown => {
+      const index = insertColumns.indexOf(column);
+      if (index < 0) throw new Error(`M05_LINE_EVENT_INSERT_COLUMN_MISSING:${column}`);
+      return first.args[index];
+    };
     state.existing = {
-      line_event_id: String(first.args[0]),
-      canonical_fingerprint: String(first.args[26]),
-      line_user_key: first.args[9] as string | null,
-      business_subject_key: first.args[18] as string | null,
-      identity_key_id: first.args[15] as string | null,
+      line_event_id: String(valueFor("line_event_id")),
+      canonical_fingerprint: String(valueFor("canonical_fingerprint")),
+      line_user_key: valueFor("line_user_key") as string | null,
+      business_subject_key: valueFor("business_subject_key") as string | null,
+      identity_key_id: valueFor("identity_key_id") as string | null,
     };
     return statements.map((_, index) => ({
       success: true,
