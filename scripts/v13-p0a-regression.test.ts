@@ -101,7 +101,7 @@ const fakeDatabase = (state: FakeState): D1Database => ({
     state.canonicalBatchCalls += 1;
     state.existing = {
       line_event_id: String(first.args[0]),
-      canonical_fingerprint: String(first.args[26]),
+      canonical_fingerprint: String(first.args.at(-1)),
     };
     return statements.map((_, index) => ({
       success: true,
