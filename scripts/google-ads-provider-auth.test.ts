@@ -25,6 +25,7 @@ test("direct short-lived Google Ads access token takes precedence without exchan
   assert.deepEqual(result, {
     accessToken: "short-lived-access-token-123",
     source: "ACCESS_TOKEN",
+    tokenExpiresInSeconds: null,
   });
   assert.equal(exchangeCalled, false);
 });
@@ -49,6 +50,7 @@ test("service-account JSON remains the fallback and requests only adwords scope"
   assert.deepEqual(result, {
     accessToken: "fallback-token",
     source: "SERVICE_ACCOUNT_JSON",
+    tokenExpiresInSeconds: 3600,
   });
   assert.deepEqual(calls, [
     {

@@ -35,6 +35,7 @@ export const resolveGoogleAdsAccessToken = async (
 ): Promise<{
   accessToken: string;
   source: GoogleAdsProviderAuthSource;
+  tokenExpiresInSeconds: number | null;
 }> => {
   const directAccessToken = nonEmpty(env.GOOGLE_ADS_ACCESS_TOKEN);
   if (directAccessToken) {
@@ -44,6 +45,7 @@ export const resolveGoogleAdsAccessToken = async (
     return {
       accessToken: directAccessToken,
       source: "ACCESS_TOKEN",
+      tokenExpiresInSeconds: null,
     };
   }
 
@@ -58,5 +60,6 @@ export const resolveGoogleAdsAccessToken = async (
   return {
     accessToken: exchanged.accessToken,
     source: "SERVICE_ACCOUNT_JSON",
+    tokenExpiresInSeconds: exchanged.expiresIn,
   };
 };
